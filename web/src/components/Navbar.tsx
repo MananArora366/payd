@@ -2,13 +2,14 @@
 
 import React, { useState } from 'react';
 import { usePayd } from '@/lib/store/PaydContext';
-import { Moon, Sun, ChevronDown, Check, Sparkles, ShieldCheck, Camera } from 'lucide-react';
+import { Moon, Sun, ChevronDown, Check, Sparkles, ShieldCheck, Camera, Cpu } from 'lucide-react';
 
 interface NavbarProps {
   onOpenReceiptScanner?: () => void;
+  onOpenMcp?: () => void;
 }
 
-export function Navbar({ onOpenReceiptScanner }: NavbarProps = {}) {
+export function Navbar({ onOpenReceiptScanner, onOpenMcp }: NavbarProps = {}) {
   const { currentUser, users, switchUser, theme, toggleTheme } = usePayd();
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
@@ -34,7 +35,18 @@ export function Navbar({ onOpenReceiptScanner }: NavbarProps = {}) {
         </div>
 
         {/* Right side controls */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          {onOpenMcp && (
+            <button
+              onClick={onOpenMcp}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 transition text-xs font-bold shadow-xs"
+              title="Open Model Context Protocol (MCP) Agent Console"
+            >
+              <Cpu className="w-3.5 h-3.5" />
+              <span>MCP Tools</span>
+            </button>
+          )}
+
           {onOpenReceiptScanner && (
             <button
               onClick={onOpenReceiptScanner}

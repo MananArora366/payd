@@ -8,10 +8,12 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "mcp": "node scripts/mcp-server.mjs"
   },
   "dependencies": {
     "@google/genai": "^0.2.0",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.49.1",
     "clsx": "^2.1.1",

@@ -15,6 +15,7 @@ import { CreateGroupModal } from '@/components/modals/CreateGroupModal';
 import { TransactionDetailDrawer } from '@/components/modals/TransactionDetailDrawer';
 import { ReceiptScannerModal } from '@/components/modals/ReceiptScannerModal';
 import { FairPayerRouletteModal } from '@/components/modals/FairPayerRouletteModal';
+import { McpInspectorModal } from '@/components/modals/McpInspectorModal';
 import { Transaction } from '@/types/database';
 import { SimplifiedDebt } from '@/lib/ledger';
 
@@ -37,6 +38,7 @@ export default function AppHome() {
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [receiptScannerOpen, setReceiptScannerOpen] = useState(false);
   const [rouletteOpen, setRouletteOpen] = useState(false);
+  const [mcpOpen, setMcpOpen] = useState(false);
   const [rouletteGroupId, setRouletteGroupId] = useState<string | null>(null);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
@@ -73,7 +75,10 @@ export default function AppHome() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
-      <Navbar onOpenReceiptScanner={() => setReceiptScannerOpen(true)} />
+      <Navbar
+        onOpenReceiptScanner={() => setReceiptScannerOpen(true)}
+        onOpenMcp={() => setMcpOpen(true)}
+      />
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 pt-6">
         {activeTab === 'home' && (
@@ -157,6 +162,11 @@ export default function AppHome() {
         isOpen={rouletteOpen}
         onClose={() => setRouletteOpen(false)}
         defaultGroupId={rouletteGroupId}
+      />
+
+      <McpInspectorModal
+        isOpen={mcpOpen}
+        onClose={() => setMcpOpen(false)}
       />
     </div>
   );
