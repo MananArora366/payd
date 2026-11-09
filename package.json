@@ -1,0 +1,13 @@
+{
+  "name": "payd-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Payd — Dual-Platform Expense Ledger (Web MVP + Native iOS)",
+  "scripts": {
+    "dev": "npm --prefix web run dev",
+    "build": "npm --prefix web run build",
+    "start": "npm --prefix web start",
+    "test": "npm --prefix web test",
+    "ios": "open ios/Payd.swiftpm"
+  }
+}
