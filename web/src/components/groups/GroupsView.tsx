@@ -16,13 +16,16 @@ import {
   ChevronRight,
   Receipt,
   Sparkles,
+  Coffee,
 } from 'lucide-react';
+import { RecurringBillsSection } from '@/components/recurring/RecurringBillsSection';
 
 interface GroupsViewProps {
   onOpenCreateGroup: () => void;
   onOpenAddExpenseForGroup: (groupId: string) => void;
   onOpenSettlementForDebt: (debt: SimplifiedDebt, groupId: string) => void;
   onSelectTransaction: (txn: Transaction) => void;
+  onOpenRoulette?: (groupId?: string | null) => void;
 }
 
 export function GroupsView({
@@ -30,6 +33,7 @@ export function GroupsView({
   onOpenAddExpenseForGroup,
   onOpenSettlementForDebt,
   onSelectTransaction,
+  onOpenRoulette,
 }: GroupsViewProps) {
   const {
     currentUser,
@@ -216,6 +220,16 @@ export function GroupsView({
               </button>
 
               <button
+                type="button"
+                onClick={() => onOpenRoulette?.(selectedGroup.id)}
+                className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md transition"
+                title="Spin who covers the next bill"
+              >
+                <Coffee className="w-3.5 h-3.5" />
+                <span>Spin for Payer</span>
+              </button>
+
+              <button
                 onClick={() => onOpenAddExpenseForGroup(selectedGroup.id)}
                 className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md transition"
               >
@@ -389,6 +403,11 @@ export function GroupsView({
                 })
               )}
             </div>
+          </div>
+
+          {/* Group Subscriptions & Recurring Bills */}
+          <div className="pt-2">
+            <RecurringBillsSection groupId={selectedGroup.id} />
           </div>
         </div>
       )}

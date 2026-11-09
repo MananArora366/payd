@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { usePayd } from '@/lib/store/PaydContext';
 import { formatMinorUnits, parseMajorToMinor, splitEqual, splitExact, splitPercentage, splitShares } from '@/lib/ledger';
-import { X, Check, Users, Sparkles, ShieldCheck, Camera } from 'lucide-react';
+import { calculateItemizedShares } from '@/lib/ai/receipt-scan';
+import { X, Check, Users, Sparkles, ShieldCheck, Camera, Plus, Trash2, Split } from 'lucide-react';
 
 interface AddExpenseModalProps {
   isOpen: boolean;
@@ -24,14 +25,27 @@ export function AddExpenseModal({ isOpen, onClose, defaultType = 'expense', defa
   const [groupId, setGroupId] = useState<string | null>(defaultGroupId);
   const [paymentMethod, setPaymentMethod] = useState('Card');
   const [notes, setNotes] = useState('');
-  const [splitMethod, setSplitMethod] = useState<'equal' | 'exact'>('equal');
+  const [splitMethod, setSplitMethod] = useState<'equal' | 'exact' | 'itemized'>('equal');
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([currentUser.id]);
   const [exactAmounts, setExactAmounts] = useState<Record<string, string>>({});
+  const [manualItems, setManualItems] = useState<
+    { id: string; name: string; amountStr: string; assignedUserIds: string[] }[]
+  >([
+    { id: '1', name: 'Item 1', amountStr: '', assignedUserIds: [currentUser.id] },
+  ]);
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const totalMinor = parseMajorToMinor(amountStr, currentUser.default_currency);
+  // Compute manual items subtotal if in itemized mode
+  const manualItemsTotalMinor = manualItems.reduce((acc, item) => {
+    return acc + parseMajorToMinor(item.amountStr || '0', currentUser.default_currency);
+  }, 0);
+
+  const effectiveTotalMinor =
+    splitMethod === 'itemized' && manualItemsTotalMinor > 0 && !amountStr.trim()
+      ? manualItemsTotalMinor
+      : parseMajorToMinor(amountStr, currentUser.default_currency);
 
   const toggleUserSelection = (userId: string) => {
     if (selectedUserIds.includes(userId)) {
@@ -42,32 +56,86 @@ export function AddExpenseModal({ isOpen, onClose, defaultType = 'expense', defa
     }
   };
 
+  const handleToggleManualItemUser = (itemId: string, userId: string) => {
+    setManualItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== itemId) return item;
+        const current = item.assignedUserIds;
+        if (current.includes(userId)) {
+          if (current.length === 1) return item;
+          return { ...item, assignedUserIds: current.filter((id) => id !== userId) };
+        } else {
+          return { ...item, assignedUserIds: [...current, userId] };
+        }
+      })
+    );
+  };
+
+  const handleAddManualItem = () => {
+    setManualItems((prev) => [
+      ...prev,
+      {
+        id: `item-${Date.now()}`,
+        name: `Item ${prev.length + 1}`,
+        amountStr: '',
+        assignedUserIds: [...selectedUserIds],
+      },
+    ]);
+  };
+
+  const handleRemoveManualItem = (itemId: string) => {
+    if (manualItems.length <= 1) return;
+    setManualItems((prev) => prev.filter((i) => i.id !== itemId));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     try {
       if (!title.trim()) throw new Error('Please enter a description');
-      if (totalMinor <= 0) throw new Error('Please enter an amount greater than 0');
+      if (effectiveTotalMinor <= 0) throw new Error('Please enter an amount greater than 0');
 
       let splitsToSave: { user_id: string; share_minor: number }[] = [];
 
       if (type === 'income') {
-        splitsToSave = [{ user_id: payerId, share_minor: totalMinor }];
+        splitsToSave = [{ user_id: payerId, share_minor: effectiveTotalMinor }];
       } else {
         if (splitMethod === 'equal') {
-          const splitObj = splitEqual(totalMinor, selectedUserIds);
+          const splitObj = splitEqual(effectiveTotalMinor, selectedUserIds);
           splitsToSave = Object.entries(splitObj).map(([uid, share]) => ({
             user_id: uid,
             share_minor: share,
           }));
-        } else {
+        } else if (splitMethod === 'exact') {
           // Exact split
           const alloc: Record<string, number> = {};
           for (const uid of selectedUserIds) {
             alloc[uid] = parseMajorToMinor(exactAmounts[uid] || '0', currentUser.default_currency);
           }
-          const splitObj = splitExact(totalMinor, alloc);
+          const splitObj = splitExact(effectiveTotalMinor, alloc);
+          splitsToSave = Object.entries(splitObj).map(([uid, share]) => ({
+            user_id: uid,
+            share_minor: share,
+          }));
+        } else {
+          // Itemized split
+          const lineItems = manualItems.map((item) => ({
+            name: item.name || 'Item',
+            quantity: 1,
+            price_minor: parseMajorToMinor(item.amountStr || '0', currentUser.default_currency),
+          }));
+          const assignments: Record<number, string[]> = {};
+          manualItems.forEach((item, idx) => {
+            assignments[idx] = item.assignedUserIds.length > 0 ? item.assignedUserIds : selectedUserIds;
+          });
+
+          const splitObj = calculateItemizedShares(
+            effectiveTotalMinor,
+            lineItems,
+            assignments,
+            selectedUserIds
+          );
           splitsToSave = Object.entries(splitObj).map(([uid, share]) => ({
             user_id: uid,
             share_minor: share,
@@ -78,7 +146,7 @@ export function AddExpenseModal({ isOpen, onClose, defaultType = 'expense', defa
       addTransaction({
         type,
         title: title.trim(),
-        amount_minor: totalMinor,
+        amount_minor: effectiveTotalMinor,
         currency: currentUser.default_currency,
         category_id: categoryId || null,
         payer_id: payerId,
@@ -242,19 +310,52 @@ export function AddExpenseModal({ isOpen, onClose, defaultType = 'expense', defa
 
           {/* Splits section (for expenses) */}
           {type === 'expense' && (
-            <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div className="space-y-3.5 pt-2 border-t border-slate-100 dark:border-slate-800">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5 text-emerald-500" />
-                  Split Among Participants
+                  Split Participants ({selectedUserIds.length})
                 </span>
-                <span className="text-xs font-medium text-slate-400">
-                  {selectedUserIds.length} selected
-                </span>
+                {/* Split Strategy Switcher */}
+                <div className="flex rounded-lg bg-slate-100 dark:bg-slate-800 p-0.5 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => setSplitMethod('equal')}
+                    className={`px-2.5 py-1 rounded-md font-medium transition ${
+                      splitMethod === 'equal'
+                        ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                        : 'text-slate-400'
+                    }`}
+                  >
+                    Equal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSplitMethod('itemized')}
+                    className={`px-2.5 py-1 rounded-md font-medium transition ${
+                      splitMethod === 'itemized'
+                        ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                        : 'text-slate-400'
+                    }`}
+                  >
+                    Tap-to-Claim
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSplitMethod('exact')}
+                    className={`px-2.5 py-1 rounded-md font-medium transition ${
+                      splitMethod === 'exact'
+                        ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                        : 'text-slate-400'
+                    }`}
+                  >
+                    Exact
+                  </button>
+                </div>
               </div>
 
               {/* User Selector Pills */}
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {users.map((u) => {
                   const isSelected = selectedUserIds.includes(u.id);
                   return (
@@ -264,7 +365,7 @@ export function AddExpenseModal({ isOpen, onClose, defaultType = 'expense', defa
                       onClick={() => toggleUserSelection(u.id)}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition ${
                         isSelected
-                          ? 'bg-emerald-500 text-white shadow-sm'
+                          ? 'bg-emerald-500 text-white shadow-xs'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
                       }`}
                     >
@@ -275,11 +376,144 @@ export function AddExpenseModal({ isOpen, onClose, defaultType = 'expense', defa
                 })}
               </div>
 
-              {/* Split Preview */}
-              {totalMinor > 0 && selectedUserIds.length > 0 && (
+              {/* ITEMIZE MODE: Tap-to-Claim line items */}
+              {splitMethod === 'itemized' && (
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-700 dark:text-slate-300">
+                      Line Items ({manualItems.length})
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleAddManualItem}
+                      className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-xs font-semibold hover:underline"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Add Item
+                    </button>
+                  </div>
+
+                  <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                    {manualItems.map((item, idx) => {
+                      const count = item.assignedUserIds.length;
+                      const fraction = count > 1 ? `¹/${count}` : '';
+                      return (
+                        <div
+                          key={item.id}
+                          className="p-3 bg-slate-50 dark:bg-slate-850/80 border border-slate-200 dark:border-slate-750 rounded-2xl space-y-2"
+                        >
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={item.name}
+                              placeholder={`Item ${idx + 1}`}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setManualItems((prev) =>
+                                  prev.map((i) => (i.id === item.id ? { ...i, name: val } : i))
+                                );
+                              }}
+                              className="flex-1 px-2.5 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            />
+                            <div className="w-28 relative">
+                              <input
+                                type="number"
+                                step="0.01"
+                                placeholder="0.00"
+                                value={item.amountStr}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setManualItems((prev) =>
+                                    prev.map((i) => (i.id === item.id ? { ...i, amountStr: val } : i))
+                                  );
+                                }}
+                                className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 text-right pr-9 font-semibold"
+                              />
+                              <span className="absolute right-2 top-1.5 text-[10px] text-slate-400 font-semibold pointer-events-none">
+                                AED
+                              </span>
+                            </div>
+                            {manualItems.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveManualItem(item.id)}
+                                className="p-1.5 text-slate-400 hover:text-rose-500 transition"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Friends tap-to-claim chips for this item */}
+                          <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                            <span className="text-[10px] text-slate-400 font-medium">Claimed:</span>
+                            {selectedUserIds.map((uid) => {
+                              const u = users.find((usr) => usr.id === uid);
+                              if (!u) return null;
+                              const isClaimed = item.assignedUserIds.includes(uid);
+                              return (
+                                <button
+                                  key={uid}
+                                  type="button"
+                                  onClick={() => handleToggleManualItemUser(item.id, uid)}
+                                  className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition ${
+                                    isClaimed
+                                      ? 'bg-emerald-500 text-white font-semibold'
+                                      : 'bg-white dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700'
+                                  }`}
+                                >
+                                  {u.name} {isClaimed && fraction ? `(${fraction})` : ''}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* EXACT MODE: Amount per person */}
+              {splitMethod === 'exact' && (
+                <div className="space-y-1.5 pt-1">
+                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Exact Amount per Participant
+                  </span>
+                  <div className="space-y-1.5">
+                    {selectedUserIds.map((uid) => {
+                      const u = users.find((usr) => usr.id === uid);
+                      return (
+                        <div key={uid} className="flex items-center justify-between gap-3 text-xs">
+                          <span className="text-slate-600 dark:text-slate-300 font-medium">
+                            {u?.name}
+                          </span>
+                          <div className="w-32 relative">
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              value={exactAmounts[uid] || ''}
+                              onChange={(e) =>
+                                setExactAmounts({ ...exactAmounts, [uid]: e.target.value })
+                              }
+                              className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-right pr-9 font-semibold"
+                            />
+                            <span className="absolute right-2 top-1.5 text-[10px] text-slate-400 font-semibold pointer-events-none">
+                              AED
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* EQUAL MODE Split Preview */}
+              {splitMethod === 'equal' && effectiveTotalMinor > 0 && selectedUserIds.length > 0 && (
                 <div className="p-3 bg-slate-50 dark:bg-slate-850 rounded-xl text-xs space-y-1">
                   <div className="text-slate-400 font-medium">Deterministic Equal Shares:</div>
-                  {Object.entries(splitEqual(totalMinor, selectedUserIds)).map(([uid, share]) => {
+                  {Object.entries(splitEqual(effectiveTotalMinor, selectedUserIds)).map(([uid, share]) => {
                     const u = users.find((user) => user.id === uid);
                     return (
                       <div key={uid} className="flex justify-between font-medium">

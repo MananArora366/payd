@@ -14,6 +14,7 @@ import { RecordSettlementModal } from '@/components/modals/RecordSettlementModal
 import { CreateGroupModal } from '@/components/modals/CreateGroupModal';
 import { TransactionDetailDrawer } from '@/components/modals/TransactionDetailDrawer';
 import { ReceiptScannerModal } from '@/components/modals/ReceiptScannerModal';
+import { FairPayerRouletteModal } from '@/components/modals/FairPayerRouletteModal';
 import { Transaction } from '@/types/database';
 import { SimplifiedDebt } from '@/lib/ledger';
 
@@ -35,7 +36,14 @@ export default function AppHome() {
 
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [receiptScannerOpen, setReceiptScannerOpen] = useState(false);
+  const [rouletteOpen, setRouletteOpen] = useState(false);
+  const [rouletteGroupId, setRouletteGroupId] = useState<string | null>(null);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+
+  const handleOpenRoulette = (groupId: string | null = null) => {
+    setRouletteGroupId(groupId);
+    setRouletteOpen(true);
+  };
 
   const handleOpenAddExpense = (type: 'expense' | 'income' = 'expense', groupId: string | null = null) => {
     setAddExpenseType(type);
@@ -74,6 +82,7 @@ export default function AppHome() {
             onOpenRecordSettlement={() => handleOpenRecordSettlement()}
             onOpenCreateGroup={() => setCreateGroupOpen(true)}
             onOpenReceiptScanner={() => setReceiptScannerOpen(true)}
+            onOpenRoulette={() => handleOpenRoulette(null)}
             onSelectTransaction={(txn) => setSelectedTransaction(txn)}
             onNavigateTab={(tab) => setActiveTab(tab)}
           />
@@ -92,6 +101,7 @@ export default function AppHome() {
             onOpenAddExpenseForGroup={(groupId) => handleOpenAddExpense('expense', groupId)}
             onOpenSettlementForDebt={handleOpenSettlementForDebt}
             onSelectTransaction={(txn) => setSelectedTransaction(txn)}
+            onOpenRoulette={(gid) => handleOpenRoulette(gid || null)}
           />
         )}
 
@@ -141,6 +151,12 @@ export default function AppHome() {
       <ReceiptScannerModal
         isOpen={receiptScannerOpen}
         onClose={() => setReceiptScannerOpen(false)}
+      />
+
+      <FairPayerRouletteModal
+        isOpen={rouletteOpen}
+        onClose={() => setRouletteOpen(false)}
+        defaultGroupId={rouletteGroupId}
       />
     </div>
   );

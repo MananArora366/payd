@@ -1,4 +1,4 @@
-import { User, Group, GroupMember, Category, Transaction, TransactionSplit, Settlement, Budget } from '@/types/database';
+import { User, Group, GroupMember, Category, Transaction, TransactionSplit, Settlement, Budget, RecurringBill } from '@/types/database';
 
 export const INITIAL_USERS: User[] = [
   {
@@ -156,7 +156,97 @@ export const INITIAL_SPLITS: TransactionSplit[] = [
   { id: 'sp8', transaction_id: 't0000004-0000-0000-0000-000000000004', user_id: '11111111-1111-1111-1111-111111111111', share_minor: 1500000, created_at: new Date().toISOString() },
 ];
 
-export const INITIAL_SETTLEMENTS: Settlement[] = [];
+export const INITIAL_SETTLEMENTS: Settlement[] = [
+  {
+    id: 's0000001-0000-0000-0000-000000000001',
+    group_id: 'g0000001-0000-0000-0000-000000000001',
+    sender_id: '33333333-3333-3333-3333-333333333333', // Sarah
+    recipient_id: '11111111-1111-1111-1111-111111111111', // Manan
+    amount_minor: 5000, // 50.00 AED
+    currency: 'AED',
+    method: 'Careem Pay / Aani',
+    reference: 'Dinner payback',
+    status: 'settled',
+    settled_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+    created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+  },
+  {
+    id: 's0000002-0000-0000-0000-000000000002',
+    group_id: 'g0000001-0000-0000-0000-000000000001',
+    sender_id: '22222222-2222-2222-2222-222222222222', // Rahul
+    recipient_id: '11111111-1111-1111-1111-111111111111', // Manan
+    amount_minor: 3333, // 33.33 AED
+    currency: 'AED',
+    method: 'Bank Transfer',
+    reference: 'Split settlement',
+    status: 'settled',
+    settled_at: new Date(Date.now() - 9 * 86400000).toISOString(),
+    created_at: new Date(Date.now() - 9 * 86400000).toISOString(),
+  },
+];
+
+export const INITIAL_RECURRING_BILLS: RecurringBill[] = [
+  {
+    id: 'rec00001-0000-0000-0000-000000000001',
+    title: 'Du 5G Home High-Speed Wi-Fi',
+    amount_minor: 38900, // AED 389.00
+    currency: 'AED',
+    category_id: 'c0000007-0000-0000-0000-000000000007', // Utilities and bills
+    payer_id: '11111111-1111-1111-1111-111111111111', // Manan
+    group_id: 'g0000001-0000-0000-0000-000000000001', // Dubai Marina Flatmates
+    frequency: 'monthly',
+    due_day: 1, // 1st of month
+    notes: 'Du Unlimited 800 Mbps Fiber account #1092842',
+    auto_post: false,
+    last_posted_at: new Date(Date.now() - 25 * 86400000).toISOString(),
+    splits: [
+      { user_id: '11111111-1111-1111-1111-111111111111', share_minor: 12967 },
+      { user_id: '22222222-2222-2222-2222-222222222222', share_minor: 12967 },
+      { user_id: '33333333-3333-3333-3333-333333333333', share_minor: 12966 },
+    ],
+    created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
+  },
+  {
+    id: 'rec00002-0000-0000-0000-000000000002',
+    title: 'DEWA Utilities (Electricity & Water)',
+    amount_minor: 75000, // AED 750.00
+    currency: 'AED',
+    category_id: 'c0000007-0000-0000-0000-000000000007',
+    payer_id: '33333333-3333-3333-3333-333333333333', // Sarah
+    group_id: 'g0000001-0000-0000-0000-000000000001',
+    frequency: 'monthly',
+    due_day: 15, // 15th of month
+    notes: 'DEWA Premise #20049182',
+    auto_post: false,
+    last_posted_at: new Date(Date.now() - 20 * 86400000).toISOString(),
+    splits: [
+      { user_id: '11111111-1111-1111-1111-111111111111', share_minor: 25000 },
+      { user_id: '22222222-2222-2222-2222-222222222222', share_minor: 25000 },
+      { user_id: '33333333-3333-3333-3333-333333333333', share_minor: 25000 },
+    ],
+    created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
+  },
+  {
+    id: 'rec00003-0000-0000-0000-000000000003',
+    title: 'Housekeeping & Deep Cleaning',
+    amount_minor: 24000, // AED 240.00
+    currency: 'AED',
+    category_id: 'c0000007-0000-0000-0000-000000000007',
+    payer_id: '22222222-2222-2222-2222-222222222222', // Rahul
+    group_id: 'g0000001-0000-0000-0000-000000000001',
+    frequency: 'monthly',
+    due_day: 10,
+    notes: 'Bi-weekly apartment cleaning service',
+    auto_post: false,
+    last_posted_at: null,
+    splits: [
+      { user_id: '11111111-1111-1111-1111-111111111111', share_minor: 8000 },
+      { user_id: '22222222-2222-2222-2222-222222222222', share_minor: 8000 },
+      { user_id: '33333333-3333-3333-3333-333333333333', share_minor: 8000 },
+    ],
+    created_at: new Date(Date.now() - 40 * 86400000).toISOString(),
+  },
+];
 
 export const INITIAL_BUDGETS: Budget[] = [
   {

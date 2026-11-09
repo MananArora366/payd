@@ -462,53 +462,104 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
 
             {/* Line Items Table (For Itemized Mode) */}
             {splitMode === 'itemized' && scannedReceipt.line_items.length > 0 && (
-              <div className="space-y-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                  Itemized Line Items (Tap member to assign)
-                </span>
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                    Tap-To-Claim Line Items
+                  </span>
+                  <div className="flex items-center gap-1.5 text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newAssignments: Record<number, string[]> = {};
+                        scannedReceipt.line_items.forEach((_, idx) => {
+                          newAssignments[idx] = [...selectedUserIds];
+                        });
+                        setItemAssignments(newAssignments);
+                      }}
+                      className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-emerald-500 font-medium transition"
+                    >
+                      Split All Equally
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newAssignments: Record<number, string[]> = {};
+                        scannedReceipt.line_items.forEach((_, idx) => {
+                          newAssignments[idx] = [payerId];
+                        });
+                        setItemAssignments(newAssignments);
+                      }}
+                      className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-emerald-500 font-medium transition"
+                    >
+                      All to Payer
+                    </button>
+                  </div>
+                </div>
+
                 <div className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
                   {scannedReceipt.line_items.map((item, idx) => {
                     const assigned = itemAssignments[idx] || [];
+                    const fraction =
+                      assigned.length > 1
+                        ? `¹/${assigned.length} (${formatMinorUnits(Math.round(item.price_minor / assigned.length), 'AED')} ea)`
+                        : '';
+
                     return (
                       <div
                         key={idx}
-                        className="p-3 bg-white dark:bg-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
+                        className="p-3 bg-white dark:bg-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs transition hover:bg-slate-50/50 dark:hover:bg-slate-850/50"
                       >
                         <div className="flex-1">
-                          <span className="font-semibold text-slate-800 dark:text-slate-200">
-                            {item.quantity > 1 ? `${item.quantity}x ` : ''}
-                            {item.name}
-                          </span>
-                          <span className="text-slate-400 ml-2">
-                            {formatMinorUnits(item.price_minor, 'AED')}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">
+                              {item.quantity > 1 ? `${item.quantity}x ` : ''}
+                              {item.name}
+                            </span>
+                            {fraction && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
+                                {fraction}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-slate-400 mt-0.5">
+                            Subtotal: {formatMinorUnits(item.price_minor, 'AED')}
+                          </div>
                         </div>
 
                         {/* Assignee badges */}
-                        <div className="flex flex-wrap gap-1">
-                          {selectedUserIds.map((uid) => {
-                            const u = users.find((usr) => usr.id === uid);
-                            if (!u) return null;
-                            const isAssigned = assigned.includes(uid);
-                            return (
-                              <button
-                                key={uid}
-                                type="button"
-                                onClick={() => toggleItemUser(idx, uid)}
-                                className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition ${
-                                  isAssigned
-                                    ? 'bg-emerald-500 text-white font-semibold'
-                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-200'
-                                }`}
-                              >
-                                {u.name}
-                              </button>
-                            );
-                          })}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] text-slate-400 font-medium">Claimed by:</span>
+                          <div className="flex flex-wrap gap-1">
+                            {selectedUserIds.map((uid) => {
+                              const u = users.find((usr) => usr.id === uid);
+                              if (!u) return null;
+                              const isAssigned = assigned.includes(uid);
+                              return (
+                                <button
+                                  key={uid}
+                                  type="button"
+                                  onClick={() => toggleItemUser(idx, uid)}
+                                  className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition flex items-center gap-1 ${
+                                    isAssigned
+                                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold shadow-xs'
+                                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                                  }`}
+                                >
+                                  {isAssigned && <Check className="w-3 h-3 stroke-[3]" />}
+                                  <span>{u.name}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
                     );
                   })}
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-slate-100/70 dark:bg-slate-850/70 border border-slate-200/50 dark:border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
+                  <span>💡 5% UAE VAT & unlisted tips are auto-distributed proportionally to individual item totals.</span>
                 </div>
               </div>
             )}

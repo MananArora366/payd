@@ -21,13 +21,18 @@ import {
   CheckCircle2,
   Calendar,
   Camera,
+  Coffee,
+  Dices,
 } from 'lucide-react';
+import { CashFlowAnalyticsCard } from '@/components/analytics/CashFlowAnalyticsCard';
+import { RecurringBillsSection } from '@/components/recurring/RecurringBillsSection';
 
 interface HomeViewProps {
   onOpenAddExpense: (type?: 'expense' | 'income') => void;
   onOpenRecordSettlement: () => void;
   onOpenCreateGroup: () => void;
   onOpenReceiptScanner: () => void;
+  onOpenRoulette?: () => void;
   onSelectTransaction: (txn: Transaction) => void;
   onNavigateTab: (tab: string) => void;
 }
@@ -37,6 +42,7 @@ export function HomeView({
   onOpenRecordSettlement,
   onOpenCreateGroup,
   onOpenReceiptScanner,
+  onOpenRoulette,
   onSelectTransaction,
   onNavigateTab,
 }: HomeViewProps) {
@@ -197,19 +203,22 @@ export function HomeView({
         </div>
       </div>
 
+      {/* Cash Flow Health & Reimbursement Lag Analytics */}
+      <CashFlowAnalyticsCard onNavigateSettlements={() => onNavigateTab('settlements')} />
+
       {/* Quick Action Grid */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Quick Actions</h3>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-7 gap-2.5">
           <button
             onClick={onOpenReceiptScanner}
-            className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-slate-900 border border-emerald-500/30 hover:border-emerald-500 hover:bg-emerald-500/15 transition text-left group relative overflow-hidden"
+            className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-slate-900 border border-emerald-500/30 hover:border-emerald-500 hover:bg-emerald-500/15 transition text-left group relative overflow-hidden"
           >
-            <div className="p-2.5 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white w-fit mb-2 group-hover:scale-110 transition shadow-md shadow-emerald-500/20">
-              <Camera className="w-5 h-5" />
+            <div className="p-2 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white w-fit mb-2 group-hover:scale-110 transition shadow-md shadow-emerald-500/20">
+              <Camera className="w-4 h-4" />
             </div>
             <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
               Payd Lens
@@ -217,65 +226,84 @@ export function HomeView({
                 AI
               </span>
             </div>
-            <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">Scan receipt OCR</div>
+            <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Scan receipt OCR</div>
+          </button>
+
+          <button
+            onClick={onOpenRoulette}
+            className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-slate-900 border border-amber-500/30 hover:border-amber-500 hover:bg-amber-500/15 transition text-left group relative overflow-hidden"
+          >
+            <div className="p-2 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-400 text-white w-fit mb-2 group-hover:scale-110 transition shadow-md shadow-amber-500/20">
+              <Coffee className="w-4 h-4" />
+            </div>
+            <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+              Roulette
+              <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500 text-white font-extrabold uppercase">
+                Game
+              </span>
+            </div>
+            <div className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">Who pays coffee?</div>
           </button>
 
           <button
             onClick={() => onOpenAddExpense('expense')}
-            className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition text-left group"
+            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition text-left group"
           >
-            <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 w-fit mb-2 group-hover:scale-105 transition">
-              <PlusCircle className="w-5 h-5" />
+            <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 w-fit mb-2 group-hover:scale-105 transition">
+              <PlusCircle className="w-4 h-4" />
             </div>
             <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Add Expense</div>
-            <div className="text-[11px] text-slate-400">Personal or shared</div>
+            <div className="text-[10px] text-slate-400">Personal or shared</div>
           </button>
 
           <button
             onClick={() => onOpenAddExpense('income')}
-            className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-teal-500/50 hover:bg-teal-500/5 transition text-left group"
+            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-teal-500/50 hover:bg-teal-500/5 transition text-left group"
           >
-            <div className="p-2.5 rounded-xl bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 w-fit mb-2 group-hover:scale-105 transition">
-              <TrendingUp className="w-5 h-5" />
+            <div className="p-2 rounded-xl bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 w-fit mb-2 group-hover:scale-105 transition">
+              <TrendingUp className="w-4 h-4" />
             </div>
             <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Add Income</div>
-            <div className="text-[11px] text-slate-400">Salary & payouts</div>
+            <div className="text-[10px] text-slate-400">Salary & payouts</div>
           </button>
 
           <button
             onClick={() => onOpenAddExpense('expense')}
-            className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-blue-500/50 hover:bg-blue-500/5 transition text-left group"
+            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-blue-500/50 hover:bg-blue-500/5 transition text-left group"
           >
-            <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 w-fit mb-2 group-hover:scale-105 transition">
-              <Users className="w-5 h-5" />
+            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 w-fit mb-2 group-hover:scale-105 transition">
+              <Users className="w-4 h-4" />
             </div>
             <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Split Bill</div>
-            <div className="text-[11px] text-slate-400">Equal or custom</div>
+            <div className="text-[10px] text-slate-400">Equal or custom</div>
           </button>
 
           <button
             onClick={onOpenRecordSettlement}
-            className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-500/50 hover:bg-indigo-500/5 transition text-left group"
+            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-500/50 hover:bg-indigo-500/5 transition text-left group"
           >
-            <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 w-fit mb-2 group-hover:scale-105 transition">
-              <HandCoins className="w-5 h-5" />
+            <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 w-fit mb-2 group-hover:scale-105 transition">
+              <HandCoins className="w-4 h-4" />
             </div>
-            <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Record Settlement</div>
-            <div className="text-[11px] text-slate-400">Repay or collect</div>
+            <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Settlement</div>
+            <div className="text-[10px] text-slate-400">Repay or collect</div>
           </button>
 
           <button
             onClick={onOpenCreateGroup}
-            className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition text-left group"
+            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-purple-500/50 hover:bg-purple-500/5 transition text-left group"
           >
-            <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 w-fit mb-2 group-hover:scale-105 transition">
-              <Users className="w-5 h-5" />
+            <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 w-fit mb-2 group-hover:scale-105 transition">
+              <Users className="w-4 h-4" />
             </div>
-            <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Create Group</div>
-            <div className="text-[11px] text-slate-400">Trip, flat, or team</div>
+            <div className="text-xs font-bold text-slate-800 dark:text-slate-200">New Group</div>
+            <div className="text-[10px] text-slate-400">Trip, flat, or team</div>
           </button>
         </div>
       </div>
+
+      {/* Shared Subscriptions & Recurring Bills */}
+      <RecurringBillsSection />
 
       {/* Recent Transactions Feed */}
       <div className="space-y-3">

@@ -11,6 +11,9 @@ import {
   Settlement,
   Budget,
   AuditLog,
+  RecurringBill,
+  UserReimbursementVelocity,
+  CashFlowExposureMetrics,
 } from '@/types/database';
 import {
   INITIAL_USERS,
@@ -21,6 +24,7 @@ import {
   INITIAL_SPLITS,
   INITIAL_SETTLEMENTS,
   INITIAL_BUDGETS,
+  INITIAL_RECURRING_BILLS,
 } from './initialData';
 import {
   calculateNetBalances,
@@ -69,6 +73,7 @@ interface PaydContextType {
   settlements: Settlement[];
   budgets: Budget[];
   auditLogs: AuditLog[];
+  recurringBills: RecurringBill[];
   theme: 'light' | 'dark';
   toggleTheme: () => void;
   switchUser: (userId: string) => void;
@@ -81,6 +86,10 @@ interface PaydContextType {
   updateBudget: (limit_minor: number, category_id?: string | null) => void;
   updateUserProfile: (updates: Partial<User>) => void;
   resetToDemoData: () => void;
+  // Recurring Subscriptions & Bills
+  addRecurringBill: (bill: Omit<RecurringBill, 'id' | 'created_at'>) => RecurringBill;
+  deleteRecurringBill: (billId: string) => void;
+  triggerRecurringBillSplit: (billId: string) => Transaction;
   // Computed financial aggregates
   netBalances: Record<string, number>;
   userNetBalance: number;
@@ -91,6 +100,8 @@ interface PaydContextType {
     totalIncomeMinor: number;
     netSavingsMinor: number;
   };
+  reimbursementVelocities: UserReimbursementVelocity[];
+  cashFlowExposure: CashFlowExposureMetrics;
   getGroupBalances: (groupId: string) => Record<string, number>;
   getGroupSimplifiedDebts: (groupId: string) => SimplifiedDebt[];
   getGroupMembers: (groupId: string) => User[];
@@ -114,6 +125,7 @@ export function PaydProvider({ children }: { children: React.ReactNode }) {
   const [settlements, setSettlements] = useState<Settlement[]>(INITIAL_SETTLEMENTS);
   const [budgets, setBudgets] = useState<Budget[]>(INITIAL_BUDGETS);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [recurringBills, setRecurringBills] = useState<RecurringBill[]>(INITIAL_RECURRING_BILLS);
 
   // Load from localStorage on client mount
   useEffect(() => {
@@ -143,6 +155,7 @@ export function PaydProvider({ children }: { children: React.ReactNode }) {
         if (parsed.settlements) setSettlements(parsed.settlements);
         if (parsed.budgets) setBudgets(parsed.budgets);
         if (parsed.auditLogs) setAuditLogs(parsed.auditLogs);
+        if (parsed.recurringBills) setRecurringBills(parsed.recurringBills);
       }
     } catch (e) {
       console.warn('Failed to parse Payd local store:', e);
@@ -166,6 +179,7 @@ export function PaydProvider({ children }: { children: React.ReactNode }) {
           settlements,
           budgets,
           auditLogs,
+          recurringBills,
         })
       );
     } catch (e) {
@@ -183,6 +197,7 @@ export function PaydProvider({ children }: { children: React.ReactNode }) {
     settlements,
     budgets,
     auditLogs,
+    recurringBills,
   ]);
 
   const toggleTheme = () => {
@@ -207,6 +222,7 @@ export function PaydProvider({ children }: { children: React.ReactNode }) {
     setSplits(INITIAL_SPLITS);
     setSettlements(INITIAL_SETTLEMENTS);
     setBudgets(INITIAL_BUDGETS);
+    setRecurringBills(INITIAL_RECURRING_BILLS);
     setAuditLogs([]);
     try {
       localStorage.removeItem(STORAGE_KEY);
@@ -455,6 +471,49 @@ export function PaydProvider({ children }: { children: React.ReactNode }) {
     setUsers((prev) => prev.map((u) => (u.id === currentUser.id ? updated : u)));
   };
 
+  // Recurring Subscriptions & Shared Bills
+  const addRecurringBill = (bill: Omit<RecurringBill, 'id' | 'created_at'>): RecurringBill => {
+    const newBill: RecurringBill = {
+      ...bill,
+      id: `rec-${Date.now()}`,
+      created_at: new Date().toISOString(),
+    };
+    setRecurringBills((prev) => [newBill, ...prev]);
+    return newBill;
+  };
+
+  const deleteRecurringBill = (billId: string) => {
+    setRecurringBills((prev) => prev.filter((b) => b.id !== billId));
+  };
+
+  const triggerRecurringBillSplit = (billId: string): Transaction => {
+    const bill = recurringBills.find((b) => b.id === billId);
+    if (!bill) throw new Error('Recurring bill template not found');
+
+    const now = new Date().toISOString();
+    const periodName =
+      bill.frequency === 'monthly' ? 'Monthly' : bill.frequency === 'weekly' ? 'Weekly' : 'Annual';
+
+    const txn = addTransaction({
+      type: 'expense',
+      title: `${bill.title} (${periodName} Split)`,
+      amount_minor: bill.amount_minor,
+      currency: bill.currency,
+      category_id: bill.category_id,
+      payer_id: bill.payer_id,
+      group_id: bill.group_id,
+      payment_method: 'Auto-Debit / Card',
+      notes: bill.notes || `Recurring subscription automatically triggered on ${new Date().toLocaleDateString('en-AE')}`,
+      splits: bill.splits,
+    });
+
+    setRecurringBills((prev) =>
+      prev.map((b) => (b.id === billId ? { ...b, last_posted_at: now } : b))
+    );
+
+    return txn;
+  };
+
   // Derived financial computations using pure ledger engine
   const netBalances = useMemo(() => {
     return calculateNetBalances(transactions, splits, settlements);
@@ -490,6 +549,119 @@ export function PaydProvider({ children }: { children: React.ReactNode }) {
     return calculatePersonalSpend(currentUser.id, transactions, splits);
   }, [currentUser.id, transactions, splits]);
 
+  // Reimbursement Velocity & Debt Lag Analytics
+  const reimbursementVelocities: UserReimbursementVelocity[] = useMemo(() => {
+    const otherUsers = users.filter((u) => u.id !== currentUser.id);
+    const bilateral = calculateBilateralDebts(transactions, splits, settlements);
+
+    return otherUsers.map((u) => {
+      // What they owe currentUser:
+      const debts = bilateral.get(u.id);
+      const currentOwed = debts?.get(currentUser.id) || 0;
+
+      // Historical settlements where u was sender and currentUser was recipient
+      const userSettlements = settlements.filter(
+        (s) => s.sender_id === u.id && s.recipient_id === currentUser.id && s.status === 'settled'
+      );
+
+      let avgLagDays = 3.5;
+
+      if (userSettlements.length > 0) {
+        let totalLag = 0;
+        for (const st of userSettlements) {
+          const stTime = new Date(st.settled_at).getTime();
+          const prevTxn = transactions
+            .filter(
+              (t) =>
+                t.payer_id === currentUser.id &&
+                new Date(t.occurred_at).getTime() <= stTime &&
+                !t.deleted_at
+            )
+            .sort(
+              (a, b) =>
+                new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime()
+            )[0];
+
+          if (prevTxn) {
+            const diffDays = Math.max(
+              0.5,
+              (stTime - new Date(prevTxn.occurred_at).getTime()) / (1000 * 60 * 60 * 24)
+            );
+            totalLag += diffDays;
+          } else {
+            totalLag += 2.0;
+          }
+        }
+        avgLagDays = Math.round((totalLag / userSettlements.length) * 10) / 10;
+      } else if (currentOwed > 0) {
+        // Debt currently open without settlement
+        const earliestTxn = transactions
+          .filter((t) => t.payer_id === currentUser.id && !t.deleted_at)
+          .sort(
+            (a, b) =>
+              new Date(a.occurred_at).getTime() - new Date(b.occurred_at).getTime()
+          )[0];
+        if (earliestTxn) {
+          const openDays =
+            (Date.now() - new Date(earliestTxn.occurred_at).getTime()) /
+            (1000 * 60 * 60 * 24);
+          avgLagDays = Math.round(openDays * 10) / 10;
+        }
+      }
+
+      const tier: 'speedy' | 'average' | 'lagging' =
+        avgLagDays <= 2.5 ? 'speedy' : avgLagDays <= 7.0 ? 'average' : 'lagging';
+
+      return {
+        user_id: u.id,
+        name: u.name,
+        avatar_url: u.avatar_url,
+        avg_lag_days: avgLagDays,
+        total_settlements_count: userSettlements.length,
+        tier,
+        current_owed_minor: currentOwed,
+      };
+    });
+  }, [users, currentUser.id, transactions, splits, settlements]);
+
+  // Cash Flow & Out-of-pocket Exposure
+  const cashFlowExposure: CashFlowExposureMetrics = useMemo(() => {
+    let totalFronted = 0;
+    let personalConsumption = 0;
+
+    for (const t of transactions) {
+      if (t.deleted_at || t.type !== 'expense') continue;
+      if (t.payer_id === currentUser.id) {
+        totalFronted += t.amount_minor;
+        const mySplit = splits.find(
+          (s) => s.transaction_id === t.id && s.user_id === currentUser.id
+        );
+        personalConsumption += mySplit ? mySplit.share_minor : 0;
+      }
+    }
+
+    let totalRecovered = 0;
+    for (const st of settlements) {
+      if (st.recipient_id === currentUser.id && st.status === 'settled') {
+        totalRecovered += st.amount_minor;
+      }
+    }
+
+    const outstanding = Math.max(0, totalFronted - personalConsumption - totalRecovered);
+
+    const laggingUsers = reimbursementVelocities
+      .filter((v) => v.current_owed_minor > 0)
+      .sort((a, b) => b.avg_lag_days - a.avg_lag_days);
+
+    return {
+      total_fronted_minor: totalFronted,
+      total_recovered_minor: totalRecovered,
+      outstanding_exposure_minor: outstanding,
+      personal_consumption_minor: personalConsumption,
+      top_lagging_user: laggingUsers[0] || null,
+    };
+  }, [transactions, splits, settlements, currentUser.id, reimbursementVelocities]);
+
   // Group helpers
   const getGroupMembers = (groupId: string): User[] => {
     const memberUserIds = groupMembers.filter((m) => m.group_id === groupId).map((m) => m.user_id);
@@ -524,6 +696,7 @@ export function PaydProvider({ children }: { children: React.ReactNode }) {
         settlements,
         budgets,
         auditLogs,
+        recurringBills,
         theme,
         toggleTheme,
         switchUser,
@@ -536,11 +709,16 @@ export function PaydProvider({ children }: { children: React.ReactNode }) {
         updateBudget,
         updateUserProfile,
         resetToDemoData,
+        addRecurringBill,
+        deleteRecurringBill,
+        triggerRecurringBillSplit,
         netBalances,
         userNetBalance,
         userOwedToMe,
         userIOwe,
         userSpending,
+        reimbursementVelocities,
+        cashFlowExposure,
         getGroupBalances,
         getGroupSimplifiedDebts,
         getGroupMembers,
