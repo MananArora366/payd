@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { parseReceiptImage, SAMPLE_UAE_RECEIPTS } from '@/lib/ai/receipt-scan';
+import { parseReceiptImage } from '@/lib/ai/receipt-server';
+import { SAMPLE_UAE_RECEIPTS } from '@/lib/ai/receipt-scan';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { image, mimeType, sample } = body;
+    const { image, mimeType, sample, apiKey } = body;
 
     // Handle instant preset demo samples
     if (sample && typeof sample === 'string' && SAMPLE_UAE_RECEIPTS[sample]) {
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const receipt = await parseReceiptImage(image, mimeType || 'image/jpeg');
+    const receipt = await parseReceiptImage(image, mimeType || 'image/jpeg', apiKey);
 
     return NextResponse.json({ success: true, receipt });
   } catch (error: any) {

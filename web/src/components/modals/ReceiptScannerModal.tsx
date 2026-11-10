@@ -1,27 +1,30 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
-import { usePayd } from '@/lib/store/PaydContext';
-import {
-  ReceiptScanResult,
-  SAMPLE_UAE_RECEIPTS,
-  calculateItemizedShares,
-} from '@/lib/ai/receipt-scan';
-import { formatMinorUnits, splitEqual } from '@/lib/ledger';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Camera,
   Upload,
-  Sparkles,
   X,
   Check,
   Receipt,
+  Sparkles,
   ShieldCheck,
-  Users,
   AlertCircle,
-  FileText,
-  Clock,
-  Layers,
+  RotateCcw,
+  RotateCw,
+  Edit3,
+  Plus,
+  Trash2,
+  Key,
+  Cpu,
 } from 'lucide-react';
+import { usePayd } from '@/lib/store/PaydContext';
+import {
+  ReceiptScanResult,
+  calculateItemizedShares,
+  ReceiptItem,
+} from '@/lib/ai/receipt-scan';
+import { splitEqual, formatMinorUnits } from '@/lib/ledger';
 
 interface ReceiptScannerModalProps {
   isOpen: boolean;
@@ -32,70 +35,134 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
   const { currentUser, users, groups, categories, addTransaction } = usePayd();
 
   const [isScanning, setIsScanning] = useState(false);
-  const [scannedReceipt, setScannedReceipt] = useState<ReceiptScanResult | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isReadyToScan, setIsReadyToScan] = useState(false);
+  const [scannedReceipt, setScannedReceipt] = useState<ReceiptScanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Split Configuration State
-  const [splitMode, setSplitMode] = useState<'equal' | 'itemized'>('equal');
-  const [selectedGroup, setSelectedGroup] = useState<string | null>(groups[0]?.id || null);
-  const [payerId, setPayerId] = useState(currentUser.id);
-  const [selectedUserIds, setSelectedUserIds] = useState<string[]>(
-    users.slice(0, 3).map((u) => u.id)
-  );
+  // Settings & Gemini API Key state
+  const [showKeyConfig, setShowKeyConfig] = useState(false);
+  const [apiKey, setApiKey] = useState<string>('');
 
-  // Itemized assignments: itemIndex -> array of userIds
+  // Editing state for scanned receipt
+  const [isEditingReceipt, setIsEditingReceipt] = useState(false);
+
+  // Split state
+  const [payerId, setPayerId] = useState<string>(currentUser.id);
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(
+    groups.length > 0 ? groups[0].id : null
+  );
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>(
+    users.map((u) => u.id)
+  );
+  const [splitMode, setSplitMode] = useState<'equal' | 'itemized'>('itemized');
   const [itemAssignments, setItemAssignments] = useState<Record<number, string[]>>({});
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Load API key from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('payd_gemini_api_key');
+      if (stored) setApiKey(stored);
+    }
+  }, []);
+
+  const handleSaveApiKey = (newKey: string) => {
+    setApiKey(newKey);
+    if (typeof window !== 'undefined') {
+      if (newKey.trim()) {
+        localStorage.setItem('payd_gemini_api_key', newKey.trim());
+      } else {
+        localStorage.removeItem('payd_gemini_api_key');
+      }
+    }
+  };
+
+  // Rotate base64 image via HTML5 Canvas
+  const handleRotateImage = (degrees: number) => {
+    if (!imagePreview) return;
+
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      if (Math.abs(degrees) === 90 || Math.abs(degrees) === 270) {
+        canvas.width = img.height;
+        canvas.height = img.width;
+      } else {
+        canvas.width = img.width;
+        canvas.height = img.height;
+      }
+
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate((degrees * Math.PI) / 180);
+      ctx.drawImage(img, -img.width / 2, -img.height / 2);
+
+      const rotatedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      setImagePreview(rotatedDataUrl);
+    };
+    img.src = imagePreview;
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setError(null);
-    setIsScanning(true);
-
     const reader = new FileReader();
-    reader.onload = async () => {
-      const base64 = reader.result as string;
-      setImagePreview(base64);
-
-      try {
-        const res = await fetch('/api/ai/receipt-scan', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            image: base64,
-            mimeType: file.type || 'image/jpeg',
-          }),
-        });
-
-        const data = await res.json();
-        if (data.success && data.receipt) {
-          setScannedReceipt(data.receipt);
-          // Initialize item assignments equally across selected users
-          const initialAssign: Record<number, string[]> = {};
-          data.receipt.line_items.forEach((_: any, idx: number) => {
-            initialAssign[idx] = [...selectedUserIds];
-          });
-          setItemAssignments(initialAssign);
-        } else {
-          throw new Error(data.error || 'Failed to scan receipt');
-        }
-      } catch (err: any) {
-        setError(err.message || 'Error processing receipt');
-      } finally {
-        setIsScanning(false);
-      }
+    reader.onload = () => {
+      setImagePreview(reader.result as string);
+      setIsReadyToScan(true);
+      setScannedReceipt(null);
     };
     reader.readAsDataURL(file);
   };
 
-  const handleLoadSample = async (sampleKey: 'al_safadi' | 'carrefour' | 'zaatar') => {
+  const executeReceiptScan = async () => {
+    if (!imagePreview) return;
+
+    setError(null);
+    setIsScanning(true);
+    setIsReadyToScan(false);
+
+    try {
+      const res = await fetch('/api/ai/receipt-scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: imagePreview,
+          mimeType: 'image/jpeg',
+          apiKey: apiKey.trim() || undefined,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.receipt) {
+        setScannedReceipt(data.receipt);
+        const initialAssign: Record<number, string[]> = {};
+        data.receipt.line_items.forEach((_: any, idx: number) => {
+          initialAssign[idx] = [...selectedUserIds];
+        });
+        setItemAssignments(initialAssign);
+      } else {
+        throw new Error(data.error || 'Failed to scan receipt');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Error processing receipt');
+      setIsReadyToScan(true);
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const handleLoadSample = async (sampleKey: 'lulu' | 'al_safadi' | 'carrefour' | 'zaatar') => {
     setError(null);
     setIsScanning(true);
     setImagePreview(null);
+    setIsReadyToScan(false);
 
     try {
       const res = await fetch('/api/ai/receipt-scan', {
@@ -125,7 +192,6 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
       if (selectedUserIds.length === 1) return;
       const updated = selectedUserIds.filter((id) => id !== userId);
       setSelectedUserIds(updated);
-      // Clean item assignments
       const newAssignments: Record<number, string[]> = {};
       Object.entries(itemAssignments).forEach(([idx, uids]) => {
         newAssignments[Number(idx)] = uids.filter((id) => id !== userId);
@@ -139,7 +205,7 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
   const toggleItemUser = (itemIndex: number, userId: string) => {
     const current = itemAssignments[itemIndex] || [];
     if (current.includes(userId)) {
-      if (current.length === 1) return; // Keep at least one person assigned
+      if (current.length === 1) return;
       setItemAssignments({
         ...itemAssignments,
         [itemIndex]: current.filter((id) => id !== userId),
@@ -150,6 +216,84 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
         [itemIndex]: [...current, userId],
       });
     }
+  };
+
+  // Editing handlers for line items
+  const handleUpdateItemName = (idx: number, newName: string) => {
+    if (!scannedReceipt) return;
+    const updated = [...scannedReceipt.line_items];
+    updated[idx] = { ...updated[idx], name: newName };
+    setScannedReceipt({ ...scannedReceipt, line_items: updated });
+  };
+
+  const handleUpdateItemPrice = (idx: number, aedStr: string) => {
+    if (!scannedReceipt) return;
+    const val = parseFloat(aedStr) || 0;
+    const minor = Math.round(val * 100);
+    const updated = [...scannedReceipt.line_items];
+    updated[idx] = { ...updated[idx], price_minor: minor };
+
+    // Recalculate total if items sum up
+    const newItemsSum = updated.reduce((acc, it) => acc + it.price_minor, 0);
+    const newTotal = newItemsSum > 0 ? newItemsSum : scannedReceipt.total_minor;
+    const newVat = Math.round((newTotal * 5) / 105);
+
+    setScannedReceipt({
+      ...scannedReceipt,
+      line_items: updated,
+      total_minor: newTotal,
+      vat_minor: newVat,
+      subtotal_minor: newTotal - newVat,
+    });
+  };
+
+  const handleDeleteItem = (idx: number) => {
+    if (!scannedReceipt) return;
+    const updated = scannedReceipt.line_items.filter((_, i) => i !== idx);
+    const newItemsSum = updated.reduce((acc, it) => acc + it.price_minor, 0);
+    const newTotal = newItemsSum > 0 ? newItemsSum : scannedReceipt.total_minor;
+    const newVat = Math.round((newTotal * 5) / 105);
+
+    setScannedReceipt({
+      ...scannedReceipt,
+      line_items: updated,
+      total_minor: newTotal,
+      vat_minor: newVat,
+      subtotal_minor: newTotal - newVat,
+    });
+
+    // Clean assignments
+    const newAssignments: Record<number, string[]> = {};
+    updated.forEach((_, i) => {
+      newAssignments[i] = itemAssignments[i] || [...selectedUserIds];
+    });
+    setItemAssignments(newAssignments);
+  };
+
+  const handleAddItem = () => {
+    if (!scannedReceipt) return;
+    const newItem: ReceiptItem = {
+      name: 'Custom Item',
+      quantity: 1,
+      price_minor: 1000, // 10.00 AED
+    };
+    const updated = [...scannedReceipt.line_items, newItem];
+    const newItemsSum = updated.reduce((acc, it) => acc + it.price_minor, 0);
+    const newTotal = newItemsSum > 0 ? newItemsSum : scannedReceipt.total_minor;
+    const newVat = Math.round((newTotal * 5) / 105);
+
+    const newIdx = updated.length - 1;
+    setScannedReceipt({
+      ...scannedReceipt,
+      line_items: updated,
+      total_minor: newTotal,
+      vat_minor: newVat,
+      subtotal_minor: newTotal - newVat,
+    });
+    setItemAssignments({
+      ...itemAssignments,
+      [newIdx]: [...selectedUserIds],
+    });
   };
 
   // Compute final shares based on mode
@@ -176,7 +320,6 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
         share_minor: shareMinor,
       }));
 
-      // Find or assign matching category
       const matchedCat =
         categories.find(
           (c) => c.name.toLowerCase() === (scannedReceipt.category || '').toLowerCase()
@@ -215,8 +358,8 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold">Payd Lens</h2>
-                <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                  UAE 5% VAT Compliant
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                  UAE OCR & VAT
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -224,13 +367,67 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowKeyConfig(!showKeyConfig)}
+              className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs flex items-center gap-1.5 transition"
+              title="Configure Gemini Vision API Key"
+            >
+              <Key className="w-4 h-4 text-emerald-500" />
+              <span className="hidden sm:inline font-medium">
+                {apiKey ? 'Gemini 2.0 Connected' : 'Engine Settings'}
+              </span>
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
+
+        {/* Collapsible API Key Settings */}
+        {showKeyConfig && (
+          <div className="mt-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-3 animate-in fade-in duration-150">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
+                <Cpu className="w-4 h-4 text-emerald-500" />
+                <span>Vision Processing Engine</span>
+              </div>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold">
+                {apiKey ? '⚡ Gemini 2.0 Flash Vision Active' : '🔍 High-Speed Local OCR (Offline)'}
+              </span>
+            </div>
+            <div>
+              <label className="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">
+                Google Gemini API Key (Optional)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  placeholder="AIzaSy..."
+                  value={apiKey}
+                  onChange={(e) => handleSaveApiKey(e.target.value)}
+                  className="flex-1 px-3 py-1.5 text-xs rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                />
+                {apiKey && (
+                  <button
+                    type="button"
+                    onClick={() => handleSaveApiKey('')}
+                    className="px-2.5 py-1 text-xs text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">
+                Leave blank to use the on-device Apple Vision OCR engine (zero latency, offline).
+              </p>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="mt-4 p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-center gap-2">
@@ -239,8 +436,8 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
           </div>
         )}
 
-        {/* State 1: Capture or Preset Selection */}
-        {!scannedReceipt && !isScanning && (
+        {/* State 1: Choose or Snap File */}
+        {!scannedReceipt && !isScanning && !isReadyToScan && (
           <div className="mt-6 space-y-6">
             <div
               onClick={() => fileInputRef.current?.click()}
@@ -259,11 +456,11 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
               </div>
               <h3 className="font-bold text-sm sm:text-base">Take a Photo or Upload Receipt</h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
-                Snap any UAE restaurant or grocery bill. Gemini Vision extracts the TRN, line items, and 5% VAT in real-time.
+                Snap any UAE restaurant or grocery bill. Payd Lens extracts merchant, TRN, line items, and 5% VAT in real-time.
               </p>
             </div>
 
-            {/* Quick Demo UAE Presets for Hackathon Demos */}
+            {/* Quick Demo UAE Presets */}
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="w-4 h-4 text-emerald-500" />
@@ -271,17 +468,31 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
                   Instant Demo UAE Receipts (1-Click)
                 </span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => handleLoadSample('lulu')}
+                  className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-emerald-500/30 hover:border-emerald-500 hover:bg-emerald-500/5 text-left transition group"
+                >
+                  <div className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-500 transition">
+                    LuLu Hypermarket
+                  </div>
+                  <div className="text-[11px] text-slate-500 mt-0.5">AED 41.30 • 5 items</div>
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1 inline-block font-semibold">
+                    Butter Chicken & Samosas
+                  </span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => handleLoadSample('al_safadi')}
-                  className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 hover:border-emerald-500/50 hover:bg-emerald-500/5 text-left transition group"
+                  className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 hover:border-emerald-500/50 hover:bg-emerald-500/5 text-left transition group"
                 >
                   <div className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-500 transition">
                     Al Safadi Restaurant
                   </div>
                   <div className="text-[11px] text-slate-500 mt-0.5">AED 260.00 • 6 items</div>
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-2 inline-block font-semibold">
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1 inline-block font-semibold">
                     TRN: 100345678900003
                   </span>
                 </button>
@@ -289,13 +500,13 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
                 <button
                   type="button"
                   onClick={() => handleLoadSample('carrefour')}
-                  className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 hover:border-emerald-500/50 hover:bg-emerald-500/5 text-left transition group"
+                  className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 hover:border-emerald-500/50 hover:bg-emerald-500/5 text-left transition group"
                 >
                   <div className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-500 transition">
                     Carrefour Marina
                   </div>
                   <div className="text-[11px] text-slate-500 mt-0.5">AED 100.00 • Groceries</div>
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-2 inline-block font-semibold">
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1 inline-block font-semibold">
                     5% VAT Itemized
                   </span>
                 </button>
@@ -303,17 +514,73 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
                 <button
                   type="button"
                   onClick={() => handleLoadSample('zaatar')}
-                  className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 hover:border-emerald-500/50 hover:bg-emerald-500/5 text-left transition group"
+                  className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 hover:border-emerald-500/50 hover:bg-emerald-500/5 text-left transition group"
                 >
                   <div className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-500 transition">
                     Careem DineOut
                   </div>
                   <div className="text-[11px] text-slate-500 mt-0.5">AED 124.00 • Zaatar w Zeit</div>
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-2 inline-block font-semibold">
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1 inline-block font-semibold">
                     Super App Split
                   </span>
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* State 1.5: Image Orientation & Confirmation Stage */}
+        {isReadyToScan && imagePreview && !isScanning && (
+          <div className="mt-6 space-y-4">
+            <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-950 flex items-center justify-center max-h-80">
+              <img
+                src={imagePreview}
+                alt="Receipt Preview"
+                className="max-h-80 w-auto object-contain transition-transform duration-200"
+              />
+              <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-md px-2 py-1 rounded-xl border border-white/10 text-white text-xs">
+                <button
+                  type="button"
+                  onClick={() => handleRotateImage(-90)}
+                  className="p-1.5 hover:bg-white/20 rounded-lg transition"
+                  title="Rotate Left 90°"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+                <span className="text-[10px] text-slate-300">Rotate</span>
+                <button
+                  type="button"
+                  onClick={() => handleRotateImage(90)}
+                  className="p-1.5 hover:bg-white/20 rounded-lg transition"
+                  title="Rotate Right 90°"
+                >
+                  <RotateCw className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <p className="text-xs text-center text-slate-500 dark:text-slate-400">
+              Is the receipt upright? Use the rotate buttons above if taken sideways or upside-down.
+            </p>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setImagePreview(null);
+                  setIsReadyToScan(false);
+                }}
+                className="flex-1 py-3 px-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs hover:bg-slate-200 dark:hover:bg-slate-750 transition"
+              >
+                Choose Another
+              </button>
+              <button
+                type="button"
+                onClick={executeReceiptScan}
+                className="flex-[2] py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2"
+              >
+                <Sparkles className="w-4 h-4" /> Scan Receipt with Payd Lens
+              </button>
             </div>
           </div>
         )}
@@ -328,7 +595,7 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
               </div>
             </div>
             <div>
-              <h3 className="font-bold text-base">Gemini Vision Scanning...</h3>
+              <h3 className="font-bold text-base">Payd Lens Scanning Receipt...</h3>
               <p className="text-xs text-slate-400 mt-1">
                 Reading line items, merchant TRN, and verifying UAE 5% VAT calculations.
               </p>
@@ -342,28 +609,75 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
             {/* Merchant & Tax Card */}
             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3">
               <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
-                    {scannedReceipt.merchant_name}
-                  </h3>
-                  <div className="flex flex-wrap items-center gap-2 mt-1">
-                    {scannedReceipt.trn && (
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
-                        TRN: {scannedReceipt.trn}
-                      </span>
-                    )}
-                    <span className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold">
-                      FTA 5% VAT Verified
-                    </span>
-                  </div>
+                <div className="flex-1 pr-4">
+                  {isEditingReceipt ? (
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase font-bold text-slate-400">Merchant Name</label>
+                      <input
+                        type="text"
+                        value={scannedReceipt.merchant_name}
+                        onChange={(e) =>
+                          setScannedReceipt({ ...scannedReceipt, merchant_name: e.target.value })
+                        }
+                        className="w-full px-2.5 py-1 text-sm font-bold rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
+                        {scannedReceipt.merchant_name}
+                      </h3>
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        {scannedReceipt.trn && (
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                            TRN: {scannedReceipt.trn}
+                          </span>
+                        )}
+                        <span className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold">
+                          FTA 5% VAT Verified
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold">
+                          {scannedReceipt.engine === 'gemini_2_flash_vision'
+                            ? '⚡ Gemini 2.0 Flash'
+                            : '🔍 On-Device Vision'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
+
                 <div className="text-right">
-                  <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                    {formatMinorUnits(scannedReceipt.total_minor, 'AED')}
-                  </div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">
-                    Subtotal: {formatMinorUnits(scannedReceipt.subtotal_minor, 'AED')} • VAT: {formatMinorUnits(scannedReceipt.vat_minor, 'AED')}
-                  </div>
+                  {isEditingReceipt ? (
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase font-bold text-slate-400">Total AED</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={(scannedReceipt.total_minor / 100).toFixed(2)}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value) || 0;
+                          const minor = Math.round(val * 100);
+                          const vat = Math.round((minor * 5) / 105);
+                          setScannedReceipt({
+                            ...scannedReceipt,
+                            total_minor: minor,
+                            vat_minor: vat,
+                            subtotal_minor: minor - vat,
+                          });
+                        }}
+                        className="w-24 px-2 py-1 text-right text-base font-extrabold rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-emerald-600"
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                        {formatMinorUnits(scannedReceipt.total_minor, 'AED')}
+                      </div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">
+                        Subtotal: {formatMinorUnits(scannedReceipt.subtotal_minor, 'AED')} • VAT: {formatMinorUnits(scannedReceipt.vat_minor, 'AED')}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -402,34 +716,49 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
               </div>
             </div>
 
-            {/* Split Mode Selector */}
+            {/* Split Mode Selector & Edit Toggle */}
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
                 Split Strategy
               </span>
-              <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setSplitMode('equal')}
-                  className={`px-3 py-1 text-xs font-semibold rounded-lg transition ${
-                    splitMode === 'equal'
-                      ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
-                      : 'text-slate-500'
+                  onClick={() => setIsEditingReceipt(!isEditingReceipt)}
+                  className={`px-3 py-1 text-xs font-semibold rounded-xl border flex items-center gap-1.5 transition ${
+                    isEditingReceipt
+                      ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-600'
+                      : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
-                  Split Equally
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>{isEditingReceipt ? 'Done Editing' : 'Edit Items'}</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setSplitMode('itemized')}
-                  className={`px-3 py-1 text-xs font-semibold rounded-lg transition ${
-                    splitMode === 'itemized'
-                      ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
-                      : 'text-slate-500'
-                  }`}
-                >
-                  Itemized (&quot;Who Had What?&quot;)
-                </button>
+
+                <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setSplitMode('equal')}
+                    className={`px-3 py-1 text-xs font-semibold rounded-lg transition ${
+                      splitMode === 'equal'
+                        ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                        : 'text-slate-500'
+                    }`}
+                  >
+                    Split Equally
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSplitMode('itemized')}
+                    className={`px-3 py-1 text-xs font-semibold rounded-lg transition ${
+                      splitMode === 'itemized'
+                        ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                        : 'text-slate-500'
+                    }`}
+                  >
+                    Itemized (&quot;Who Had What?&quot;)
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -461,13 +790,22 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
             </div>
 
             {/* Line Items Table (For Itemized Mode) */}
-            {splitMode === 'itemized' && scannedReceipt.line_items.length > 0 && (
+            {splitMode === 'itemized' && (
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    Tap-To-Claim Line Items
+                    Line Items ({scannedReceipt.line_items.length})
                   </span>
                   <div className="flex items-center gap-1.5 text-[11px]">
+                    {isEditingReceipt && (
+                      <button
+                        type="button"
+                        onClick={handleAddItem}
+                        className="px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-600 font-semibold hover:bg-emerald-500/20 transition flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" /> Add Item
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => {
@@ -511,48 +849,81 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
                         className="p-3 bg-white dark:bg-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs transition hover:bg-slate-50/50 dark:hover:bg-slate-850/50"
                       >
                         <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-slate-800 dark:text-slate-200">
-                              {item.quantity > 1 ? `${item.quantity}x ` : ''}
-                              {item.name}
-                            </span>
-                            {fraction && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
-                                {fraction}
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[11px] text-slate-400 mt-0.5">
-                            Subtotal: {formatMinorUnits(item.price_minor, 'AED')}
-                          </div>
+                          {isEditingReceipt ? (
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={item.name}
+                                onChange={(e) => handleUpdateItemName(idx, e.target.value)}
+                                className="flex-1 px-2 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium text-xs"
+                              />
+                              <div className="flex items-center gap-1">
+                                <span className="text-slate-400 text-[11px]">AED</span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={(item.price_minor / 100).toFixed(2)}
+                                  onChange={(e) => handleUpdateItemPrice(idx, e.target.value)}
+                                  className="w-16 px-1.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-right font-bold text-xs"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteItem(idx)}
+                                className="p-1 text-rose-400 hover:text-rose-600 rounded-lg"
+                                title="Delete Item"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                  {item.quantity > 1 ? `${item.quantity}x ` : ''}
+                                  {item.name}
+                                </span>
+                                {fraction && (
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
+                                    {fraction}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[11px] text-slate-400 mt-0.5">
+                                Subtotal: {formatMinorUnits(item.price_minor, 'AED')}
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         {/* Assignee badges */}
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[10px] text-slate-400 font-medium">Claimed by:</span>
-                          <div className="flex flex-wrap gap-1">
-                            {selectedUserIds.map((uid) => {
-                              const u = users.find((usr) => usr.id === uid);
-                              if (!u) return null;
-                              const isAssigned = assigned.includes(uid);
-                              return (
-                                <button
-                                  key={uid}
-                                  type="button"
-                                  onClick={() => toggleItemUser(idx, uid)}
-                                  className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition flex items-center gap-1 ${
-                                    isAssigned
-                                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold shadow-xs'
-                                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                                  }`}
-                                >
-                                  {isAssigned && <Check className="w-3 h-3 stroke-[3]" />}
-                                  <span>{u.name}</span>
-                                </button>
-                              );
-                            })}
+                        {!isEditingReceipt && (
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[10px] text-slate-400 font-medium">Claimed by:</span>
+                            <div className="flex flex-wrap gap-1">
+                              {selectedUserIds.map((uid) => {
+                                const u = users.find((usr) => usr.id === uid);
+                                if (!u) return null;
+                                const isAssigned = assigned.includes(uid);
+                                return (
+                                  <button
+                                    key={uid}
+                                    type="button"
+                                    onClick={() => toggleItemUser(idx, uid)}
+                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition flex items-center gap-1 ${
+                                      isAssigned
+                                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold shadow-xs'
+                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                                    }`}
+                                  >
+                                    {isAssigned && <Check className="w-3 h-3 stroke-[3]" />}
+                                    <span>{u.name}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     );
                   })}
@@ -595,7 +966,11 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
             <div className="flex items-center gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => setScannedReceipt(null)}
+                onClick={() => {
+                  setScannedReceipt(null);
+                  setImagePreview(null);
+                  setIsReadyToScan(false);
+                }}
                 className="flex-1 py-3 px-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs hover:bg-slate-200 dark:hover:bg-slate-750 transition"
               >
                 Scan Another
