@@ -23,9 +23,12 @@ import {
   Camera,
   Coffee,
   Dices,
+  Zap,
 } from 'lucide-react';
 import { CashFlowAnalyticsCard } from '@/components/analytics/CashFlowAnalyticsCard';
+import { CategoryBreakdownCard } from '@/components/analytics/CategoryBreakdownCard';
 import { RecurringBillsSection } from '@/components/recurring/RecurringBillsSection';
+import { DemoTourBanner } from '@/components/home/DemoTourBanner';
 
 interface HomeViewProps {
   onOpenAddExpense: (type?: 'expense' | 'income') => void;
@@ -33,6 +36,8 @@ interface HomeViewProps {
   onOpenCreateGroup: () => void;
   onOpenReceiptScanner: () => void;
   onOpenRoulette?: () => void;
+  onOpenCareemPay?: () => void;
+  onOpenMcp?: () => void;
   onSelectTransaction: (txn: Transaction) => void;
   onNavigateTab: (tab: string) => void;
 }
@@ -43,6 +48,8 @@ export function HomeView({
   onOpenCreateGroup,
   onOpenReceiptScanner,
   onOpenRoulette,
+  onOpenCareemPay,
+  onOpenMcp,
   onSelectTransaction,
   onNavigateTab,
 }: HomeViewProps) {
@@ -98,6 +105,14 @@ export function HomeView({
 
   return (
     <div className="space-y-6 pb-24">
+      {/* Careem Hackathon Showcase Banner */}
+      <DemoTourBanner
+        onOpenReceiptScanner={onOpenReceiptScanner}
+        onOpenRoulette={() => (onOpenRoulette ? onOpenRoulette() : {})}
+        onOpenMcp={() => (onOpenMcp ? onOpenMcp() : {})}
+        onOpenCareemPay={() => (onOpenCareemPay ? onOpenCareemPay() : onOpenRecordSettlement())}
+      />
+
       {/* Top Welcome & Net Balance Banner */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-850 to-slate-900 border border-slate-800 p-6 text-white shadow-2xl">
         <div className="absolute top-0 right-0 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -206,13 +221,16 @@ export function HomeView({
       {/* Cash Flow Health & Reimbursement Lag Analytics */}
       <CashFlowAnalyticsCard onNavigateSettlements={() => onNavigateTab('settlements')} />
 
+      {/* Spending Sectors & Daily Runway */}
+      <CategoryBreakdownCard onNavigateTransactions={() => onNavigateTab('transactions')} />
+
       {/* Quick Action Grid */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Quick Actions</h3>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-7 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
           <button
             onClick={onOpenReceiptScanner}
             className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-slate-900 border border-emerald-500/30 hover:border-emerald-500 hover:bg-emerald-500/15 transition text-left group relative overflow-hidden"
@@ -243,6 +261,22 @@ export function HomeView({
               </span>
             </div>
             <div className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">Who pays coffee?</div>
+          </button>
+
+          <button
+            onClick={() => (onOpenCareemPay ? onOpenCareemPay() : onOpenRecordSettlement())}
+            className="p-3.5 rounded-2xl bg-gradient-to-br from-[#00ea80]/15 via-emerald-500/5 to-slate-900 border border-emerald-500/30 hover:border-[#00ea80] hover:bg-[#00ea80]/10 transition text-left group relative overflow-hidden"
+          >
+            <div className="p-2 rounded-xl bg-gradient-to-tr from-[#00ea80] to-emerald-600 text-slate-950 w-fit mb-2 group-hover:scale-110 transition shadow-md shadow-emerald-500/20 font-black">
+              <Zap className="w-4 h-4 fill-current" />
+            </div>
+            <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+              Careem Pay
+              <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-[#00ea80] text-slate-950 font-extrabold uppercase">
+                Aani
+              </span>
+            </div>
+            <div className="text-[10px] text-[#00a859] dark:text-[#00ea80] font-medium">Instant UAE Pay</div>
           </button>
 
           <button

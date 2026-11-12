@@ -159,7 +159,7 @@ export const INITIAL_SPLITS: TransactionSplit[] = [
 export const INITIAL_SETTLEMENTS: Settlement[] = [
   {
     id: 's0000001-0000-0000-0000-000000000001',
-    group_id: 'g0000001-0000-0000-0000-000000000001',
+    group_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
     sender_id: '33333333-3333-3333-3333-333333333333', // Sarah
     recipient_id: '11111111-1111-1111-1111-111111111111', // Manan
     amount_minor: 5000, // 50.00 AED
@@ -172,7 +172,7 @@ export const INITIAL_SETTLEMENTS: Settlement[] = [
   },
   {
     id: 's0000002-0000-0000-0000-000000000002',
-    group_id: 'g0000001-0000-0000-0000-000000000001',
+    group_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
     sender_id: '22222222-2222-2222-2222-222222222222', // Rahul
     recipient_id: '11111111-1111-1111-1111-111111111111', // Manan
     amount_minor: 3333, // 33.33 AED
@@ -193,7 +193,7 @@ export const INITIAL_RECURRING_BILLS: RecurringBill[] = [
     currency: 'AED',
     category_id: 'c0000007-0000-0000-0000-000000000007', // Utilities and bills
     payer_id: '11111111-1111-1111-1111-111111111111', // Manan
-    group_id: 'g0000001-0000-0000-0000-000000000001', // Dubai Marina Flatmates
+    group_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', // Dubai Flatmates
     frequency: 'monthly',
     due_day: 1, // 1st of month
     notes: 'Du Unlimited 800 Mbps Fiber account #1092842',
@@ -213,7 +213,7 @@ export const INITIAL_RECURRING_BILLS: RecurringBill[] = [
     currency: 'AED',
     category_id: 'c0000007-0000-0000-0000-000000000007',
     payer_id: '33333333-3333-3333-3333-333333333333', // Sarah
-    group_id: 'g0000001-0000-0000-0000-000000000001',
+    group_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
     frequency: 'monthly',
     due_day: 15, // 15th of month
     notes: 'DEWA Premise #20049182',
@@ -233,7 +233,7 @@ export const INITIAL_RECURRING_BILLS: RecurringBill[] = [
     currency: 'AED',
     category_id: 'c0000007-0000-0000-0000-000000000007',
     payer_id: '22222222-2222-2222-2222-222222222222', // Rahul
-    group_id: 'g0000001-0000-0000-0000-000000000001',
+    group_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
     frequency: 'monthly',
     due_day: 10,
     notes: 'Bi-weekly apartment cleaning service',

@@ -32,7 +32,7 @@ export function RecordSettlementModal({
     defaultAmountMinor ? (defaultAmountMinor / 100).toFixed(2) : ''
   );
   const [groupId, setGroupId] = useState<string | null>(defaultGroupId);
-  const [method, setMethod] = useState('Cash');
+  const [method, setMethod] = useState('Careem Pay / Aani');
   const [reference, setReference] = useState('');
   const [allowOverpayment, setAllowOverpayment] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -201,13 +201,13 @@ export function RecordSettlementModal({
               <select
                 value={method}
                 onChange={(e) => setMethod(e.target.value)}
-                className="w-full mt-1 px-3 py-2 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full mt-1 px-3 py-2 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
               >
-                <option value="Cash">Cash</option>
-                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Careem Pay / Aani">Careem Pay / Aani (Instant)</option>
                 <option value="Apple Pay">Apple Pay</option>
+                <option value="Bank Transfer">Bank Transfer / Wio</option>
                 <option value="Credit Card">Card</option>
-                <option value="Wio">Wio / UPI</option>
+                <option value="Cash">Cash</option>
               </select>
             </div>
           </div>

@@ -16,6 +16,7 @@ import { TransactionDetailDrawer } from '@/components/modals/TransactionDetailDr
 import { ReceiptScannerModal } from '@/components/modals/ReceiptScannerModal';
 import { FairPayerRouletteModal } from '@/components/modals/FairPayerRouletteModal';
 import { McpInspectorModal } from '@/components/modals/McpInspectorModal';
+import { CareemPayModal } from '@/components/modals/CareemPayModal';
 import { Transaction } from '@/types/database';
 import { SimplifiedDebt } from '@/lib/ledger';
 
@@ -39,12 +40,31 @@ export default function AppHome() {
   const [receiptScannerOpen, setReceiptScannerOpen] = useState(false);
   const [rouletteOpen, setRouletteOpen] = useState(false);
   const [mcpOpen, setMcpOpen] = useState(false);
+  const [careemPayOpen, setCareemPayOpen] = useState(false);
+  const [careemPayParams, setCareemPayParams] = useState<{
+    senderId?: string;
+    recipientId?: string;
+    amountMinor?: number;
+    reference?: string;
+    groupId?: string | null;
+  }>({});
   const [rouletteGroupId, setRouletteGroupId] = useState<string | null>(null);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   const handleOpenRoulette = (groupId: string | null = null) => {
     setRouletteGroupId(groupId);
     setRouletteOpen(true);
+  };
+
+  const handleOpenCareemPay = (params?: {
+    senderId?: string;
+    recipientId?: string;
+    amountMinor?: number;
+    reference?: string;
+    groupId?: string | null;
+  }) => {
+    setCareemPayParams(params || {});
+    setCareemPayOpen(true);
   };
 
   const handleOpenAddExpense = (type: 'expense' | 'income' = 'expense', groupId: string | null = null) => {
@@ -88,6 +108,8 @@ export default function AppHome() {
             onOpenCreateGroup={() => setCreateGroupOpen(true)}
             onOpenReceiptScanner={() => setReceiptScannerOpen(true)}
             onOpenRoulette={() => handleOpenRoulette(null)}
+            onOpenCareemPay={() => handleOpenCareemPay()}
+            onOpenMcp={() => setMcpOpen(true)}
             onSelectTransaction={(txn) => setSelectedTransaction(txn)}
             onNavigateTab={(tab) => setActiveTab(tab)}
           />
@@ -105,6 +127,7 @@ export default function AppHome() {
             onOpenCreateGroup={() => setCreateGroupOpen(true)}
             onOpenAddExpenseForGroup={(groupId) => handleOpenAddExpense('expense', groupId)}
             onOpenSettlementForDebt={handleOpenSettlementForDebt}
+            onOpenCareemPay={handleOpenCareemPay}
             onSelectTransaction={(txn) => setSelectedTransaction(txn)}
             onOpenRoulette={(gid) => handleOpenRoulette(gid || null)}
           />
@@ -113,6 +136,7 @@ export default function AppHome() {
         {activeTab === 'settlements' && (
           <SettlementsView
             onOpenRecordSettlement={(params) => handleOpenRecordSettlement(params)}
+            onOpenCareemPay={(params) => handleOpenCareemPay(params)}
           />
         )}
 
@@ -141,6 +165,16 @@ export default function AppHome() {
         defaultRecipientId={settlementParams.recipientId}
         defaultAmountMinor={settlementParams.amountMinor}
         defaultGroupId={settlementParams.groupId}
+      />
+
+      <CareemPayModal
+        isOpen={careemPayOpen}
+        onClose={() => setCareemPayOpen(false)}
+        senderId={careemPayParams.senderId}
+        recipientId={careemPayParams.recipientId}
+        amountMinor={careemPayParams.amountMinor}
+        groupId={careemPayParams.groupId}
+        reference={careemPayParams.reference}
       />
 
       <CreateGroupModal

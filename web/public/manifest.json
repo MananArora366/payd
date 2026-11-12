@@ -1,0 +1,18 @@
+{
+  "name": "Payd - Voice & Group Expense Ledger",
+  "short_name": "Payd",
+  "description": "Voice-first social expense ledger with UAE VAT OCR, min-cash-flow debt simplification, and Careem Pay integration.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#00a859",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

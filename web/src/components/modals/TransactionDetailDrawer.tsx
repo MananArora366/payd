@@ -5,7 +5,7 @@ import { Transaction } from '@/types/database';
 import { usePayd } from '@/lib/store/PaydContext';
 import { formatMinorUnits } from '@/lib/ledger';
 import { getCategoryIcon, getPaymentMethodIcon } from '@/lib/icons';
-import { X, Trash2, RotateCcw, Calendar, User, Users, ShieldAlert, Tag, Wallet } from 'lucide-react';
+import { X, Trash2, RotateCcw, Calendar, User, Users, ShieldAlert, Tag, Wallet, Share2, Copy, Check } from 'lucide-react';
 
 interface TransactionDetailDrawerProps {
   transaction: Transaction | null;
@@ -23,6 +23,8 @@ export function TransactionDetailDrawer({ transaction, onClose }: TransactionDet
     restoreTransaction,
   } = usePayd();
 
+  const [copied, setCopied] = React.useState(false);
+
   if (!transaction) return null;
 
   const category = categories.find((c) => c.id === transaction.category_id);
@@ -30,6 +32,35 @@ export function TransactionDetailDrawer({ transaction, onClose }: TransactionDet
   const group = groups.find((g) => g.id === transaction.group_id);
   const txnSplits = splits.filter((s) => s.transaction_id === transaction.id);
   const isDeleted = !!transaction.deleted_at;
+
+  const getBreakdownSummary = () => {
+    const payerName = payer?.id === currentUser.id ? 'You' : payer?.name || 'Someone';
+    const totalStr = formatMinorUnits(transaction.amount_minor, transaction.currency);
+    let text = `🧾 *${transaction.title}* (${totalStr})\n`;
+    text += `Paid by: ${payerName}\n`;
+    if (group) text += `Group: ${group.name}\n`;
+    if (txnSplits.length > 0) {
+      text += `\n*Split Breakdown:*\n`;
+      txnSplits.forEach((sp) => {
+        const u = users.find((user) => user.id === sp.user_id);
+        const shareStr = formatMinorUnits(sp.share_minor, transaction.currency);
+        text += `• ${u?.name || 'User'}: ${shareStr}\n`;
+      });
+    }
+    text += `\nTracked on Payd • Settle easily via Careem Pay / Aani! 💚`;
+    return text;
+  };
+
+  const handleCopyBreakdown = () => {
+    navigator.clipboard.writeText(getBreakdownSummary());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShareWhatsApp = () => {
+    const text = encodeURIComponent(getBreakdownSummary());
+    window.open(`https://wa.me/?text=${text}`, '_blank');
+  };
 
   const handleDelete = () => {
     softDeleteTransaction(transaction.id);
@@ -172,6 +203,28 @@ export function TransactionDetailDrawer({ transaction, onClose }: TransactionDet
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* Share & Copy Row */}
+        {txnSplits.length > 0 && !isDeleted && (
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <button
+              type="button"
+              onClick={handleShareWhatsApp}
+              className="py-2.5 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span>Share to WhatsApp</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleCopyBreakdown}
+              className="py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copied ? 'Copied!' : 'Copy Breakdown'}</span>
+            </button>
           </div>
         )}
 

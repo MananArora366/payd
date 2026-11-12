@@ -53,13 +53,16 @@ export function getCategoryIcon(iconName?: string | null, className = 'w-4 h-4')
 
 export function getPaymentMethodIcon(method?: string, className = 'w-4 h-4') {
   const m = (method || '').toLowerCase();
+  if (m.includes('careem') || m.includes('aani')) {
+    return <Zap className={`${className} text-emerald-500`} />;
+  }
   if (m.includes('card') || m.includes('visa') || m.includes('mastercard')) {
     return <CreditCard className={className} />;
   }
   if (m.includes('apple') || m.includes('google') || m.includes('phone') || m.includes('pay')) {
     return <Smartphone className={className} />;
   }
-  if (m.includes('bank') || m.includes('transfer') || m.includes('wire')) {
+  if (m.includes('bank') || m.includes('transfer') || m.includes('wire') || m.includes('wio')) {
     return <ArrowUpRight className={className} />;
   }
   return <Banknote className={className} />;

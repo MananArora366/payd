@@ -17,6 +17,8 @@ import {
   Trash2,
   Key,
   Cpu,
+  Share2,
+  Copy,
 } from 'lucide-react';
 import { usePayd } from '@/lib/store/PaydContext';
 import {
@@ -57,6 +59,7 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
   );
   const [splitMode, setSplitMode] = useState<'equal' | 'itemized'>('itemized');
   const [itemAssignments, setItemAssignments] = useState<Record<number, string[]>>({});
+  const [copiedBreakdown, setCopiedBreakdown] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -310,6 +313,31 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
       );
     }
   }, [scannedReceipt, splitMode, selectedUserIds, itemAssignments]);
+
+  const getReceiptBreakdownText = () => {
+    if (!scannedReceipt) return '';
+    const payerName = users.find((u) => u.id === payerId)?.name || 'Payer';
+    let text = `🧾 *${scannedReceipt.merchant_name}* (${formatMinorUnits(scannedReceipt.total_minor, 'AED')})\n`;
+    if (scannedReceipt.trn) text += `TRN: ${scannedReceipt.trn}\n`;
+    text += `Paid by: ${payerName}\n\n*Split Breakdown:*\n`;
+    Object.entries(computedShares).forEach(([uid, shareMinor]) => {
+      const u = users.find((user) => user.id === uid);
+      text += `• ${u?.name || 'Member'}: ${formatMinorUnits(shareMinor, 'AED')}\n`;
+    });
+    text += `\nTracked with Payd Lens • Settle via Careem Pay / Aani! 💚`;
+    return text;
+  };
+
+  const handleShareReceiptWhatsApp = () => {
+    const text = encodeURIComponent(getReceiptBreakdownText());
+    window.open(`https://wa.me/?text=${text}`, '_blank');
+  };
+
+  const handleCopyReceiptBreakdown = () => {
+    navigator.clipboard.writeText(getReceiptBreakdownText());
+    setCopiedBreakdown(true);
+    setTimeout(() => setCopiedBreakdown(false), 2000);
+  };
 
   const handleSaveToLedger = () => {
     if (!scannedReceipt) return;
@@ -960,6 +988,30 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
                   );
                 })}
               </div>
+            </div>
+
+            {/* Quick Share Row */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={handleShareReceiptWhatsApp}
+                className="py-2.5 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Share Breakdown on WhatsApp</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleCopyReceiptBreakdown}
+                className="py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+              >
+                {copiedBreakdown ? (
+                  <Check className="w-3.5 h-3.5 text-emerald-500" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
+                <span>{copiedBreakdown ? 'Copied to Clipboard!' : 'Copy Summary'}</span>
+              </button>
             </div>
 
             {/* Actions */}
