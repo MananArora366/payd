@@ -6,7 +6,7 @@ import { PaydProvider } from '@/lib/store/PaydContext';
 const inter = Inter({ subsets: ['latin'] });
 
 export const viewport: Viewport = {
-  themeColor: '#00a859',
+  themeColor: '#7C3AED',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -33,8 +33,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors`}>
+    <html lang="en" className="dark" suppressHydrationWarning>
+      <body className="min-h-screen bg-[#09090b] text-[#f4f4f5] font-body antialiased selection:bg-violet-600 selection:text-white">
         <PaydProvider>{children}</PaydProvider>
       </body>
     </html>

@@ -82,21 +82,21 @@ export function CategoryBreakdownCard({ onNavigateTransactions }: CategoryBreakd
   const careemTotalMinor = careemRidesOrFood.reduce((acc, t) => acc + t.amount_minor, 0);
 
   return (
-    <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm space-y-4">
+    <div className="rounded-3xl bg-[#18181b] border border-white/8 p-5 shadow-md space-y-4 font-body">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400">
+          <div className="p-2 rounded-xl bg-violet-500/20 text-violet-400">
             <PieChart className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-              Spending Sectors & Daily Runway
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400 font-bold uppercase">
-                Insights
+            <h3 className="font-heading text-xs text-white flex items-center gap-1.5">
+              SPENDING SECTORS & DAILY RUNWAY
+              <span className="text-[9px] px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 font-heading border border-violet-500/30">
+                INSIGHTS
               </span>
             </h3>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-zinc-400 font-body">
               Categorical distribution & smart daily burn rate for November
             </p>
           </div>

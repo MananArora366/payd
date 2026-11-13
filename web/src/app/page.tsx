@@ -94,13 +94,15 @@ export default function AppHome() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+    <div className="min-h-screen flex flex-col bg-[#09090b] text-[#f4f4f5] font-body selection:bg-violet-600 selection:text-white transition-colors">
       <Navbar
         onOpenReceiptScanner={() => setReceiptScannerOpen(true)}
         onOpenMcp={() => setMcpOpen(true)}
+        onOpenAddExpense={() => handleOpenAddExpense('expense')}
+        onNavigateTab={(tab) => setActiveTab(tab)}
       />
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 pt-6">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 pt-4 sm:pt-6">
         {activeTab === 'home' && (
           <HomeView
             onOpenAddExpense={(type) => handleOpenAddExpense(type || 'expense')}

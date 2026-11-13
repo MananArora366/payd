@@ -60,17 +60,17 @@ export function RecurringBillsSection({ groupId = null }: RecurringBillsSectionP
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-purple-500/10 text-purple-500">
+          <div className="p-2 rounded-xl bg-violet-500/20 text-violet-400">
             <Repeat className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-              Shared Subscriptions & Recurring Bills
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold uppercase">
-                {displayedBills.length} Active
+            <h3 className="font-heading text-xs text-white flex items-center gap-1.5">
+              SHARED SUBSCRIPTIONS & RECURRING BILLS
+              <span className="text-[9px] px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 font-heading border border-violet-500/30">
+                {displayedBills.length} ACTIVE
               </span>
             </h3>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-zinc-400 font-body">
               Automated monthly splits for Wi-Fi, rent, DEWA, and memberships
             </p>
           </div>
@@ -79,10 +79,10 @@ export function RecurringBillsSection({ groupId = null }: RecurringBillsSectionP
         <button
           type="button"
           onClick={() => setModalOpen(true)}
-          className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs flex items-center gap-1 shadow-sm transition"
+          className="px-3.5 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-heading text-xs tracking-wider flex items-center gap-1 shadow-md shadow-violet-600/30 transition active:scale-95"
         >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Add Subscription</span>
+          <Plus className="w-3.5 h-3.5 stroke-[3]" />
+          <span>+ Subscription</span>
         </button>
       </div>
 
@@ -111,7 +111,7 @@ export function RecurringBillsSection({ groupId = null }: RecurringBillsSectionP
             return (
               <div
                 key={bill.id}
-                className="p-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-xs space-y-3 flex flex-col justify-between transition hover:border-purple-500/40"
+                className="p-4 bg-[#18181b] border border-white/8 hover:border-violet-500/40 rounded-2xl shadow-sm space-y-3 flex flex-col justify-between transition text-white font-body"
               >
                 <div>
                   <div className="flex items-start justify-between gap-2">

@@ -47,53 +47,53 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
+      <div className="w-full max-w-md bg-[#18181b] border border-white/10 rounded-3xl p-6 shadow-2xl space-y-4 text-white font-body">
+        <div className="flex items-center justify-between pb-3 border-b border-white/8">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-lg text-slate-900 dark:text-white">Create New Group</span>
+            <span className="font-heading text-sm text-white">CREATE NEW GROUP</span>
           </div>
-          <button onClick={onClose} className="p-1 rounded-full text-slate-400 hover:text-slate-600 transition">
+          <button onClick={onClose} className="p-1 rounded-full text-zinc-400 hover:text-white transition">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {error && (
-          <div className="p-3 text-xs bg-rose-500/10 border border-rose-500/30 text-rose-500 rounded-xl">
+          <div className="p-3 text-xs bg-rose-500/10 border border-rose-500/30 text-rose-400 rounded-xl">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Group Name</label>
+            <label className="text-[11px] font-heading text-zinc-400">GROUP NAME</label>
             <input
               type="text"
               required
-              placeholder="e.g. Ski Trip 2026, Dubai Villa"
+              placeholder="e.g. Dubai Villa, Supper Club"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full mt-1 px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full mt-1 px-3.5 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-violet-500 text-white placeholder:text-zinc-600 font-body"
             />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Description</label>
+            <label className="text-[11px] font-heading text-zinc-400">DESCRIPTION</label>
             <input
               type="text"
-              placeholder="e.g. Shared expenses, groceries, and travel"
+              placeholder="e.g. Shared expenses, rent, groceries"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full mt-1 px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full mt-1 px-3.5 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-violet-500 text-white placeholder:text-zinc-600 font-body"
             />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Group Currency</label>
+            <label className="text-[11px] font-heading text-zinc-400">LEDGER CURRENCY</label>
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="w-full mt-1 px-3 py-2 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full mt-1 px-3 py-2 text-sm bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-violet-500 text-white font-body"
             >
               <option value="AED">AED (UAE Dirham)</option>
               <option value="USD">USD ($)</option>
@@ -104,8 +104,8 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">
-              Add Members ({selectedUserIds.length})
+            <label className="text-[11px] font-heading text-zinc-400 mb-2 block">
+              ADD MEMBERS ({selectedUserIds.length})
             </label>
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {users.map((u) => {
@@ -117,34 +117,36 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
                     onClick={() => toggleUser(u.id)}
                     className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition ${
                       isSelected
-                        ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30'
-                        : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850'
+                        ? 'border-violet-500 bg-[#22222a]'
+                        : 'border-white/6 hover:bg-[#202025]'
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <img src={u.avatar_url || ''} alt={u.name} className="w-6 h-6 rounded-full object-cover" />
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white">
+                        {u.name.slice(0, 1)}
+                      </div>
                       <span className="text-sm font-medium">
                         {u.name} {isCreator ? '(Creator)' : ''}
                       </span>
                     </div>
-                    {isSelected && <Check className="w-4 h-4 text-emerald-500" />}
+                    {isSelected && <Check className="w-4 h-4 text-violet-400" />}
                   </div>
                 );
               })}
             </div>
           </div>
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-3 pt-2 font-body">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-750 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-medium transition"
+              className="flex-1 py-3 rounded-xl border border-white/10 text-zinc-300 hover:bg-[#27272a] text-xs font-heading tracking-wider transition"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-sm font-semibold shadow-lg shadow-emerald-600/25 transition"
+              className="flex-1 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 hover:from-violet-500 hover:to-violet-400 text-white text-xs font-heading tracking-wider shadow-lg shadow-violet-600/30 transition active:scale-95"
             >
               Create Group
             </button>

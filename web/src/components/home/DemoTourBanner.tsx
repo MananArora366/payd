@@ -31,26 +31,26 @@ export function DemoTourBanner({
   if (isDismissed) return null;
 
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-950 via-slate-900 to-teal-950 border border-emerald-500/30 p-4 sm:p-5 shadow-xl text-white">
+    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-violet-950/60 via-[#18181b] to-black border border-violet-500/30 p-4 sm:p-5 shadow-xl text-white font-body">
       {/* Background glow */}
-      <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-0 right-0 w-80 h-80 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative z-10 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-slate-950 shadow-md">
+            <span className="p-1.5 rounded-xl bg-gradient-to-tr from-violet-500 to-indigo-500 text-white shadow-md">
               <Trophy className="w-4 h-4 font-black" />
             </span>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-black uppercase tracking-wider text-emerald-400">
-                  Careem Builders &apos;26 Hackathon
+                <span className="text-xs font-heading tracking-wider text-violet-300">
+                  CAREEM BUILDERS &apos;26 HACKATHON
                 </span>
-                <span className="text-[10px] px-2 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
-                  Live Showcase
+                <span className="text-[10px] px-2 py-0.2 rounded-full bg-violet-500/20 text-violet-300 font-heading border border-violet-500/30">
+                  DUBAI LIVE SHOWCASE
                 </span>
               </div>
-              <p className="text-[11px] text-slate-300">
+              <p className="text-[11px] text-zinc-300 font-body">
                 Explore Payd&apos;s standout features built for Dubai & the UAE super-app ecosystem
               </p>
             </div>

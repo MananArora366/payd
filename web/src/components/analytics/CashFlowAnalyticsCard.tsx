@@ -56,21 +56,21 @@ export function CashFlowAnalyticsCard({ onNavigateSettlements }: CashFlowAnalyti
   };
 
   return (
-    <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm space-y-4">
+    <div className="rounded-3xl bg-[#18181b] border border-white/8 p-5 shadow-md space-y-4 font-body">
       {/* Top Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500">
+          <div className="p-2 rounded-xl bg-violet-500/20 text-violet-400">
             <Activity className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-              Cash Flow Health & Reimbursement Lag
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold uppercase">
-                Analytics
+            <h3 className="font-heading text-xs text-white flex items-center gap-1.5">
+              CASH FLOW HEALTH & REIMBURSEMENT LAG
+              <span className="text-[9px] px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 font-heading border border-violet-500/30">
+                ANALYTICS
               </span>
             </h3>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-zinc-400 font-body">
               Personal out-of-pocket exposure & friend settlement turnaround
             </p>
           </div>
@@ -79,7 +79,7 @@ export function CashFlowAnalyticsCard({ onNavigateSettlements }: CashFlowAnalyti
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
+          className="p-1 rounded-lg text-zinc-400 hover:text-white transition"
         >
           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
@@ -88,35 +88,35 @@ export function CashFlowAnalyticsCard({ onNavigateSettlements }: CashFlowAnalyti
       {/* Primary KPI Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {/* Outstanding Exposure */}
-        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/60 dark:border-slate-800">
-          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-            Out-of-Pocket Exposure
+        <div className="p-3.5 rounded-2xl bg-[#202025] border border-white/6">
+          <div className="text-[10px] font-heading text-zinc-400">
+            OUT-OF-POCKET EXPOSURE
           </div>
-          <div className="text-xl font-black text-rose-500 mt-1">
+          <div className="text-xl font-bold text-[#F43F5E] mt-1">
             {formatMinorUnits(outstanding_exposure_minor, currentUser.default_currency)}
           </div>
-          <div className="text-[10px] text-slate-400 mt-0.5">
+          <div className="text-[10px] text-zinc-400 mt-0.5">
             Fronted for others & awaiting repayment
           </div>
         </div>
 
         {/* Repayment Velocity Rate */}
-        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/60 dark:border-slate-800">
-          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-            Settlement Recovery Rate
+        <div className="p-3.5 rounded-2xl bg-[#202025] border border-white/6">
+          <div className="text-[10px] font-heading text-zinc-400">
+            SETTLEMENT RECOVERY RATE
           </div>
-          <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
+          <div className="text-xl font-bold text-[#10B981] mt-1">
             {recoveryPercent}%
           </div>
-          <div className="text-[10px] text-slate-400 mt-0.5">
+          <div className="text-[10px] text-zinc-400 mt-0.5">
             {formatMinorUnits(total_recovered_minor, currentUser.default_currency)} recovered of fronted share
           </div>
         </div>
 
         {/* Personal vs Group Fronted Ratio */}
-        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/60 dark:border-slate-800">
-          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-            Fair Share Consumption
+        <div className="p-3.5 rounded-2xl bg-[#202025] border border-white/6">
+          <div className="text-[10px] font-heading text-zinc-400">
+            FAIR SHARE CONSUMPTION
           </div>
           <div className="text-xl font-black text-slate-800 dark:text-slate-200 mt-1">
             {formatMinorUnits(personal_consumption_minor, currentUser.default_currency)}

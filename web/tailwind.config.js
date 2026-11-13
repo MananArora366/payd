@@ -9,24 +9,40 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        logo: ['"Zen Dots"', 'sans-serif'],
+        heading: ['"DM Sans"', 'sans-serif'],
+        sans: ['"PT Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        body: ['"PT Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+      },
       colors: {
+        violet: {
+          primary: '#7C3AED',
+          light: '#A78BFA',
+          dark: '#5B21B6',
+          soft: 'rgba(124, 58, 237, 0.12)',
+        },
         payd: {
-          50: '#f0fdf4',
-          100: '#dcfce7',
-          200: '#bbf7d0',
-          300: '#86efac',
-          400: '#4ade80',
-          500: '#22c55e',
-          600: '#16a34a',
-          700: '#15803d',
-          800: '#166534',
-          900: '#14532d',
-          950: '#052e16',
+          canvas: '#09090b',
+          card: '#18181b',
+          'card-subtle': '#27272a',
+          border: 'rgba(255, 255, 255, 0.08)',
+          50: '#f5f3ff',
+          100: '#ede9fe',
+          200: '#ddd6fe',
+          300: '#c4b5fd',
+          400: '#a78bfa',
+          500: '#8b5cf6',
+          600: '#7c3aed',
+          700: '#6d28d9',
+          800: '#5b21b6',
+          900: '#4c1d95',
+          950: '#2e1065',
         },
         slate: {
-          850: '#172033',
-          925: '#0b1120',
-        }
+          850: '#151518',
+          925: '#0f0f12',
+        },
       },
       keyframes: {
         pulseWave: {
@@ -36,13 +52,24 @@ module.exports = {
         glowPulse: {
           '0%, 100%': { opacity: '0.4', transform: 'scale(1)' },
           '50%': { opacity: '0.9', transform: 'scale(1.08)' },
-        }
+        },
+        micRipple: {
+          '0%': { transform: 'scale(0.85)', opacity: '0.8' },
+          '100%': { transform: 'scale(1.35)', opacity: '0' },
+        },
+        barJump: {
+          '0%, 100%': { transform: 'scaleY(0.3)' },
+          '50%': { transform: 'scaleY(1.0)' },
+        },
       },
       animation: {
         'pulse-wave': 'pulseWave 1s ease-in-out infinite',
         'glow-pulse': 'glowPulse 2s ease-in-out infinite',
-      }
+        'mic-ripple': 'micRipple 1.8s infinite ease-out',
+        'bar-jump': 'barJump 1s infinite ease-in-out',
+      },
     },
   },
   plugins: [],
-}
+};
+

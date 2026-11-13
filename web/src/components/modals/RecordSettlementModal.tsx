@@ -87,14 +87,14 @@ export function RecordSettlementModal({
   const recipientUser = users.find((u) => u.id === recipientId);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
+      <div className="w-full max-w-lg bg-[#18181b] border border-white/10 rounded-3xl p-6 shadow-2xl space-y-4 text-white font-body">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-between pb-3 border-b border-white/8">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-lg text-slate-900 dark:text-white">Record Settlement</span>
-            <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-400">
-              Not an expense
+            <span className="font-heading text-sm text-white">RECORD SETTLEMENT</span>
+            <span className="text-[10px] font-heading px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30">
+              NOT AN EXPENSE
             </span>
           </div>
           <button onClick={onClose} className="p-1 rounded-full text-slate-400 hover:text-slate-600 transition">

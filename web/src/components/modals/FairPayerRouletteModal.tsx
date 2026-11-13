@@ -232,28 +232,28 @@ export function FairPayerRouletteModal({
   const winnerUser = winnerId ? users.find((u) => u.id === winnerId) : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-150">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
+      <div className="w-full max-w-md bg-[#18181b] border border-white/10 rounded-3xl p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto text-white font-body">
         {/* Header */}
-        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-between pb-2 border-b border-white/8">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
+            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400">
               <Coffee className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-1.5">
-                Fair Payer Roulette
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold uppercase">
-                  Mini-Game
+              <h3 className="font-heading text-base text-white flex items-center gap-1.5">
+                FAIR PAYER ROULETTE
+                <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-heading border border-amber-500/30">
+                  MINI-GAME
                 </span>
               </h3>
-              <p className="text-[11px] text-slate-400">Who covers coffee or lunch today?</p>
+              <p className="text-[11px] text-zinc-400 font-body">Who covers coffee or lunch today?</p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
+            className="p-1 rounded-full text-zinc-400 hover:text-white transition"
           >
             <X className="w-5 h-5" />
           </button>

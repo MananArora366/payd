@@ -10,8 +10,6 @@ import {
   Link as LinkIcon,
   Copy,
   Check,
-  ArrowRight,
-  HandCoins,
   ShieldCheck,
   ChevronRight,
   Receipt,
@@ -70,6 +68,14 @@ export function GroupsView({
     ? transactions.filter((t) => t.group_id === selectedGroup.id && !t.deleted_at)
     : [];
 
+  const getGroupEmoji = (name: string) => {
+    const lower = name.toLowerCase();
+    if (lower.includes('dubai') || lower.includes('trip')) return '🌴';
+    if (lower.includes('apartment') || lower.includes('flat')) return '🏙️';
+    if (lower.includes('supper') || lower.includes('food')) return '🍷';
+    return '👥';
+  };
+
   const handleCopyInviteLink = () => {
     const inviteUrl = `${window.location.origin}/join/${selectedGroup?.id || 'demo'}`;
     navigator.clipboard.writeText(inviteUrl);
@@ -92,56 +98,56 @@ export function GroupsView({
   };
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="space-y-6 pb-28">
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Shared Groups</h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Splitwise-style groups with min-cash-flow debt simplification
+          <h2 className="font-heading text-xl sm:text-2xl text-white tracking-wide">ACTIVE LEDGERS</h2>
+          <p className="text-xs text-zinc-400 mt-1 font-body">
+            Deterministic min-cash-flow debt simplification & zero-sum balance guarantees
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={onOpenCreateGroup}
-            className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/25 transition"
+            className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-violet-600 to-violet-500 hover:from-violet-500 hover:to-violet-400 text-white font-heading text-xs tracking-wider flex items-center gap-2 shadow-lg shadow-violet-600/30 transition active:scale-95"
           >
-            <Plus className="w-4 h-4" />
-            <span>Create Group</span>
+            <Plus className="w-4 h-4 stroke-[3]" />
+            <span>+ New Group</span>
           </button>
         </div>
       </div>
 
       {/* Join Group By Invite Link Box */}
-      <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-sm">
+      <div className="p-4 bg-[#18181b] border border-white/8 rounded-2xl shadow-sm font-body">
         <form onSubmit={handleJoinByToken} className="flex flex-col sm:flex-row items-center gap-2">
-          <div className="flex items-center gap-2 w-full sm:w-auto text-xs font-semibold text-slate-500 uppercase tracking-wider pl-1">
-            <LinkIcon className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Join Group:</span>
+          <div className="flex items-center gap-2 w-full sm:w-auto text-xs font-heading text-zinc-400 pl-1">
+            <LinkIcon className="w-3.5 h-3.5 text-violet-400" />
+            <span>Join Ledger:</span>
           </div>
           <input
             type="text"
             placeholder="Paste invite link or token (e.g. dubai-marina-2026)..."
             value={joinTokenInput}
             onChange={(e) => setJoinTokenInput(e.target.value)}
-            className="flex-1 w-full px-3.5 py-2 text-xs bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white"
+            className="flex-1 w-full px-3.5 py-2 text-xs bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-violet-500 text-white placeholder:text-zinc-600 font-body"
           />
           <button
             type="submit"
-            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-xs font-semibold text-slate-800 dark:text-slate-200 transition"
+            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#27272a] hover:bg-violet-600 text-xs font-heading text-white transition active:scale-95"
           >
             Join
           </button>
         </form>
         {joinMessage && (
-          <div className="mt-2 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+          <div className="mt-2 text-xs text-emerald-400 font-medium">
             {joinMessage}
           </div>
         )}
       </div>
 
-      {/* Groups Carousel / Tabs */}
+      {/* Groups Grid / Selector Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
         {groups.map((group) => {
           const isSelected = selectedGroup?.id === group.id;
@@ -153,45 +159,48 @@ export function GroupsView({
             <div
               key={group.id}
               onClick={() => setSelectedGroupId(group.id)}
-              className={`p-4 rounded-3xl border cursor-pointer transition shadow-sm ${
+              className={`p-4 rounded-2xl border cursor-pointer transition shadow-md ${
                 isSelected
-                  ? 'border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/20 ring-2 ring-emerald-500/20'
-                  : 'border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700'
+                  ? 'border-violet-500 bg-[#22222a] ring-2 ring-violet-500/30'
+                  : 'border-white/8 bg-[#18181b] hover:border-white/20'
               }`}
             >
               <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-bold text-slate-900 dark:text-white text-base">{group.name}</h3>
-                  <p className="text-xs text-slate-400 line-clamp-1 mt-0.5">{group.description}</p>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{getGroupEmoji(group.name)}</span>
+                  <div>
+                    <h3 className="font-heading text-sm text-white">{group.name}</h3>
+                    <p className="text-xs text-zinc-400 line-clamp-1 mt-0.5 font-body">{group.description}</p>
+                  </div>
                 </div>
-                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                <span className="text-[10px] font-heading px-2 py-0.5 rounded-full bg-[#27272a] text-zinc-300">
                   {group.currency}
                 </span>
               </div>
 
-              {/* Members Avatar Row */}
-              <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80">
+              {/* Members Avatar Row & Balance */}
+              <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/6 font-body">
                 <div className="flex -space-x-1.5">
                   {members.map((m) => (
-                    <img
+                    <div
                       key={m.id}
-                      src={m.avatar_url || ''}
-                      alt={m.name}
+                      className="w-6 h-6 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white ring-2 ring-[#18181b]"
                       title={m.name}
-                      className="w-6 h-6 rounded-full object-cover ring-2 ring-white dark:ring-slate-900"
-                    />
+                    >
+                      {m.name.slice(0, 1)}
+                    </div>
                   ))}
                 </div>
 
                 <div className="text-right">
-                  <div className="text-[10px] uppercase font-semibold text-slate-400">Your Balance</div>
+                  <div className="text-[10px] uppercase font-heading text-zinc-400">Balance</div>
                   <div
                     className={`text-xs font-bold ${
                       myBalance > 0
-                        ? 'text-emerald-600 dark:text-emerald-400'
+                        ? 'text-[#10B981]'
                         : myBalance < 0
-                        ? 'text-rose-500'
-                        : 'text-slate-500'
+                        ? 'text-[#F43F5E]'
+                        : 'text-zinc-400'
                     }`}
                   >
                     {myBalance > 0 ? '+' : ''}
@@ -208,56 +217,57 @@ export function GroupsView({
       {selectedGroup && (
         <div className="space-y-6 animate-in fade-in duration-150">
           {/* Group Header Controls */}
-          <div className="p-5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="p-5 bg-[#18181b] border border-white/8 rounded-3xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 font-body">
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white">{selectedGroup.name}</h3>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold">
-                  {groupMembers.length} members
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl">{getGroupEmoji(selectedGroup.name)}</span>
+                <h3 className="font-heading text-lg text-white">{selectedGroup.name}</h3>
+                <span className="text-[10px] font-heading px-2.5 py-0.5 rounded-full bg-violet-500/20 text-violet-300">
+                  {groupMembers.length} MEMBERS
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-1">{selectedGroup.description}</p>
+              <p className="text-xs text-zinc-400 mt-1 font-body">{selectedGroup.description}</p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={handleCopyInviteLink}
-                className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-750 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 transition"
+                className="px-3.5 py-2 rounded-xl border border-white/10 hover:bg-[#27272a] text-xs font-semibold text-zinc-300 flex items-center gap-1.5 transition active:scale-95"
               >
-                {copiedToken ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copiedToken ? 'Invite Link Copied!' : 'Copy Invite Link'}</span>
+                {copiedToken ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copiedToken ? 'Invite Link Copied!' : 'Copy Invite'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => onOpenRoulette?.(selectedGroup.id)}
-                className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md transition"
-                title="Spin who covers the next bill"
+                className="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition active:scale-95"
+                title="Fair Payer Coffee Roulette"
               >
                 <Coffee className="w-3.5 h-3.5" />
-                <span>Spin for Payer</span>
+                <span>Coffee Roulette</span>
               </button>
 
               <button
                 onClick={() => onOpenAddExpenseForGroup(selectedGroup.id)}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md transition"
+                className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-heading tracking-wider flex items-center gap-1.5 shadow-lg shadow-violet-600/30 transition active:scale-95"
               >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Group Expense</span>
+                <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                <span>Add Expense</span>
               </button>
             </div>
           </div>
 
           {/* Member Roster with Zero-Sum Balances */}
-          <div className="p-5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-sm space-y-3">
+          <div className="p-5 bg-[#18181b] border border-white/8 rounded-3xl shadow-sm space-y-3 font-body">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-emerald-500" />
-                Member Balances (Zero-Sum Invariant)
+              <span className="font-heading text-xs text-zinc-400 flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-violet-400" />
+                MEMBER BALANCES (ZERO-SUM INVARIANT)
               </span>
-              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+              <span className="text-[11px] text-emerald-400 flex items-center gap-1 font-body">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                Sum of balances = 0.00
+                &Sigma; Balances = 0.00 AED
               </span>
             </div>
 
@@ -269,19 +279,17 @@ export function GroupsView({
                 return (
                   <div
                     key={member.id}
-                    className="p-3 bg-slate-50 dark:bg-slate-850/70 border border-slate-200/60 dark:border-slate-800 rounded-2xl flex items-center justify-between"
+                    className="p-3 bg-[#202025] border border-white/6 rounded-2xl flex items-center justify-between"
                   >
                     <div className="flex items-center gap-2.5">
-                      <img
-                        src={member.avatar_url || ''}
-                        alt={member.name}
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-xs font-bold text-white">
+                        {member.name.slice(0, 1)}
+                      </div>
                       <div>
-                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                        <div className="text-xs font-bold text-white">
                           {member.name} {isMe ? '(You)' : ''}
                         </div>
-                        <div className="text-[10px] text-slate-400">
+                        <div className="text-[10px] text-zinc-400">
                           {bal > 0 ? 'Gets back' : bal < 0 ? 'Owes' : 'Settled'}
                         </div>
                       </div>
@@ -290,10 +298,10 @@ export function GroupsView({
                     <div
                       className={`text-xs font-bold ${
                         bal > 0
-                          ? 'text-emerald-600 dark:text-emerald-400'
+                          ? 'text-[#10B981]'
                           : bal < 0
-                          ? 'text-rose-500'
-                          : 'text-slate-400'
+                          ? 'text-[#F43F5E]'
+                          : 'text-zinc-500'
                       }`}
                     >
                       {bal > 0 ? '+' : ''}
@@ -306,24 +314,24 @@ export function GroupsView({
           </div>
 
           {/* Min-Cash-Flow Debt Simplification Box */}
-          <div className="p-5 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent border border-emerald-500/30 rounded-3xl space-y-3">
+          <div className="p-5 bg-gradient-to-br from-violet-950/40 via-[#18181b] to-black border border-violet-500/30 rounded-3xl space-y-3 font-body">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="p-1.5 rounded-full bg-emerald-500/20 text-emerald-500">
+                <span className="p-1.5 rounded-full bg-violet-500/20 text-violet-400">
                   <Sparkles className="w-4 h-4" />
                 </span>
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-                  Optimal Debt Simplification
+                <span className="font-heading text-xs text-violet-300">
+                  OPTIMAL DEBT SIMPLIFICATION
                 </span>
               </div>
-              <span className="text-[11px] text-slate-500">
-                Minimizes total payment transactions
+              <span className="text-[11px] text-zinc-400">
+                Minimizes total payment transfers
               </span>
             </div>
 
             {simplifiedDebts.length === 0 ? (
-              <div className="p-4 text-center text-xs text-slate-500 dark:text-slate-400 bg-white/50 dark:bg-slate-900/50 rounded-2xl">
-                Everyone in this group is completely even! No pending debt settlements.
+              <div className="p-4 text-center text-xs text-zinc-400 bg-black/40 rounded-2xl">
+                Everyone in this group is completely settled! Zero outstanding debt.
               </div>
             ) : (
               <div className="space-y-2">
@@ -334,20 +342,20 @@ export function GroupsView({
                   return (
                     <div
                       key={idx}
-                      className="p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs"
+                      className="p-3.5 bg-[#202025] rounded-2xl border border-white/8 flex items-center justify-between text-xs"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-800 dark:text-slate-200">
+                        <span className="font-bold text-white">
                           {fromUser?.name} {fromUser?.id === currentUser.id ? '(You)' : ''}
                         </span>
-                        <span className="text-slate-400">pays</span>
-                        <span className="font-bold text-slate-800 dark:text-slate-200">
+                        <span className="text-zinc-400 font-serif italic">&rarr; pays &rarr;</span>
+                        <span className="font-bold text-white">
                           {toUser?.name} {toUser?.id === currentUser.id ? '(You)' : ''}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className="font-black text-emerald-600 dark:text-emerald-400 mr-1">
+                        <span className="font-bold text-[#10B981] mr-1 text-sm">
                           {formatMinorUnits(debt.amountMinor, selectedGroup.currency)}
                         </span>
 
@@ -362,7 +370,7 @@ export function GroupsView({
                                 groupId: selectedGroup.id,
                               })
                             }
-                            className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-[11px] flex items-center gap-1 shadow-xs transition"
+                            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-[11px] flex items-center gap-1 shadow-sm transition active:scale-95"
                             title="Instant Careem Pay / Aani Transfer"
                           >
                             <Zap className="w-3 h-3" />
@@ -372,7 +380,7 @@ export function GroupsView({
 
                         <button
                           onClick={() => onOpenSettlementForDebt(debt, selectedGroup.id)}
-                          className="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 font-semibold text-[11px] transition"
+                          className="px-2.5 py-1.5 rounded-xl bg-[#27272a] hover:bg-[#3f3f46] text-zinc-300 font-semibold text-[11px] transition"
                         >
                           Manual
                         </button>
@@ -385,14 +393,14 @@ export function GroupsView({
           </div>
 
           {/* Group Expense Log */}
-          <div className="space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Group Activity Log ({groupTransactions.length})
+          <div className="space-y-3 font-body">
+            <h3 className="font-heading text-xs text-zinc-400">
+              GROUP EXPENSE LOG ({groupTransactions.length})
             </h3>
 
             <div className="space-y-2">
               {groupTransactions.length === 0 ? (
-                <div className="p-8 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl text-xs text-slate-400">
+                <div className="p-8 text-center bg-[#18181b] border border-white/8 rounded-3xl text-xs text-zinc-400">
                   No expenses added to this group yet.
                 </div>
               ) : (
@@ -404,22 +412,22 @@ export function GroupsView({
                     <div
                       key={t.id}
                       onClick={() => onSelectTransaction(t)}
-                      className="p-3.5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 rounded-2xl flex items-center justify-between cursor-pointer transition shadow-sm"
+                      className="p-3.5 bg-[#18181b] hover:bg-[#202025] border border-white/8 hover:border-violet-500/40 rounded-2xl flex items-center justify-between cursor-pointer transition shadow-sm"
                     >
                       <div>
-                        <div className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
+                        <div className="text-sm font-bold text-white leading-tight">
                           {t.title}
                         </div>
-                        <div className="text-[11px] text-slate-400 mt-0.5">
-                          Paid by {payer?.name} • Split among {txnSplits.length} members
+                        <div className="text-[11px] text-zinc-400 mt-0.5">
+                          Paid by {payer?.name} &bull; Split among {txnSplits.length} members
                         </div>
                       </div>
 
                       <div className="text-right">
-                        <div className="text-sm font-bold text-slate-900 dark:text-white">
+                        <div className="text-sm font-bold text-white">
                           {formatMinorUnits(t.amount_minor, t.currency)}
                         </div>
-                        <div className="text-[10px] text-slate-400">
+                        <div className="text-[10px] text-zinc-400">
                           {new Date(t.occurred_at).toLocaleDateString('en-US', {
                             month: 'short',
                             day: 'numeric',

@@ -2,21 +2,110 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Brand Typography Setup from Local TTF Files ───────────────────────── */
+@font-face {
+  font-family: 'Zen Dots';
+  src: url('/fonts/ZenDots-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'DM Sans';
+  src: url('/fonts/DMSans-VariableFont.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PT Sans';
+  src: url('/fonts/PTSans-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PT Sans';
+  src: url('/fonts/PTSans-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PT Sans';
+  src: url('/fonts/PTSans-Italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PT Sans';
+  src: url('/fonts/PTSans-BoldItalic.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* ─── Global Design Tokens ────────────────────────────────────────────── */
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --violet-primary: #7C3AED;
+  --violet-light: #A78BFA;
+  --violet-dark: #5B21B6;
+  --violet-soft: rgba(124, 58, 237, 0.12);
+  --emerald: #10B981;
+  --emerald-soft: rgba(16, 185, 129, 0.12);
+  --rose: #F43F5E;
+  --rose-soft: rgba(244, 63, 94, 0.12);
+  --amber: #F59E0B;
+  --amber-soft: rgba(245, 158, 11, 0.12);
+  --sky: #0EA5E9;
+  --sky-soft: rgba(14, 165, 233, 0.12);
+
+  --bg-canvas: #09090b;
+  --bg-card: #18181b;
+  --bg-card-subtle: #27272a;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --text-primary: #ffffff;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+
+  --background: #09090b;
+  --foreground: #f4f4f5;
 }
 
 .dark {
-  --background: #090d16;
-  --foreground: #f8fafc;
+  --background: #09090b;
+  --foreground: #f4f4f5;
 }
 
 body {
   color: var(--foreground);
   background-color: var(--background);
+  font-family: 'PT Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   font-feature-settings: "rlig" 1, "calt" 1;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Brand typography rules */
+.font-logo {
+  font-family: 'Zen Dots', sans-serif !important;
+  letter-spacing: 0.5px;
+}
+
+.font-heading {
+  font-family: 'DM Sans', sans-serif !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+}
+
+.font-body {
+  font-family: 'PT Sans', sans-serif !important;
 }
 
 /* Custom scrollbars */
@@ -28,9 +117,10 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.4);
+  background: rgba(161, 161, 170, 0.25);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.7);
+  background: rgba(161, 161, 170, 0.5);
 }
+

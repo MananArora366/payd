@@ -211,18 +211,18 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
     <>
       {/* Active Modal / Slide-up Cards */}
       {(activeIntent || aiQueryAnswer || isRecording || isProcessing || showTypedInput) && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
-          {/* 1. Live Recording State */}
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-150">
+          {/* 1. Live Recording State matching iOS Waveform Sheet */}
           {isRecording && (
-            <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-emerald-500/40 rounded-3xl p-6 shadow-2xl text-center space-y-4">
-              <div className="flex justify-between items-center text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+            <div className="w-full max-w-md bg-[#18181b] border border-violet-500/40 rounded-3xl p-6 shadow-2xl text-center space-y-4 animate-in slide-in-from-bottom-6">
+              <div className="flex justify-between items-center text-xs font-heading text-violet-400">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="w-2 h-2 rounded-full bg-violet-400 animate-ping" />
                   Listening...
                 </span>
                 <button
                   onClick={() => setIsRecording(false)}
-                  className="p-1 rounded-full text-slate-400 hover:text-slate-600"
+                  className="p-1 rounded-full text-zinc-400 hover:text-white"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -230,13 +230,13 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
 
               <VoiceWaveform isRecording={isRecording} />
 
-              <p className="text-sm font-medium text-slate-800 dark:text-slate-200 min-h-[48px] flex items-center justify-center px-3 italic">
+              <p className="text-sm font-body text-zinc-200 min-h-[48px] flex items-center justify-center px-3 italic">
                 {interimTranscript || transcript || 'Speak now: "Paid 120 AED for dinner with Rahul split equally"'}
               </p>
 
               <button
                 onClick={toggleRecording}
-                className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-lg shadow-emerald-600/30 transition"
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-violet-600 to-violet-500 hover:from-violet-500 hover:to-violet-400 text-white font-heading text-xs tracking-wider shadow-lg shadow-violet-600/40 transition active:scale-95"
               >
                 Tap to Finish & Parse
               </button>
@@ -245,13 +245,13 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
 
           {/* 2. Processing Spinner */}
           {isProcessing && !isRecording && (
-            <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl text-center space-y-4">
-              <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500/10 flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-emerald-500 animate-spin" />
+            <div className="w-full max-w-sm bg-[#18181b] border border-white/10 rounded-3xl p-6 shadow-2xl text-center space-y-4 animate-in zoom-in-95">
+              <div className="w-12 h-12 mx-auto rounded-full bg-violet-500/15 flex items-center justify-center">
+                <Sparkles className="w-6 h-6 text-violet-400 animate-spin" />
               </div>
               <div>
-                <h4 className="font-semibold text-slate-900 dark:text-white">Interpreting Speech</h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                <h4 className="font-heading text-sm text-white">Interpreting Speech</h4>
+                <p className="text-xs text-zinc-400 mt-1 font-body">
                   Parsing voice intent & applying deterministic ledger rules...
                 </p>
               </div>
@@ -281,35 +281,35 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
 
           {/* 5. Deterministic AI Financial Q&A Answer Card */}
           {aiQueryAnswer && !isProcessing && (
-            <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+            <div className="w-full max-w-md bg-[#18181b] border border-white/10 rounded-3xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
+              <div className="flex items-center justify-between pb-2 border-b border-white/8">
                 <div className="flex items-center gap-2">
-                  <span className="p-1.5 rounded-full bg-teal-100 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400">
+                  <span className="p-1.5 rounded-full bg-violet-500/20 text-violet-400">
                     <Bot className="w-4 h-4" />
                   </span>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-teal-600 dark:text-teal-400">
+                  <span className="text-xs font-heading tracking-wider text-violet-400">
                     Payd Financial Intelligence
                   </span>
                 </div>
                 <button
                   onClick={() => setAiQueryAnswer(null)}
-                  className="p-1 rounded-full text-slate-400 hover:text-slate-600"
+                  className="p-1 rounded-full text-zinc-400 hover:text-white"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-sm font-medium leading-relaxed">
+              <div className="p-4 rounded-2xl bg-[#27272a]/60 border border-white/8 text-zinc-200 text-sm font-body leading-relaxed">
                 {aiQueryAnswer}
               </div>
 
-              <div className="text-[11px] text-slate-400 italic">
+              <div className="text-[11px] text-zinc-400 italic">
                 * Answer grounded in real-time ledger calculation. Gemini formats explanations only.
               </div>
 
               <button
                 onClick={() => setAiQueryAnswer(null)}
-                className="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 text-sm font-semibold transition"
+                className="w-full py-2.5 rounded-xl bg-[#27272a] hover:bg-[#3f3f46] text-white text-xs font-heading tracking-wider transition"
               >
                 Close
               </button>
@@ -318,14 +318,14 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
 
           {/* 6. Typed Fallback Command Input */}
           {showTypedInput && !isProcessing && !activeIntent && !aiQueryAnswer && !isRecording && (
-            <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-2xl space-y-4">
+            <div className="w-full max-w-md bg-[#18181b] border border-white/10 rounded-3xl p-5 shadow-2xl space-y-4 animate-in zoom-in-95">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                <span className="text-xs font-heading tracking-wider text-violet-400">
                   Voice Command (Typed Fallback)
                 </span>
                 <button
                   onClick={() => setShowTypedInput(false)}
-                  className="p-1 rounded-full text-slate-400 hover:text-slate-600"
+                  className="p-1 rounded-full text-zinc-400 hover:text-white"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -338,29 +338,29 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
                   placeholder="e.g. Paid 120 AED for dinner with Rahul and Sarah"
                   value={typedCommand}
                   onChange={(e) => setTypedCommand(e.target.value)}
-                  className="w-full px-4 py-3 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-3 text-sm bg-[#09090b] border border-white/10 rounded-2xl text-white focus:outline-none focus:border-violet-500 font-body placeholder:text-zinc-600"
                 />
 
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex gap-1.5 overflow-x-auto text-[11px] text-slate-400 py-1">
+                  <div className="flex gap-1.5 overflow-x-auto text-[11px] text-zinc-400 py-1">
                     <button
                       type="button"
                       onClick={() => setTypedCommand('Paid 120 AED for dinner with Rahul and Sarah')}
-                      className="px-2 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 rounded-lg whitespace-nowrap transition"
+                      className="px-2.5 py-1 bg-[#27272a] hover:bg-violet-600/30 text-zinc-300 rounded-lg whitespace-nowrap transition text-[11px]"
                     >
                       Dinner 120 split
                     </button>
                     <button
                       type="button"
                       onClick={() => setTypedCommand('How much did I spend this week?')}
-                      className="px-2 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 rounded-lg whitespace-nowrap transition"
+                      className="px-2.5 py-1 bg-[#27272a] hover:bg-violet-600/30 text-zinc-300 rounded-lg whitespace-nowrap transition text-[11px]"
                     >
                       Spend query
                     </button>
                     <button
                       type="button"
                       onClick={() => setTypedCommand('Rahul paid me back 80 AED')}
-                      className="px-2 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 rounded-lg whitespace-nowrap transition"
+                      className="px-2.5 py-1 bg-[#27272a] hover:bg-violet-600/30 text-zinc-300 rounded-lg whitespace-nowrap transition text-[11px]"
                     >
                       Repayment
                     </button>
@@ -368,7 +368,7 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
 
                   <button
                     type="submit"
-                    className="p-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium shadow-md transition shrink-0"
+                    className="p-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-medium shadow-md shadow-violet-600/30 transition shrink-0"
                   >
                     <Send className="w-4 h-4" />
                   </button>
@@ -379,34 +379,21 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
         </div>
       )}
 
-      {/* Floating Hero Microphone Button (Bottom Right, positioned above BottomNav) */}
-      <div className="fixed bottom-20 sm:bottom-8 right-4 sm:right-8 z-40 flex items-center gap-2.5">
-        {onOpenReceiptScanner && (
-          <button
-            onClick={onOpenReceiptScanner}
-            className="flex items-center gap-2 p-3.5 sm:px-4 sm:py-3.5 rounded-2xl bg-white dark:bg-slate-850 hover:bg-emerald-50 dark:hover:bg-slate-800 border-2 border-emerald-500/30 hover:border-emerald-500 shadow-xl text-emerald-600 dark:text-emerald-400 hover:scale-105 active:scale-95 transition"
-            title="Scan receipt with Payd Lens"
-          >
-            <Camera className="w-5 h-5" />
-            <span className="hidden sm:inline text-xs font-bold">Scan Receipt</span>
-          </button>
-        )}
+      {/* Floating Action Trigger for Keyboard fallback & hidden DOM hook for BottomNav Center FAB */}
+      <button
+        id="payd-voice-mic-trigger"
+        onClick={toggleRecording}
+        className="hidden"
+        aria-hidden="true"
+      />
 
+      <div className="fixed bottom-24 right-4 z-30 hidden sm:flex items-center gap-2">
         <button
           onClick={() => setShowTypedInput(true)}
-          className="p-3 rounded-2xl bg-white dark:bg-slate-850 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-750 shadow-xl text-slate-600 dark:text-slate-300 transition"
+          className="p-3 rounded-2xl bg-[#18181b] hover:bg-[#27272a] border border-white/10 shadow-xl text-zinc-300 transition hover:border-violet-500/40"
           title="Type command fallback"
         >
-          <Keyboard className="w-5 h-5" />
-        </button>
-
-        <button
-          onClick={toggleRecording}
-          className="group relative flex items-center justify-center w-16 h-16 rounded-3xl bg-gradient-to-tr from-emerald-600 via-emerald-500 to-teal-400 text-white shadow-2xl shadow-emerald-500/40 hover:scale-105 active:scale-95 transition-all duration-200"
-          title="Hold or tap to speak expense"
-        >
-          <span className="absolute inset-0 rounded-3xl bg-emerald-400 opacity-20 group-hover:animate-ping" />
-          <Mic className="w-7 h-7 relative z-10" />
+          <Keyboard className="w-4 h-4" />
         </button>
       </div>
     </>

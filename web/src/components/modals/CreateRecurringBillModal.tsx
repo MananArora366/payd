@@ -79,19 +79,19 @@ export function CreateRecurringBillModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto space-y-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
+      <div className="w-full max-w-lg bg-[#18181b] border border-white/10 rounded-3xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto space-y-4 text-white font-body">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-between pb-3 border-b border-white/8">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-purple-500/10 text-purple-500">
+            <div className="p-2 rounded-xl bg-violet-500/20 text-violet-400">
               <Repeat className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-lg text-slate-900 dark:text-white">
-                New Shared Subscription
+              <h3 className="font-heading text-sm text-white">
+                NEW SHARED SUBSCRIPTION
               </h3>
-              <p className="text-xs text-slate-400">Automate recurring Wi-Fi, rent, DEWA, or Netflix</p>
+              <p className="text-xs text-zinc-400 font-body">Automate recurring Wi-Fi, rent, DEWA, or Netflix</p>
             </div>
           </div>
           <button
