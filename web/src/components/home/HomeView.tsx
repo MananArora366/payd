@@ -10,15 +10,10 @@ import {
   TrendingDown,
   ArrowUpRight,
   ArrowDownLeft,
-  Users,
   Plus,
   Receipt,
   Sparkles,
   ChevronRight,
-  ShieldCheck,
-  CreditCard,
-  HandCoins,
-  Camera,
   Coffee,
   Zap,
   Cpu,
@@ -243,47 +238,17 @@ export function HomeView({
         </div>
       </div>
 
-      {/* ─── Careem Standout Fast Actions ────────────────────────────────── */}
+      {/* ─── Standout Features ────────────────────────────────────────────── */}
       <div>
         <div className="flex items-center justify-between mb-3 px-1">
           <span className="font-heading text-xs text-zinc-400">STANDOUT FEATURES</span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
-          {/* Payd Lens OCR */}
-          <button
-            onClick={onOpenReceiptScanner}
-            className="p-3.5 rounded-2xl bg-[#18181b] hover:bg-[#222227] border border-white/8 hover:border-violet-500/40 transition text-left group active:scale-95 shadow-md"
-          >
-            <div className="w-8 h-8 rounded-xl bg-violet-500/20 text-violet-400 flex items-center justify-center mb-2 group-hover:scale-110 transition">
-              <Camera className="w-4 h-4" />
-            </div>
-            <div className="text-xs font-heading text-white flex items-center gap-1">
-              Payd Lens
-              <span className="text-[9px] px-1 py-0.2 rounded bg-violet-600 text-white font-bold">OCR</span>
-            </div>
-            <div className="text-[10px] text-zinc-400 font-body mt-0.5">Apple + Gemini Vision</div>
-          </button>
-
-          {/* Careem Pay Aani */}
-          <button
-            onClick={() => (onOpenCareemPay ? onOpenCareemPay() : onOpenRecordSettlement())}
-            className="p-3.5 rounded-2xl bg-[#18181b] hover:bg-[#222227] border border-white/8 hover:border-emerald-500/40 transition text-left group active:scale-95 shadow-md"
-          >
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-2 group-hover:scale-110 transition font-black">
-              <Zap className="w-4 h-4 fill-current" />
-            </div>
-            <div className="text-xs font-heading text-white flex items-center gap-1">
-              Careem Pay
-              <span className="text-[9px] px-1 py-0.2 rounded bg-[#00ea80] text-black font-black">AANI</span>
-            </div>
-            <div className="text-[10px] text-emerald-400 font-body mt-0.5">Instant UAE settle</div>
-          </button>
-
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
           {/* Fair Payer Coffee Roulette */}
           <button
             onClick={onOpenRoulette}
-            className="p-3.5 rounded-2xl bg-[#18181b] hover:bg-[#222227] border border-white/8 hover:border-amber-500/40 transition text-left group active:scale-95 shadow-md"
+            className="p-3.5 sm:p-4 rounded-2xl bg-[#18181b] hover:bg-[#222227] border border-white/8 hover:border-amber-500/40 transition text-left group active:scale-95 shadow-md"
           >
             <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center mb-2 group-hover:scale-110 transition">
               <Coffee className="w-4 h-4" />
@@ -292,13 +257,13 @@ export function HomeView({
               Roulette
               <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500 text-black font-bold">GAME</span>
             </div>
-            <div className="text-[10px] text-amber-400 font-body mt-0.5">Who pays coffee?</div>
+            <div className="text-[10px] sm:text-[11px] text-amber-400 font-body mt-0.5">Who pays coffee?</div>
           </button>
 
           {/* MCP Agent Console */}
           <button
             onClick={onOpenMcp}
-            className="p-3.5 rounded-2xl bg-[#18181b] hover:bg-[#222227] border border-white/8 hover:border-cyan-500/40 transition text-left group active:scale-95 shadow-md"
+            className="p-3.5 sm:p-4 rounded-2xl bg-[#18181b] hover:bg-[#222227] border border-white/8 hover:border-cyan-500/40 transition text-left group active:scale-95 shadow-md"
           >
             <div className="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center mb-2 group-hover:scale-110 transition">
               <Cpu className="w-4 h-4" />
@@ -307,55 +272,7 @@ export function HomeView({
               MCP Tools
               <span className="text-[9px] px-1 py-0.2 rounded bg-cyan-600 text-white font-bold">AGENT</span>
             </div>
-            <div className="text-[10px] text-cyan-400 font-body mt-0.5">Audit & simulate</div>
-          </button>
-
-          {/* Add Expense */}
-          <button
-            onClick={() => onOpenAddExpense('expense')}
-            className="p-3.5 rounded-2xl bg-[#18181b] hover:bg-[#222227] border border-white/8 hover:border-violet-500/40 transition text-left group active:scale-95 shadow-md"
-          >
-            <div className="w-8 h-8 rounded-xl bg-violet-500/20 text-violet-400 flex items-center justify-center mb-2 group-hover:scale-110 transition">
-              <Plus className="w-4 h-4 stroke-[3]" />
-            </div>
-            <div className="text-xs font-heading text-white">Add Expense</div>
-            <div className="text-[10px] text-zinc-400 font-body mt-0.5">Shared or personal</div>
-          </button>
-
-          {/* Split Bill */}
-          <button
-            onClick={() => onOpenAddExpense('expense')}
-            className="p-3.5 rounded-2xl bg-[#18181b] hover:bg-[#222227] border border-white/8 hover:border-violet-500/40 transition text-left group active:scale-95 shadow-md"
-          >
-            <div className="w-8 h-8 rounded-xl bg-violet-500/20 text-violet-400 flex items-center justify-center mb-2 group-hover:scale-110 transition">
-              <Users className="w-4 h-4" />
-            </div>
-            <div className="text-xs font-heading text-white">Split Bill</div>
-            <div className="text-[10px] text-zinc-400 font-body mt-0.5">Equal or custom</div>
-          </button>
-
-          {/* Record Settlement */}
-          <button
-            onClick={onOpenRecordSettlement}
-            className="p-3.5 rounded-2xl bg-[#18181b] hover:bg-[#222227] border border-white/8 hover:border-violet-500/40 transition text-left group active:scale-95 shadow-md"
-          >
-            <div className="w-8 h-8 rounded-xl bg-violet-500/20 text-violet-400 flex items-center justify-center mb-2 group-hover:scale-110 transition">
-              <HandCoins className="w-4 h-4" />
-            </div>
-            <div className="text-xs font-heading text-white">Settlement</div>
-            <div className="text-[10px] text-zinc-400 font-body mt-0.5">Record repayment</div>
-          </button>
-
-          {/* New Group */}
-          <button
-            onClick={onOpenCreateGroup}
-            className="p-3.5 rounded-2xl bg-[#18181b] hover:bg-[#222227] border border-white/8 hover:border-violet-500/40 transition text-left group active:scale-95 shadow-md"
-          >
-            <div className="w-8 h-8 rounded-xl bg-violet-500/20 text-violet-400 flex items-center justify-center mb-2 group-hover:scale-110 transition">
-              <Users className="w-4 h-4" />
-            </div>
-            <div className="text-xs font-heading text-white">New Group</div>
-            <div className="text-[10px] text-zinc-400 font-body mt-0.5">Trip, home, or flat</div>
+            <div className="text-[10px] sm:text-[11px] text-cyan-400 font-body mt-0.5">Audit & simulate</div>
           </button>
         </div>
       </div>
