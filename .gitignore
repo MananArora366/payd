@@ -48,3 +48,5 @@ DerivedData/
 *.ipa
 *.dSYM.zip
 *.dSYM
+run-claude.sh
+run-codex.sh

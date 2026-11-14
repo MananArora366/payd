@@ -5,7 +5,7 @@ import {
 import { VoiceIntent, VoiceIntentSchema, deterministicParseIntent } from './gemini';
 
 const region = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'us-east-1';
-const defaultModelId = process.env.BEDROCK_MODEL_ID || 'amazon.nova-pro-v1:0';
+const defaultModelId = process.env.BEDROCK_MODEL_ID || 'us.anthropic.claude-sonnet-5';
 
 let client: BedrockRuntimeClient | null = null;
 
