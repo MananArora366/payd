@@ -62,7 +62,7 @@ struct JoinGroupView: View {
                 .foregroundStyle(PaydTheme.zinc400)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        Button(action: router.dismissSheet) {
+        Button(action: openPayd) {
             Text("Back to Payd")
                 .font(.payd(size: 14, bold: true))
                 .foregroundStyle(.white)
