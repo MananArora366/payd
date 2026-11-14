@@ -21,12 +21,16 @@ type CameraState = 'idle' | 'starting' | 'live' | 'error';
 export function LensCameraViewer({ onCapture, onUploadClick }: LensCameraViewerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  // Bumped by every stop; a getUserMedia call that resolves after a newer stop/start
+  // (or after unmount) sees a stale id and releases its stream instead of leaking it.
+  const requestRef = useRef(0);
   const [state, setState] = useState<CameraState>('idle');
   const [error, setError] = useState<string | null>(null);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [deviceId, setDeviceId] = useState<string | null>(null);
 
   const stopCamera = useCallback(() => {
+    requestRef.current += 1;
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
   }, []);
@@ -39,8 +43,10 @@ export function LensCameraViewer({ onCapture, onUploadClick }: LensCameraViewerP
     }
     setState('starting');
     setError(null);
+    stopCamera();
+    const request = requestRef.current;
+    const isStale = () => request !== requestRef.current;
     try {
-      stopCamera();
       const size = { width: { ideal: 1920 }, height: { ideal: 1080 } };
       const stream = await navigator.mediaDevices.getUserMedia({
         // A specific camera if chosen; otherwise prefer the rear camera on
@@ -51,10 +57,15 @@ export function LensCameraViewer({ onCapture, onUploadClick }: LensCameraViewerP
           : { facingMode: { ideal: 'environment' }, ...size },
         audio: false,
       });
+      if (isStale()) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
       streamRef.current = stream;
       setDeviceId(stream.getVideoTracks()[0]?.getSettings().deviceId ?? requestedId ?? null);
       // Camera names are only exposed after permission is granted.
       const all = await navigator.mediaDevices.enumerateDevices();
+      if (isStale()) return; // a newer stop already released this stream
       setDevices(all.filter((d) => d.kind === 'videoinput'));
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -62,6 +73,7 @@ export function LensCameraViewer({ onCapture, onUploadClick }: LensCameraViewerP
       }
       setState('live');
     } catch (err) {
+      if (isStale()) return; // a newer request owns the UI state now
       setState('error');
       const name = err instanceof DOMException ? err.name : '';
       setError(

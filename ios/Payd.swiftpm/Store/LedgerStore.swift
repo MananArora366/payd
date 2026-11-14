@@ -16,6 +16,8 @@ final class LedgerStore {
     var errorMessage: String?
 
     @ObservationIgnored private let fileURL: URL
+    /// False when the saved file exists but couldn't be read or moved aside: writing would overwrite real data.
+    @ObservationIgnored private let canSave: Bool
 
     nonisolated static let defaultFileURL = URL.applicationSupportDirectory.appending(path: "payd_state_v1.json")
 
@@ -24,6 +26,7 @@ final class LedgerStore {
         let loaded = Self.load(from: fileURL)
         self.state = loaded.state
         self.errorMessage = loaded.error
+        self.canSave = loaded.canSave
     }
 
     var currentUserId: String { state.currentUserId }
@@ -58,6 +61,11 @@ final class LedgerStore {
             errorMessage = String(describing: error)
             return false
         }
+        guard canSave else {
+            errorMessage = "Your saved ledger couldn't be opened, so this change is kept in memory only. "
+                + "Restart the app to try loading it again."
+            return true
+        }
         do {
             try Self.save(state, to: fileURL)
         } catch {
@@ -71,18 +79,31 @@ final class LedgerStore {
         try PaydJSON.encoder.encode(state).write(to: url, options: .atomic)
     }
 
-    /// Missing file → demo seed. Unreadable file → moved aside (never silently overwritten), then demo seed.
-    private static func load(from url: URL) -> (state: LedgerState, error: String?) {
-        guard FileManager.default.fileExists(atPath: url.path) else { return (SeedData.make(), nil) }
+    /// Missing file → demo seed.
+    /// Read failure (e.g. still encrypted before first unlock) → demo seed, file untouched, saving disabled.
+    /// Corrupt contents → file moved to a timestamped backup (never deleted), then demo seed.
+    private static func load(from url: URL) -> (state: LedgerState, error: String?, canSave: Bool) {
+        guard FileManager.default.fileExists(atPath: url.path) else { return (SeedData.make(), nil, true) }
+        let data: Data
         do {
-            let data = try Data(contentsOf: url)
-            return (try PaydJSON.decoder.decode(LedgerState.self, from: data), nil)
+            data = try Data(contentsOf: url)
         } catch {
-            let backup = url.appendingPathExtension("corrupt")
-            try? FileManager.default.removeItem(at: backup)
-            try? FileManager.default.moveItem(at: url, to: backup)
-            return (SeedData.make(), "Saved ledger could not be read (\(error.localizedDescription)). "
-                    + "Loaded demo data; the old file was kept as \(backup.lastPathComponent).")
+            return (SeedData.make(), "Your saved ledger couldn't be opened (\(error.localizedDescription)). "
+                    + "Showing demo data; nothing will be saved until you restart the app.", false)
+        }
+        do {
+            return (try PaydJSON.decoder.decode(LedgerState.self, from: data), nil, true)
+        } catch {
+            let stamp = Int(Date().timeIntervalSince1970 * 1000)
+            let backup = url.appendingPathExtension("corrupt-\(stamp)")
+            do {
+                try FileManager.default.moveItem(at: url, to: backup)
+            } catch let moveError {
+                return (SeedData.make(), "Your saved ledger is damaged and couldn't be backed up "
+                        + "(\(moveError.localizedDescription)). Showing demo data; nothing will be saved.", false)
+            }
+            return (SeedData.make(), "Your saved ledger was damaged (\(error.localizedDescription)). "
+                    + "Loaded demo data; the old file was kept as \(backup.lastPathComponent).", true)
         }
     }
 }

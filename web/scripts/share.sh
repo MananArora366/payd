@@ -4,7 +4,9 @@
 #
 # Usage:  npm run share                     (from the repo root or web/)
 # Env:    SHARE_PORT=3001                   local port for the production server
-#         SHARE_PASSWORD=<8+ chars>         require a password (username: payd)
+#         SHARE_PASSWORD=<8+ chars>         required: login password (username: payd)
+#         SHARE_PUBLIC=1                    share WITHOUT a password (anyone with the link
+#                                           can call the AI routes on your API keys)
 #         SHARE_SKIP_BUILD=1                reuse the last share build
 #
 # Stop with Ctrl+C; the server and the tunnel both shut down.
@@ -16,6 +18,14 @@ export NEXT_DIST_DIR=".next-share" # separate from `next dev`'s .next folder
 LOG_DIR="$(mktemp -d -t payd-share)"
 
 command -v ngrok >/dev/null || { echo "ngrok not found. Install: brew install ngrok"; exit 1; }
+if [ -z "${SHARE_PASSWORD:-}" ] && [ "${SHARE_PUBLIC:-}" != "1" ]; then
+  echo "Refusing to share without a password: anyone with the link could use the AI routes"
+  echo "on your Bedrock/Gemini keys. Set SHARE_PASSWORD=<8+ chars> (or SHARE_PUBLIC=1 to accept that)."
+  exit 1
+fi
+if [ -n "${SHARE_PASSWORD:-}" ] && [ "${#SHARE_PASSWORD}" -lt 8 ]; then
+  echo "SHARE_PASSWORD must be at least 8 characters."; exit 1
+fi
 if lsof -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
   echo "Port $PORT is already in use. Set SHARE_PORT to another port."; exit 1
 fi
@@ -47,7 +57,6 @@ curl -s -o /dev/null "http://localhost:$PORT" || { tail -20 "$LOG_DIR/server.log
 echo "▸ Opening public ngrok tunnel…"
 ngrok_args=(http "$PORT" --log=stdout --log-format=logfmt)
 if [ -n "${SHARE_PASSWORD:-}" ]; then
-  [ "${#SHARE_PASSWORD}" -ge 8 ] || { echo "SHARE_PASSWORD must be at least 8 characters."; exit 1; }
   ngrok_args+=(--basic-auth "payd:$SHARE_PASSWORD")
 fi
 ngrok "${ngrok_args[@]}" > "$LOG_DIR/ngrok.log" 2>&1 &

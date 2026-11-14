@@ -34,6 +34,20 @@ struct CurrencyTests {
         #expect(Currency.parseMajorToMinor("abc") == 0)
     }
 
+    @Test func parsesLocaleDecimalComma() {
+        // Keypads in fr/de/ru locales type "," as the decimal point.
+        #expect(Currency.parseMajorToMinor("12,50", decimalSeparator: ",") == 1250)
+        #expect(Currency.parseMajorToMinor("1.250,75", decimalSeparator: ",") == 125075)
+        #expect(Currency.parseMajorToMinor("12.50", decimalSeparator: ".") == 1250)
+    }
+
+    @Test func amountsTooLargeForIntParseToZeroInsteadOfTrapping() {
+        #expect(Currency.parseMajorToMinor("99999999999999999") == 0)
+        #expect(Currency.parseMajorToMinor("-99999999999999999") == 0)
+        #expect(Currency.parseMajorToMinor("1234567890123456789012345.50") == 0)
+        #expect(Currency.parseMajorToMinor("92233720368547758.07") == Int.max)
+    }
+
     @Test func minorToMajor() {
         #expect(Currency.minorToMajor(10050) == 100.5)
         #expect(Currency.minorToMajor(3333) == 33.33)

@@ -11,9 +11,25 @@ struct AddExpenseView: View {
     @State private var date: Date = Date()
     @State private var notes: String = ""
 
+    init(draft: VoiceExpenseDraft? = nil) {
+        _title = State(initialValue: draft?.title ?? "")
+        _amountText = State(initialValue: draft?.amountMinor.map(Self.editableAmount) ?? "")
+    }
+
+    /// Minor units → "22.00" using the device's decimal separator, so it parses back exactly.
+    private static func editableAmount(_ minor: Int) -> String {
+        let decimals = Currency.config(for: Currency.defaultCode).decimals
+        let factor = (0..<decimals).reduce(1) { acc, _ in acc * 10 }
+        let fraction = String(minor % factor)
+        let padded = String(repeating: "0", count: max(0, decimals - fraction.count)) + fraction
+        let separator = Locale.current.decimalSeparator ?? "."
+        return decimals > 0 ? "\(minor / factor)\(separator)\(padded)" : "\(minor / factor)"
+    }
+
     // Integer minor units (fils); 0 when the text is not a valid amount
     private var amountMinor: Int {
-        Currency.parseMajorToMinor(amountText, currency: store.currentCurrency)
+        Currency.parseMajorToMinor(amountText, currency: store.currentCurrency,
+                                   decimalSeparator: Locale.current.decimalSeparator ?? ".")
     }
 
     private var isValid: Bool {
@@ -33,7 +49,7 @@ struct AddExpenseView: View {
                             .fontWeight(.semibold)
                         TextField("0.00", text: $amountText)
                             .keyboardType(.decimalPad)
-                            .font(.title3)
+                            .font(.payd(.title3))
                             .fontWeight(.medium)
                     }
                 }
@@ -57,8 +73,11 @@ struct AddExpenseView: View {
                         .lineLimit(2...4)
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(PaydTheme.canvas)
             .navigationTitle("New Expense")
             .navigationBarTitleDisplayMode(.inline)
+            .ledgerErrorAlert(store)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {

@@ -49,10 +49,14 @@ public enum Currency {
     }
 
     /// Parses a major-unit string ("AED 1,250.75", "19.99", "-12.5") into minor units.
-    /// Extra fraction digits are truncated; unparseable input returns 0 (matches the web).
-    public static func parseMajorToMinor(_ text: String, currency: String = defaultCode) -> Int {
+    /// Extra fraction digits are truncated; unparseable or out-of-range input returns 0 (matches the web).
+    /// Pass `Locale.current.decimalSeparator` for keypad input: with "," the dots are treated as grouping.
+    public static func parseMajorToMinor(_ text: String, currency: String = defaultCode,
+                                         decimalSeparator: String = ".") -> Int {
         let config = config(for: currency)
-        let sanitized = text.filter { $0.isASCII && ($0.isNumber || $0 == "." || $0 == "-") }
+        let normalized = decimalSeparator == "." ? text
+            : text.replacingOccurrences(of: ".", with: "").replacingOccurrences(of: decimalSeparator, with: ".")
+        let sanitized = normalized.filter { $0.isASCII && ($0.isNumber || $0 == "." || $0 == "-") }
         guard !sanitized.isEmpty, sanitized != "-", sanitized != "." else { return 0 }
 
         let isNegative = sanitized.hasPrefix("-")
@@ -62,9 +66,10 @@ public enum Currency {
         let rawFrac = parts.count > 1 ? String(parts[1]) : ""
         let fracText = String(rawFrac.prefix(config.decimals)).rightPadded(to: config.decimals)
 
-        let whole = Int(wholeText) ?? 0
-        let frac = Int(fracText) ?? 0
-        let total = whole * pow10(config.decimals) + frac
+        guard let whole = wholeText.isEmpty ? 0 : Int(wholeText), let frac = fracText.isEmpty ? 0 : Int(fracText) else { return 0 }
+        let (scaled, mulOverflow) = whole.multipliedReportingOverflow(by: pow10(config.decimals))
+        let (total, addOverflow) = scaled.addingReportingOverflow(frac)
+        guard !mulOverflow, !addOverflow else { return 0 }
         return isNegative ? -total : total
     }
 

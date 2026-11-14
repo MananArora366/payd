@@ -12,10 +12,15 @@ let package = Package(
             name: "SwiftExpenseTracker",
             targets: ["AppModule"],
             bundleIdentifier: "com.payd.SwiftExpenseTracker",
+            teamIdentifier: "8WJHXBCT98",
             displayVersion: "1.0",
             bundleVersion: "1",
             supportedDeviceFamilies: [.phone, .pad],
-            supportedInterfaceOrientations: [.portrait]
+            supportedInterfaceOrientations: [.portrait],
+            capabilities: [
+                .microphone(purposeString: "Payd listens when you tap the mic so you can add an expense by voice."),
+                .speechRecognition(purposeString: "Payd uses Apple speech recognition to turn what you say into an expense.")
+            ]
         )
     ],
     dependencies: [
@@ -27,7 +32,10 @@ let package = Package(
             dependencies: [
                 .product(name: "PaydCore", package: "PaydCore")
             ],
-            path: "."
+            path: ".",
+            resources: [
+                .process("Resources")
+            ]
         )
     ]
 )

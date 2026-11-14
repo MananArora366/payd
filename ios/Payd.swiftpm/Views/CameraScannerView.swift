@@ -55,19 +55,19 @@ struct CameraScannerView: View {
                     // Top Hero Badge
                     HStack {
                         Label("Payd Lens OCR", systemImage: "camera.viewfinder")
-                            .font(.subheadline)
+                            .font(.payd(.subheadline))
                             .fontWeight(.bold)
-                            .foregroundStyle(.tint)
+                            .foregroundStyle(PaydTheme.violetLight)
                         
                         Spacer()
                         
                         Text("UAE 5% VAT")
-                            .font(.caption2)
+                            .font(.payd(.caption2))
                             .fontWeight(.heavy)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(Color.green.opacity(0.15))
-                            .foregroundStyle(.green)
+                            .background(PaydTheme.emerald.opacity(0.15))
+                            .foregroundStyle(PaydTheme.emerald)
                             .clipShape(Capsule())
                     }
                     .padding(.horizontal)
@@ -77,20 +77,20 @@ struct CameraScannerView: View {
                         VStack(spacing: 12) {
                             ZStack {
                                 Circle()
-                                    .fill(Color.accentColor.opacity(0.15))
+                                    .fill(PaydTheme.violet.opacity(0.15))
                                     .frame(width: 68, height: 68)
 
                                 Image(systemName: "camera.fill")
                                     .font(.system(size: 28))
-                                    .foregroundStyle(Color.accentColor)
+                                    .foregroundStyle(PaydTheme.violet)
                             }
 
                             Text("Take Photo or Choose Receipt")
-                                .font(.headline)
+                                .font(.payd(.headline))
                                 .foregroundStyle(.primary)
 
                             Text("Snap any UAE receipt to extract TRN, subtotal, and 5% VAT automatically.")
-                                .font(.caption)
+                                .font(.payd(.caption))
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal)
@@ -99,10 +99,10 @@ struct CameraScannerView: View {
                         .padding(.vertical, 28)
                         .background(
                             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                .fill(Color(.secondarySystemGroupedBackground))
+                                .fill(PaydTheme.card)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                        .strokeBorder(Color.accentColor.opacity(0.3), style: StrokeStyle(lineWidth: 1.5, dash: [6]))
+                                        .strokeBorder(PaydTheme.violet.opacity(0.3), style: StrokeStyle(lineWidth: 1.5, dash: [6]))
                                 )
                         )
                     }
@@ -122,10 +122,10 @@ struct CameraScannerView: View {
                             ProgressView()
                                 .scaleEffect(1.2)
                             Text("Gemini Vision Scanning...")
-                                .font(.subheadline)
+                                .font(.payd(.subheadline))
                                 .fontWeight(.semibold)
                             Text("Extracting TRN and itemized 5% VAT...")
-                                .font(.caption)
+                                .font(.payd(.caption))
                                 .foregroundStyle(.secondary)
                         }
                         .padding()
@@ -137,31 +137,31 @@ struct CameraScannerView: View {
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(receipt.merchant)
-                                        .font(.headline)
+                                        .font(.payd(.headline))
                                         .fontWeight(.bold)
                                     Text("TRN: \(receipt.trn)")
-                                        .font(.caption2)
+                                        .font(.payd(.caption2))
                                         .fontDesign(.monospaced)
                                         .foregroundStyle(.secondary)
                                 }
                                 Spacer()
                                 Text(Currency.format(receipt.amountMinor))
-                                    .font(.title2)
+                                    .font(.payd(.title2))
                                     .fontWeight(.heavy)
-                                    .foregroundStyle(.green)
+                                    .foregroundStyle(PaydTheme.emerald)
                             }
 
                             Divider()
 
                             HStack {
                                 Label("5% VAT: \(Currency.format(receipt.vatMinor))", systemImage: "checkmark.seal.fill")
-                                    .font(.caption)
+                                    .font(.payd(.caption))
                                     .fontWeight(.medium)
                                     .foregroundStyle(.secondary)
                                 Spacer()
                                 let category = LedgerQueries.category(receipt.categoryId, in: store.state)
                                 Text(category?.name ?? "Other")
-                                    .font(.caption)
+                                    .font(.payd(.caption))
                                     .fontWeight(.semibold)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 3)
@@ -172,12 +172,12 @@ struct CameraScannerView: View {
 
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Line Items Detected:")
-                                    .font(.caption2)
+                                    .font(.payd(.caption2))
                                     .fontWeight(.bold)
                                     .foregroundStyle(.secondary)
                                 ForEach(receipt.items, id: \.self) { item in
                                     Text("• \(item)")
-                                        .font(.caption)
+                                        .font(.payd(.caption))
                                         .foregroundStyle(.primary)
                                 }
                             }
@@ -189,10 +189,10 @@ struct CameraScannerView: View {
                                     Image(systemName: "checkmark.circle.fill")
                                     Text("Save Receipt to Ledger")
                                 }
-                                .font(.headline)
+                                .font(.payd(.headline))
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
-                                .background(Color.accentColor)
+                                .background(PaydTheme.violet)
                                 .foregroundStyle(.white)
                                 .clipShape(RoundedRectangle(cornerRadius: 16))
                             }
@@ -200,7 +200,7 @@ struct CameraScannerView: View {
                         .padding(20)
                         .background(
                             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                .fill(Color(.secondarySystemGroupedBackground))
+                                .fill(PaydTheme.card)
                                 .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
                         )
                         .padding(.horizontal)
@@ -209,7 +209,7 @@ struct CameraScannerView: View {
                     // 1-Click Instant Presets for Hackathon Demos
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Instant UAE Presets (1-Click Demo)")
-                            .font(.caption)
+                            .font(.payd(.caption))
                             .fontWeight(.bold)
                             .foregroundStyle(.secondary)
                             .padding(.horizontal)
@@ -230,26 +230,26 @@ struct CameraScannerView: View {
 
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(preset.merchant)
-                                            .font(.subheadline)
+                                            .font(.payd(.subheadline))
                                             .fontWeight(.semibold)
                                             .foregroundStyle(.primary)
                                             .lineLimit(1)
                                         Text("TRN: \(preset.trn) • 5% VAT")
-                                            .font(.caption2)
+                                            .font(.payd(.caption2))
                                             .foregroundStyle(.secondary)
                                     }
 
                                     Spacer()
 
                                     Text(Currency.format(preset.amountMinor))
-                                        .font(.callout)
+                                        .font(.payd(.callout))
                                         .fontWeight(.bold)
                                         .foregroundStyle(.primary)
                                 }
                                 .padding()
                                 .background(
                                     RoundedRectangle(cornerRadius: 18)
-                                        .fill(Color(.secondarySystemGroupedBackground))
+                                        .fill(PaydTheme.card)
                                 )
                             }
                             .buttonStyle(.plain)
@@ -259,7 +259,8 @@ struct CameraScannerView: View {
                 }
                 .padding(.vertical)
             }
-            .background(Color(.systemGroupedBackground))
+            .background(PaydTheme.canvas)
+            .ledgerErrorAlert(store)
             .navigationTitle("Payd Lens")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
