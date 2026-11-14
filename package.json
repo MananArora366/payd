@@ -9,6 +9,7 @@
     "start": "npm --prefix web start",
     "test": "npm --prefix web test",
     "mcp": "node web/scripts/mcp-server.mjs",
-    "ios": "open ios/Payd.swiftpm"
+    "ios": "open ios/Payd.swiftpm",
+    "share": "npm --prefix web run share"
   }
 }
