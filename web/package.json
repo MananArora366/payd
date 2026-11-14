@@ -12,6 +12,7 @@
     "mcp": "node scripts/mcp-server.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1169.0",
     "@google/genai": "^0.2.0",
     "@modelcontextprotocol/sdk": "^1.32.2",
     "@supabase/ssr": "^0.5.2",

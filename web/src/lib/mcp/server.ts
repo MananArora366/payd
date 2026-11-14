@@ -8,13 +8,64 @@ import {
   handleSpinCoffeeRoulette,
   handleTriggerRecurringSplit,
 } from './paydTools';
+import {
+  handleCareemRideSplit,
+  handleCareemFoodImport,
+  handleCareemQuikBasket,
+  handleCareemPaySettle,
+} from './careemTools';
 
 export function createPaydMcpServer(): McpServer {
   const server = new McpServer({
-    name: 'payd-mcp',
-    version: '1.0.0',
+    name: 'payd-careem-mcp',
+    version: '1.2.0',
   });
 
+  // ─── Careem Super App MCP Tools (Careem Builders '26) ───────────────────
+  server.tool(
+    'careem_rides_split_fare',
+    'Fetch Careem Ride fare details (pickup, dropoff, surge, VAT) and calculate zero-loss passenger splits into Payd.',
+    {
+      pickup: z.string().optional().describe('Pickup location (e.g. Dubai Marina)'),
+      dropoff: z.string().optional().describe('Dropoff location (e.g. Gate Village DIFC)'),
+      totalFareAed: z.number().optional().describe('Total ride fare in AED'),
+      riderNames: z.array(z.string()).optional().describe('List of passengers sharing the ride'),
+    },
+    async (params) => handleCareemRideSplit(params)
+  );
+
+  server.tool(
+    'careem_food_import_order',
+    'Import Careem Food order line items, UAE 5% VAT, and delivery fee into Payd Tap-to-Claim bill splitting.',
+    {
+      restaurantName: z.string().optional().describe('Name of Careem restaurant partner'),
+      orderId: z.string().optional().describe('Careem Food Order ID'),
+    },
+    async (params) => handleCareemFoodImport(params)
+  );
+
+  server.tool(
+    'careem_quik_basket_split',
+    'Import Careem Quik groceries cart items for instant distribution among shared flatmates.',
+    {
+      storeName: z.string().optional().describe('Careem Quik micro-fulfillment dark store'),
+      groupName: z.string().optional().describe('Target flat or trip group in Payd'),
+    },
+    async (params) => handleCareemQuikBasket(params)
+  );
+
+  server.tool(
+    'careem_pay_settle_debt',
+    'Execute immediate peer-to-peer settlement via Careem Pay / Aani instant payment rail.',
+    {
+      recipientPhone: z.string().describe('UAE mobile number of recipient (+971...)'),
+      amountAed: z.number().describe('Amount in AED to settle'),
+      note: z.string().optional().describe('Settlement description'),
+    },
+    async (params) => handleCareemPaySettle(params)
+  );
+
+  // ─── Payd Social Finance Ledger MCP Tools ───────────────────────────────
   server.tool(
     'payd_get_balances',
     'Retrieve current net balances, who owes whom, and total outstanding debt in AED.',

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { interpretVoiceTranscript } from '@/lib/ai/gemini';
+import { interpretVoiceTranscriptBedrock, isBedrockConfigured } from '@/lib/ai/bedrock';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { transcript, context } = body;
+    const { transcript, context, provider } = body;
 
     if (!transcript || typeof transcript !== 'string') {
       return NextResponse.json({ error: 'Missing transcript string' }, { status: 400 });
@@ -39,9 +40,17 @@ export async function POST(req: NextRequest) {
     };
 
     const ctx = context || defaultContext;
-    const intent = await interpretVoiceTranscript(transcript, ctx);
+    const useBedrock = provider === 'bedrock' || isBedrockConfigured();
+    const intent = useBedrock
+      ? await interpretVoiceTranscriptBedrock(transcript, ctx)
+      : await interpretVoiceTranscript(transcript, ctx);
 
-    return NextResponse.json({ success: true, intent });
+    return NextResponse.json({
+      success: true,
+      provider: useBedrock ? 'aws-bedrock' : 'gemini',
+      model: useBedrock ? 'anthropic.claude-3-5-sonnet-20241022-v2:0' : 'gemini-2.5-flash',
+      intent,
+    });
   } catch (error: any) {
     console.error('Error in /api/ai/interpret:', error);
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });

@@ -1,0 +1,29 @@
+spec_version: "2.0"
+component: "aws-bedrock-pipeline"
+framework: "AWS Bedrock Agentic AI Runtime"
+sdk: "@aws-sdk/client-bedrock-runtime"
+models:
+  primary: "anthropic.claude-3-5-sonnet-20241022-v2:0"
+  secondary: "amazon.nova-pro-v1:0"
+pipelines:
+  - id: "nlp-voice-intent"
+    endpoint: "/api/ai/interpret"
+    command: "ConverseCommand"
+    schema: "VoiceIntentSchema (Zod)"
+    capabilities:
+      - "Multilingual voice intent extraction (Arabic, English, Franco-Arabic)"
+      - "Dubai colloquial category resolution (DEWA, Du, LuLu, Al Safadi, Careem)"
+      - "Offline deterministic rule-based fallback fallback for 100% uptime"
+
+  - id: "ledger-qa-assistant"
+    endpoint: "/api/ai/query"
+    command: "ConverseCommand"
+    capabilities:
+      - "Natural language questions against active user balances"
+      - "Zero-hallucination debt queries constrained by deterministic ledger context"
+
+  - id: "receipt-vision-ocr"
+    endpoint: "/api/ai/receipt-scan"
+    capabilities:
+      - "UAE 5% VAT extraction and line item itemization"
+      - "Local Apple Vision fallback + Bedrock multimodal analysis"

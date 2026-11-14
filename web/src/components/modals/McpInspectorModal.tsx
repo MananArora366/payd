@@ -21,6 +21,48 @@ interface McpInspectorModalProps {
 }
 
 const AVAILABLE_TOOLS = [
+  // ─── Careem Super App MCP Tools (Careem Builders '26) ───────────────────
+  {
+    id: 'careem_rides_split_fare',
+    name: 'careem_rides_split_fare',
+    summary: 'Fetch Careem Ride fare details (pickup, dropoff, VAT) and calculate zero-loss splits across riders.',
+    defaultParams: {
+      pickup: 'Dubai Marina, Silverene Tower',
+      dropoff: 'Gate Village, DIFC',
+      totalFareAed: 68.5,
+      riderNames: ['Manan', 'Sarah', 'Rahul'],
+    },
+  },
+  {
+    id: 'careem_food_import_order',
+    name: 'careem_food_import_order',
+    summary: 'Import Careem Food order line items, UAE 5% VAT, and delivery fee into Tap-to-Claim splitting.',
+    defaultParams: {
+      restaurantName: 'Al Safadi DIFC',
+      orderId: 'CR-FOOD-92841-DXB',
+    },
+  },
+  {
+    id: 'careem_quik_basket_split',
+    name: 'careem_quik_basket_split',
+    summary: 'Import Careem Quik groceries cart items for instant distribution among shared flatmates.',
+    defaultParams: {
+      storeName: 'Careem Quik Marina Central',
+      groupName: 'Dubai Marina Flatmates',
+    },
+  },
+  {
+    id: 'careem_pay_settle_debt',
+    name: 'careem_pay_settle_debt',
+    summary: 'Execute immediate peer-to-peer settlement via Careem Pay / Aani instant payment rail.',
+    defaultParams: {
+      recipientPhone: '+971501234567',
+      amountAed: 120.0,
+      note: 'Dinner & Careem Ride split',
+    },
+  },
+
+  // ─── Payd Social Finance Ledger Tools ──────────────────────────────────
   {
     id: 'payd_get_balances',
     name: 'payd_get_balances',
@@ -146,17 +188,23 @@ export function McpInspectorModal({ isOpen, onClose }: McpInspectorModalProps) {
               <Cpu className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-heading text-sm text-white">
-                  PAYD MODEL CONTEXT PROTOCOL (MCP)
+                  CAREEM MCP &amp; PAYD CONSOLE
                 </h3>
                 <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-heading tracking-wider flex items-center gap-1 border border-emerald-500/30">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  SERVER ACTIVE
+                  CAREEM MCP ACTIVE
+                </span>
+                <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 font-heading tracking-wider border border-amber-500/30">
+                  AWS BEDROCK RUNTIME
+                </span>
+                <span className="text-[9px] px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-300 font-heading tracking-wider border border-violet-500/30">
+                  KIRO SPEC
                 </span>
               </div>
-              <p className="text-[11px] text-zinc-400 font-body">
-                JSON-RPC 2.0 Agentic tools powering Claude, Cursor, and Gemini integrations
+              <p className="text-[11px] text-zinc-400 font-body mt-0.5">
+                Streamable JSON-RPC 2.0 bridging Careem Super App (Rides, Food, Quik, Pay) with Zero-Loss Ledger
               </p>
             </div>
           </div>
