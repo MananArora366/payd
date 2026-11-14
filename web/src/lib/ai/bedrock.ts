@@ -18,6 +18,19 @@ function getBedrockClient(): BedrockRuntimeClient {
   return client;
 }
 
+export const CAREEM_AGENT_PLAYBOOK = `
+# Careem Builders '26 Agent Playbook Rules:
+1. Always pass user's coordinates (latitude/longitude) - nearly every tool is location-scoped. Get saved addresses from user_info if user says "home" or "work".
+2. Respect chain dependencies: context_blob from request_ride must be passed verbatim to create_ride and expires quickly (120s); pricingId from get_ride_cancellation_attributes is required by cancel_ride; catalog_option_ids from food_get_item_options are required to add customizable food items.
+3. Never checkout blind: call cart_get_basket_price first and pass its total as total_price to checkout. Confirm order contents, address, and price with user before any mutating tool.
+4. Payment defaults are auto-resolved (working card -> wallet -> cash); only pass payment_type if the user asks.
+5. Personalize with get_activities(past) - prefer user's known favourites over cold search.
+6. Budget for multi-step journeys: full food order is ~6+ sequential tool calls; keep agent's tool-loop limits generous.
+7. Errors come back as error string field in tool's structured output, or as MCP tool errors. Retry idempotent reads; never blind-retry mutating tools.
+8. Long streams: keepalive comments (: keepalive) arrive every 15 s on SSE streams - ignore them.
+> The Golden Rule: Read-only tools are free to call while reasoning. Mutating tools spend user's money or change real-world state - ALWAYS confirm first, never blind-retry after a timeout.
+`;
+
 export function isBedrockConfigured(): boolean {
   return !!(
     (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) ||
@@ -28,7 +41,7 @@ export function isBedrockConfigured(): boolean {
 
 /**
  * Interpret voice intent using AWS Bedrock (Claude 3.5 Sonnet or Amazon Nova).
- * Falls back to deterministic rule engine if credentials are not configured or call fails.
+ * Incorporates Careem Agent Playbook guidelines.
  */
 export async function interpretVoiceTranscriptBedrock(
   transcript: string,
@@ -43,13 +56,15 @@ export async function interpretVoiceTranscriptBedrock(
   try {
     const bedrock = getBedrockClient();
 
-    const systemPrompt = `You are the AI Financial Intelligence Engine for Payd, an intelligent social finance super-app on Careem and AWS Bedrock.
+    const systemPrompt = `You are the AI Financial Intelligence Engine for Payd, an intelligent social finance super-app built on Careem MCP and AWS Bedrock.
 Parse user voice transcripts into structured expense or settlement intents.
 Today's Date: ${new Date().toISOString().split('T')[0]}
 Current Active User: ${context.currentUser.name} (Currency: ${context.currentUser.currency || 'AED'})
 Known Circle Members: ${context.knownMembers.map((m: any) => m.name).join(', ')}
 Known Groups: ${context.groups.map((g: any) => g.name).join(', ')}
 Available Categories: ${context.categories.join(', ')}
+
+${CAREEM_AGENT_PLAYBOOK}
 
 Return ONLY valid JSON matching this schema:
 {

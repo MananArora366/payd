@@ -1,0 +1,30 @@
+spec_version: "2.0"
+component: "careem-agent-playbook"
+framework: "Careem Builders '26 Official LLM System Prompt Playbook"
+guidelines:
+  - rule: 1
+    title: "Always pass coordinates"
+    description: "Scope tools by latitude/longitude. Retrieve saved locations from user_info (Home/Work)."
+  - rule: 2
+    title: "Respect chain dependencies"
+    description: "context_blob from request_ride must be passed verbatim to create_ride within 120s TTL."
+  - rule: 3
+    title: "Never checkout blind"
+    description: "Execute cart_get_basket_price and pass total as total_price to checkout. Confirm order before mutating."
+  - rule: 4
+    title: "Payment defaults auto-resolved"
+    description: "Order of preference: working card -> wallet -> cash."
+  - rule: 5
+    title: "Personalize with get_activities"
+    description: "Query get_activities(past) to favor historical favorites over cold searching."
+  - rule: 6
+    title: "Budget for multi-step journeys"
+    description: "Food and ride journeys span 6+ tool recursion cycles."
+  - rule: 7
+    title: "Error handling"
+    description: "Retry idempotent reads; never blind-retry mutating calls."
+  - rule: 8
+    title: "Stream keepalive"
+    description: "Silently discard SSE : keepalive pulses."
+golden_rule:
+  principle: "Read-only tools are free to call while reasoning. Mutating tools spend user money or modify real-world state - ALWAYS confirm first, never blind-retry after a timeout."

@@ -21,7 +21,52 @@ interface McpInspectorModalProps {
 }
 
 const AVAILABLE_TOOLS = [
-  // ─── Careem Super App MCP Tools (Careem Builders '26) ───────────────────
+  // ─── Careem Official Agent Playbook Tools (builders.careem.com) ─────────
+  {
+    id: 'user_info',
+    name: 'user_info',
+    summary: 'Rule 1: Always pass coordinates. Retrieve saved addresses (Home/Work), Careem Pay wallet balance.',
+    defaultParams: { includeSavedLocations: true },
+  },
+  {
+    id: 'request_ride',
+    name: 'request_ride',
+    summary: 'Rule 2: Request ride options with coordinates. Returns quotes and critical expiring context_blob.',
+    defaultParams: {
+      pickup_latitude: 25.0772,
+      pickup_longitude: 55.1333,
+      dropoff_latitude: 25.2104,
+      dropoff_longitude: 55.2818,
+      destination_name: 'DIFC Gate Village',
+    },
+  },
+  {
+    id: 'create_ride',
+    name: 'create_ride',
+    summary: 'Rule 2 & Golden Rule: Mutating tool to confirm & dispatch Careem ride using verbatim context_blob.',
+    defaultParams: {
+      context_blob: 'eyJmbGlnaHQiOiJDTUZUIiwidXNlcl9pZCI6OTI4MSwiZmFyZV9hZWQiOjY4LjV9',
+      confirmed_by_user: true,
+      split_with_riders: ['Manan Arora', 'Sarah', 'Rahul'],
+    },
+  },
+  {
+    id: 'cart_get_basket_price',
+    name: 'cart_get_basket_price',
+    summary: 'Rule 3: Never checkout blind. Compute total, UAE 5% VAT, and pass total_price verbatim to checkout.',
+    defaultParams: {
+      promo_code: 'CAREEM26',
+      delivery_address: 'Silverene Tower B, Dubai Marina',
+    },
+  },
+  {
+    id: 'get_activities',
+    name: 'get_activities',
+    summary: 'Rule 5: Personalize with past activities & user favorites over cold search.',
+    defaultParams: { type: 'past' },
+  },
+
+  // ─── Careem Super App Extended Actions (Careem Builders '26) ────────────
   {
     id: 'careem_rides_split_fare',
     name: 'careem_rides_split_fare',
@@ -107,7 +152,7 @@ const AVAILABLE_TOOLS = [
 ];
 
 export function McpInspectorModal({ isOpen, onClose }: McpInspectorModalProps) {
-  const [activeTab, setActiveTab] = useState<'playground' | 'config' | 'resources'>('playground');
+  const [activeTab, setActiveTab] = useState<'playground' | 'playbook' | 'config' | 'resources'>('playground');
   const [selectedToolId, setSelectedToolId] = useState(AVAILABLE_TOOLS[0].id);
   const [requestParams, setRequestParams] = useState(
     JSON.stringify(AVAILABLE_TOOLS[0].defaultParams, null, 2)
@@ -234,6 +279,19 @@ export function McpInspectorModal({ isOpen, onClose }: McpInspectorModalProps) {
 
           <button
             type="button"
+            onClick={() => setActiveTab('playbook')}
+            className={`flex-1 py-1.5 rounded-lg transition flex items-center justify-center gap-1.5 ${
+              activeTab === 'playbook'
+                ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-xs font-bold'
+                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Agent Playbook</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab('config')}
             className={`flex-1 py-1.5 rounded-lg transition flex items-center justify-center gap-1.5 ${
               activeTab === 'config'
@@ -242,7 +300,7 @@ export function McpInspectorModal({ isOpen, onClose }: McpInspectorModalProps) {
             }`}
           >
             <Code2 className="w-3.5 h-3.5" />
-            <span>Claude Desktop & Cursor Config</span>
+            <span>Kiro &amp; Claude Config</span>
           </button>
 
           <button
@@ -333,7 +391,76 @@ export function McpInspectorModal({ isOpen, onClose }: McpInspectorModalProps) {
           </div>
         )}
 
-        {/* TAB 2: Config */}
+        {/* TAB 2: Official Careem Agent Playbook */}
+        {activeTab === 'playbook' && (
+          <div className="space-y-3.5">
+            <div className="p-3.5 bg-gradient-to-r from-emerald-500/10 via-cyan-500/10 to-transparent border border-emerald-500/20 rounded-2xl">
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles className="w-4 h-4 text-emerald-400" />
+                <h4 className="font-heading text-xs text-white">OFFICIAL CAREEM AGENT PLAYBOOK (BUILDERS &apos;26)</h4>
+              </div>
+              <p className="text-[11px] text-zinc-300 font-body">
+                System prompt contracts guiding LLM agents (AWS Bedrock Claude 3.5 Sonnet) when orchestrating Careem Super App &amp; Payd tools.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+              <div className="p-3 rounded-2xl bg-slate-950 border border-white/8 space-y-1">
+                <span className="text-xs font-bold text-emerald-400 font-mono">1. Coordinate Scope</span>
+                <p className="text-[11px] text-zinc-400 font-body">
+                  Always pass latitude/longitude coordinates. Retrieve saved addresses (&ldquo;Home&rdquo;/&ldquo;Work&rdquo;) from <code className="text-cyan-300 font-mono">user_info</code>.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-slate-950 border border-white/8 space-y-1">
+                <span className="text-xs font-bold text-emerald-400 font-mono">2. Chain Dependencies</span>
+                <p className="text-[11px] text-zinc-400 font-body">
+                  <code className="text-cyan-300 font-mono">context_blob</code> from <code className="text-cyan-300 font-mono">request_ride</code> must be passed verbatim to <code className="text-cyan-300 font-mono">create_ride</code> before its 120s expiry.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-slate-950 border border-white/8 space-y-1">
+                <span className="text-xs font-bold text-emerald-400 font-mono">3. Never Checkout Blind</span>
+                <p className="text-[11px] text-zinc-400 font-body">
+                  Call <code className="text-cyan-300 font-mono">cart_get_basket_price</code> first and pass total as <code className="text-cyan-300 font-mono">total_price</code> to checkout. Confirm order, address, and VAT with user.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-slate-950 border border-white/8 space-y-1">
+                <span className="text-xs font-bold text-emerald-400 font-mono">4. Auto-Resolved Payments</span>
+                <p className="text-[11px] text-zinc-400 font-body">
+                  Payment defaults auto-resolve (working card &rarr; wallet &rarr; cash). Only pass <code className="text-cyan-300 font-mono">payment_type</code> if user explicitly requests.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-slate-950 border border-white/8 space-y-1">
+                <span className="text-xs font-bold text-emerald-400 font-mono">5. Personalization</span>
+                <p className="text-[11px] text-zinc-400 font-body">
+                  Personalize with <code className="text-cyan-300 font-mono">get_activities(past)</code> &mdash; prefer user&apos;s known favourites (e.g. Al Safadi DIFC) over cold search.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-slate-950 border border-white/8 space-y-1">
+                <span className="text-xs font-bold text-emerald-400 font-mono">6. Multi-Step Journeys</span>
+                <p className="text-[11px] text-zinc-400 font-body">
+                  A full food or grocery order spans ~6+ sequential tool calls; agent tool-loop budgets are configured for high-recursion depth.
+                </p>
+              </div>
+            </div>
+
+            {/* The Golden Rule Alert */}
+            <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 space-y-1 font-body">
+              <span className="text-xs font-bold flex items-center gap-1.5 uppercase tracking-wide">
+                <ShieldCheck className="w-4 h-4 text-amber-400" /> The Golden Rule
+              </span>
+              <p className="text-[11px] text-amber-200/90 leading-relaxed">
+                Read-only tools are free to call while reasoning. <strong>Mutating tools spend the user&apos;s money or change real-world state</strong> &mdash; always confirm first, and never retry them blindly after a timeout.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: Config */}
         {activeTab === 'config' && (
           <div className="space-y-3">
             <p className="text-xs text-slate-500 dark:text-slate-400">

@@ -9,6 +9,11 @@ import {
   handleTriggerRecurringSplit,
 } from './paydTools';
 import {
+  handleUserInfo,
+  handleRequestRide,
+  handleCreateRide,
+  handleCartGetBasketPrice,
+  handleGetActivities,
   handleCareemRideSplit,
   handleCareemFoodImport,
   handleCareemQuikBasket,
@@ -21,7 +26,60 @@ export function createPaydMcpServer(): McpServer {
     version: '1.2.0',
   });
 
-  // ─── Careem Super App MCP Tools (Careem Builders '26) ───────────────────
+  // ─── Careem Official Agent Playbook Tools (builders.careem.com) ─────────
+  server.tool(
+    'user_info',
+    'Playbook Rule 1: Retrieve user coordinates, saved addresses (home/work), Careem Pay wallet balance, and preferences.',
+    {
+      includeSavedLocations: z.boolean().optional().describe('Include saved home/work lat-long coordinates'),
+    },
+    async (params) => handleUserInfo(params)
+  );
+
+  server.tool(
+    'request_ride',
+    'Playbook Rule 2: Request ride options with coordinates. Returns quotes and critical expiring context_blob.',
+    {
+      pickup_latitude: z.number().optional().describe('Pickup latitude (default: user home)'),
+      pickup_longitude: z.number().optional().describe('Pickup longitude'),
+      dropoff_latitude: z.number().optional().describe('Dropoff latitude (default: user work)'),
+      dropoff_longitude: z.number().optional().describe('Dropoff longitude'),
+      destination_name: z.string().optional().describe('Destination landmark name'),
+    },
+    async (params) => handleRequestRide(params)
+  );
+
+  server.tool(
+    'create_ride',
+    'Playbook Rule 2 & Golden Rule: Mutating tool to confirm and dispatch Careem ride using verbatim context_blob.',
+    {
+      context_blob: z.string().describe('Base64 context_blob returned from request_ride'),
+      confirmed_by_user: z.boolean().describe('Golden Rule: User must confirm before mutating money/state'),
+      split_with_riders: z.array(z.string()).optional().describe('Friend names to automatically split fare with in Payd'),
+    },
+    async (params) => handleCreateRide(params)
+  );
+
+  server.tool(
+    'cart_get_basket_price',
+    'Playbook Rule 3: Never checkout blind. Calculate itemized cart total, UAE 5% VAT, and promo before checkout.',
+    {
+      promo_code: z.string().optional().describe('Promo code to apply (e.g. CAREEM26)'),
+      delivery_address: z.string().optional().describe('Delivery location address'),
+    },
+    async (params) => handleCartGetBasketPrice({ items: [], ...params })
+  );
+
+  server.tool(
+    'get_activities',
+    'Playbook Rule 5: Personalize with past activities and user favorites over cold search.',
+    {
+      type: z.enum(['past', 'upcoming']).describe('Filter activity history'),
+    },
+    async (params) => handleGetActivities(params)
+  );
+
+  // ─── Careem Super App Extended Actions ──────────────────────────────────
   server.tool(
     'careem_rides_split_fare',
     'Fetch Careem Ride fare details (pickup, dropoff, surge, VAT) and calculate zero-loss passenger splits into Payd.',
