@@ -78,7 +78,10 @@ struct PaydAPI: Sendable {
         guard (200..<300).contains(status) else {
             throw .http(status: status, message: Self.errorField(data), code: nil)
         }
-        guard let json = JSONValue.parse(data) else { throw .decoding("Careem events body is not JSON") }
+        // useCareemEvents.ts:66 — a body without an `events` array is ignored, keeping the current state.
+        guard let json = JSONValue.parse(data), json["events"]?.arrayValue != nil else {
+            throw .decoding("Careem events body has no events array")
+        }
         return CareemEvents.decodePending(json)
     }
 
