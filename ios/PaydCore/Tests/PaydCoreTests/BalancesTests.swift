@@ -56,9 +56,9 @@ struct BalancesTests {
 
     @Test func softDeletedTransactionsIgnored() {
         let balances = Balances.net(transactions: [dinner(deleted: true)], splits: dinnerSplits, settlements: [])
-        #expect(balances[prakarsh, default: 0] == 0)
-        #expect(balances[rahul, default: 0] == 0)
-        #expect(balances[sarah, default: 0] == 0)
+        #expect(balances[prakarsh] ?? 0 == 0)
+        #expect(balances[rahul] ?? 0 == 0)
+        #expect(balances[sarah] ?? 0 == 0)
     }
 
     @Test func refundReversesExpense() {
@@ -70,15 +70,16 @@ struct BalancesTests {
 
     @Test func userFilterSeedsZeroBalances() {
         let balances = Balances.net(transactions: [], splits: [], settlements: [], seeding: ["x"])
-        #expect(balances == ["x": 0])
+        let expected: Shares = ["x": 0]
+        #expect(balances == expected)
     }
 
     @Test func validateSettlementAmount() {
-        #expect(Balances.isValidSettlement(3333, outstandingDebt: 3333))
-        #expect(Balances.isValidSettlement(2000, outstandingDebt: 3333))
-        #expect(!(Balances.isValidSettlement(5000, outstandingDebt: 3333)))
-        #expect(Balances.isValidSettlement(5000, outstandingDebt: 3333, allowOverpayment: true))
-        #expect(!(Balances.isValidSettlement(0, outstandingDebt: 3333, allowOverpayment: true)))
+        #expect(Balances.isValidSettlementAmount(3333, debtMinor: 3333))
+        #expect(Balances.isValidSettlementAmount(2000, debtMinor: 3333))
+        #expect(!(Balances.isValidSettlementAmount(5000, debtMinor: 3333)))
+        #expect(Balances.isValidSettlementAmount(5000, debtMinor: 3333, allowOverpayment: true))
+        #expect(!(Balances.isValidSettlementAmount(0, debtMinor: 3333, allowOverpayment: true)))
     }
 
     @Test func bilateralDebtsDeductSettlements() {
@@ -108,21 +109,23 @@ struct BalancesTests {
         #expect(spend.netSavingsMinor == 1_500_000 - 5534)
     }
 
-    @Test func simplifiesThreePartyDebts() {
-        let result = DebtSimplifier.simplify(["alice": 100, "bob": -40, "charlie": -60])
+    @Test func simplifiesThreePartyDebts() throws {
+        let balances: Shares = ["alice": 100, "bob": -40, "charlie": -60]
+        let result = try DebtSimplifier.simplify(balances)
         #expect(result.count == 2)
         #expect(result.contains(SimplifiedDebt(fromUserId: "charlie", toUserId: "alice", amountMinor: 60)))
         #expect(result.contains(SimplifiedDebt(fromUserId: "bob", toUserId: "alice", amountMinor: 40)))
     }
 
-    @Test func simplifyEmptyWhenSettled() {
-        #expect(DebtSimplifier.simplify(["user-1": 0, "user-2": 0]) == [])
+    @Test func simplifyEmptyWhenSettled() throws {
+        let balances: Shares = ["user-1": 0, "user-2": 0]
+        #expect(try DebtSimplifier.simplify(balances) == [])
     }
 
-    @Test func simplifyIsDeterministicOnTies() {
-        let balances = ["a": 50, "b": 50, "c": -50, "d": -50]
-        let first = DebtSimplifier.simplify(balances)
-        for _ in 0..<20 { #expect(DebtSimplifier.simplify(balances) == first) }
+    @Test func simplifyIsDeterministicOnTies() throws {
+        let balances: Shares = ["a": 50, "b": 50, "c": -50, "d": -50]
+        let first = try DebtSimplifier.simplify(balances)
+        for _ in 0..<20 { #expect(try DebtSimplifier.simplify(balances) == first) }
         #expect(first.map(\.amountMinor).reduce(0, +) == 100)
     }
 }

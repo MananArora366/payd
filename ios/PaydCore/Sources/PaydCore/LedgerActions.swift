@@ -1,8 +1,31 @@
 import Foundation
 
-// Port of the mutating actions in web/src/lib/store/PaydContext.tsx as pure functions:
-// each takes a LedgerState and returns a new one. The input state is never modified.
+// Port of every action in web/src/lib/store/PaydContext.tsx as a pure function: each takes a
+// LedgerState (plus an injected clock and randomness) and returns a new one. Inputs are never modified.
 
+/// Injected clock + randomness so actions stay pure and testable.
+public struct ActionContext: Sendable {
+    public let now: Date
+    /// 5 lowercase base-36 characters (`Math.random().toString(36).substring(2, 7)`).
+    public let randomSuffix: String
+
+    public init(now: Date, randomSuffix: String) {
+        self.now = now
+        self.randomSuffix = randomSuffix
+    }
+
+    /// The real clock (whole milliseconds, like `Date.now()`) and a random suffix.
+    public static func live() -> ActionContext {
+        let alphabet = Array("0123456789abcdefghijklmnopqrstuvwxyz")
+        let suffix = String((0..<5).map { _ in alphabet[Int.random(in: 0..<alphabet.count)] })
+        return ActionContext(now: Date().truncatedToMilliseconds, randomSuffix: suffix)
+    }
+
+    /// `Date.now()`.
+    public var epochMillis: Int { PaydJSON.epochMillis(now) }
+}
+
+/// `AddTransactionInput`.
 public struct NewTransaction: Sendable, Hashable {
     public let type: TransactionType
     public let title: String
@@ -33,6 +56,7 @@ public struct NewTransaction: Sendable, Hashable {
     }
 }
 
+/// `RecordSettlementInput`.
 public struct NewSettlement: Sendable, Hashable {
     public let groupId: String?
     public let senderId: String
@@ -54,178 +78,252 @@ public struct NewSettlement: Sendable, Hashable {
         self.reference = reference
         self.allowOverpayment = allowOverpayment
     }
+
+    var validationInput: SettlementValidationInput {
+        SettlementValidationInput(senderId: senderId, recipientId: recipientId, amountMinor: amountMinor,
+                                  groupId: groupId, allowOverpayment: allowOverpayment)
+    }
+}
+
+/// `Omit<RecurringBill, 'id' | 'created_at'>`.
+public struct NewRecurringBill: Sendable, Hashable {
+    public let title: String
+    public let amountMinor: Int
+    public let currency: String
+    public let categoryId: String?
+    public let payerId: String
+    public let groupId: String?
+    public let frequency: RecurringFrequency
+    public let dueDay: Int
+    public let notes: String?
+    public let autoPost: Bool
+    public let lastPostedAt: Date?
+    public let splits: [ShareAllocation]
+
+    public init(title: String, amountMinor: Int, currency: String = Currency.ledgerCode, categoryId: String?,
+                payerId: String, groupId: String?, frequency: RecurringFrequency, dueDay: Int, notes: String?,
+                autoPost: Bool = false, lastPostedAt: Date? = nil, splits: [ShareAllocation]) {
+        self.title = title
+        self.amountMinor = amountMinor
+        self.currency = currency
+        self.categoryId = categoryId
+        self.payerId = payerId
+        self.groupId = groupId
+        self.frequency = frequency
+        self.dueDay = dueDay
+        self.notes = notes
+        self.autoPost = autoPost
+        self.lastPostedAt = lastPostedAt
+        self.splits = splits
+    }
+}
+
+/// `Partial<User>` as used by the profile screen.
+public struct UserProfileUpdate: Sendable, Hashable {
+    public let name: String?
+    public let defaultCurrency: String?
+
+    public init(name: String? = nil, defaultCurrency: String? = nil) {
+        self.name = name
+        self.defaultCurrency = defaultCurrency
+    }
+}
+
+/// `JoinGroupResult`.
+public struct JoinGroupResult: Sendable, Equatable {
+    public let success: Bool
+    public let group: Group?
+    public let error: String?
+    /// True when the user was already in the group (success is still true).
+    public let alreadyMember: Bool
+    /// Friendly status text, e.g. "You're already a member of Dubai Flatmates."
+    public let message: String?
+
+    public init(success: Bool, group: Group? = nil, error: String? = nil, alreadyMember: Bool = false,
+                message: String? = nil) {
+        self.success = success
+        self.group = group
+        self.error = error
+        self.alreadyMember = alreadyMember
+        self.message = message
+    }
 }
 
 public enum LedgerActions {
-    /// Demo invite tokens accepted in addition to raw group IDs (same as the web app).
-    static let demoInviteTokens = ["dubai-marina-2026": SeedIDs.flatmates, "hatta-camp-2026": SeedIDs.hattaTrip]
+    private static func json(_ value: some Encodable) -> JSONValue {
+        (try? JSONValue(encoding: value)) ?? .null
+    }
 
+    private static func audit(_ action: AuditAction, _ recordType: AuditRecordType, recordId: String,
+                              before: JSONValue?, after: JSONValue?, state: LedgerState,
+                              context: ActionContext) -> AuditLog {
+        AuditLog(id: "al-\(context.epochMillis)", actorId: LedgerQueries.currentUser(in: state).id, action: action,
+                 recordType: recordType, recordId: recordId, before: before, after: after, createdAt: context.now)
+    }
+
+    /// PaydContext.tsx:294-347. The only check is that the splits sum to the amount.
     public static func addTransaction(_ input: NewTransaction, to state: LedgerState,
-                                      now: Date = Date()) throws(LedgerError) -> (LedgerState, Transaction) {
-        let title = input.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !title.isEmpty else { throw .missingTitle }
-        guard input.amountMinor > 0 else { throw .negativeAmount }
-        guard input.splits.allSatisfy({ $0.shareMinor >= 0 }) else { throw .negativeAmount }
-        let splitSum = input.splits.map(\.shareMinor).reduce(0, +)
-        guard splitSum == input.amountMinor else { throw .sumMismatch(expected: input.amountMinor, actual: splitSum) }
-
-        let txn = Transaction(
-            id: newId("t"), type: input.type, title: title, amountMinor: input.amountMinor,
-            currency: input.currency ?? currentUser(in: state)?.defaultCurrency ?? Currency.defaultCode,
-            categoryId: input.categoryId, payerId: input.payerId, groupId: input.groupId,
-            paymentMethod: input.paymentMethod ?? "Card", notes: input.notes,
-            occurredAt: input.occurredAt ?? now, createdBy: state.currentUserId, createdAt: now
-        )
-        let splits = input.splits.map {
-            TransactionSplit(id: newId("sp"), transactionId: txn.id, userId: $0.userId, shareMinor: $0.shareMinor, createdAt: now)
+                                      context: ActionContext) throws(LedgerInvariantError) -> (LedgerState, Transaction) {
+        let splitSum = input.splits.reduce(0) { $0 + $1.shareMinor }
+        if splitSum != input.amountMinor {
+            throw LedgerInvariantError("Split sum (\(splitSum)) does not equal transaction amount (\(input.amountMinor))")
         }
-        var next = state
-        next.transactions = [txn] + state.transactions
-        next.splits = state.splits + splits
+        let txnId = "t-\(context.epochMillis)-\(context.randomSuffix)"
+        let txn = Transaction(
+            id: txnId, type: input.type, title: input.title, amountMinor: input.amountMinor, currency: "AED",
+            categoryId: input.categoryId.nonEmpty, payerId: input.payerId, groupId: input.groupId.nonEmpty,
+            paymentMethod: input.paymentMethod.nonEmpty ?? "Card", notes: input.notes.nonEmpty,
+            occurredAt: input.occurredAt ?? context.now, createdBy: LedgerQueries.currentUser(in: state).id,
+            createdAt: context.now)
+        let newSplits = input.splits.enumerated().map { index, split in
+            TransactionSplit(id: "sp-\(txnId)-\(index)", transactionId: txnId, userId: split.userId,
+                             shareMinor: split.shareMinor, createdAt: context.now)
+        }
+        let entry = audit(.insert, .transaction, recordId: txnId, before: nil,
+                          after: .object(["transaction": json(txn), "splits": json(newSplits)]),
+                          state: state, context: context)
+        let next = state.with(transactions: [txn] + state.transactions, splits: state.splits + newSplits,
+                              auditLogs: [entry] + state.auditLogs)
         return (next, txn)
     }
 
-    public static func softDelete(transactionId: String, in state: LedgerState,
-                                  now: Date = Date()) throws(LedgerError) -> LedgerState {
-        try replacingTransaction(transactionId, in: state) { $0.withDeletedAt(now) }
+    /// PaydContext.tsx:349-370. No-op when missing or already deleted.
+    public static func softDeleteTransaction(_ id: String, in state: LedgerState, context: ActionContext) -> LedgerState {
+        guard let existing = state.transactions.first(where: { $0.id == id }), !existing.isDeleted else { return state }
+        let updated = existing.withDeletedAt(context.now)
+        let entry = audit(.softDelete, .transaction, recordId: id, before: json(existing), after: json(updated),
+                          state: state, context: context)
+        return state.with(transactions: state.transactions.map { $0.id == id ? updated : $0 },
+                          auditLogs: [entry] + state.auditLogs)
     }
 
-    public static func restore(transactionId: String, in state: LedgerState) throws(LedgerError) -> LedgerState {
-        try replacingTransaction(transactionId, in: state) { $0.withDeletedAt(nil) }
+    /// PaydContext.tsx:372-393. No-op when missing or not deleted; `after` has no `deleted_at` key.
+    public static func restoreTransaction(_ id: String, in state: LedgerState, context: ActionContext) -> LedgerState {
+        guard let existing = state.transactions.first(where: { $0.id == id }), existing.isDeleted else { return state }
+        let updated = existing.withDeletedAt(nil)
+        let entry = audit(.restore, .transaction, recordId: id, before: json(existing), after: json(updated),
+                          state: state, context: context)
+        return state.with(transactions: state.transactions.map { $0.id == id ? updated : $0 },
+                          auditLogs: [entry] + state.auditLogs)
     }
 
+    /// PaydContext.tsx:395-435. Validates against the unified debt model first.
     public static func recordSettlement(_ input: NewSettlement, in state: LedgerState,
-                                        now: Date = Date()) throws(LedgerError) -> (LedgerState, Settlement) {
-        guard input.senderId != input.recipientId else { throw .selfSettlement }
-        let debts = Balances.bilateral(transactions: state.transactions, splits: state.splits, settlements: state.settlements)
-        let currentDebt = debts[input.senderId]?[input.recipientId] ?? 0
-        guard input.amountMinor > 0 else { throw .negativeAmount }
-        guard Balances.isValidSettlement(input.amountMinor, outstandingDebt: currentDebt,
-                                         allowOverpayment: input.allowOverpayment) else {
-            throw .settlementExceedsDebt(amount: input.amountMinor, debt: currentDebt)
-        }
-
+                                        context: ActionContext) throws(LedgerInvariantError) -> (LedgerState, Settlement) {
+        let grouped = Balances.groupedBilateral(transactions: state.transactions, splits: state.splits,
+                                                settlements: state.settlements)
+        let check = LedgerQueries.validateSettlement(input.validationInput, in: state, grouped: grouped,
+                                                     bilateral: Balances.bilateral(fromGrouped: grouped))
+        if let reason = check.reason { throw LedgerInvariantError(reason) }
+        let id = "s-\(context.epochMillis)-\(context.randomSuffix)"
         let settlement = Settlement(
-            id: newId("s"), groupId: input.groupId, senderId: input.senderId, recipientId: input.recipientId,
-            amountMinor: input.amountMinor, currency: input.currency ?? Currency.defaultCode, method: input.method,
-            reference: input.reference, status: .settled, settledAt: now, createdAt: now
-        )
-        var next = state
-        next.settlements = [settlement] + state.settlements
-        return (next, settlement)
+            id: id, groupId: input.groupId.nonEmpty, senderId: input.senderId, recipientId: input.recipientId,
+            amountMinor: input.amountMinor, currency: "AED", method: input.method.nonEmpty ?? "Cash",
+            reference: input.reference.nonEmpty, status: .settled, settledAt: context.now, createdAt: context.now)
+        let entry = audit(.insert, .settlement, recordId: id, before: nil, after: json(settlement),
+                          state: state, context: context)
+        return (state.with(settlements: [settlement] + state.settlements, auditLogs: [entry] + state.auditLogs), settlement)
     }
 
-    public static func createGroup(name: String, description: String?, memberIds: [String],
-                                   currency: String = Currency.defaultCode, in state: LedgerState,
-                                   now: Date = Date()) throws(LedgerError) -> (LedgerState, Group) {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { throw .missingTitle }
-        let group = Group(id: newId("g"), name: trimmed, description: description, currency: currency,
-                          creatorId: state.currentUserId, createdAt: now)
-        let others = Set(memberIds).subtracting([state.currentUserId]).sorted()
-        let members = [GroupMember(groupId: group.id, userId: state.currentUserId, role: .admin, joinedAt: now)]
-            + others.map { GroupMember(groupId: group.id, userId: $0, role: .member, joinedAt: now) }
-        var next = state
-        next.groups = state.groups + [group]
-        next.groupMembers = state.groupMembers + members
-        return (next, group)
-    }
-
-    public static func joinGroup(token: String, in state: LedgerState,
-                                 now: Date = Date()) throws(LedgerError) -> (LedgerState, Group) {
-        let groupId = demoInviteTokens[token] ?? token
-        guard let group = state.groups.first(where: { $0.id == groupId }) else { throw .invalidInvite }
-        let alreadyMember = state.groupMembers.contains { $0.groupId == group.id && $0.userId == state.currentUserId }
-        guard !alreadyMember else { return (state, group) }
-        var next = state
-        next.groupMembers = state.groupMembers + [GroupMember(groupId: group.id, userId: state.currentUserId, joinedAt: now)]
-        return (next, group)
-    }
-
-    public static func switchUser(to userId: String, in state: LedgerState) throws(LedgerError) -> LedgerState {
-        guard state.users.contains(where: { $0.id == userId }) else { throw .notFound(userId) }
-        var next = state
-        next.currentUserId = userId
-        return next
-    }
-
-    /// Inserts or replaces the current user's monthly budget for `categoryId` (nil = overall).
-    public static func updateBudget(limitMinor: Int, categoryId: String?, in state: LedgerState) -> LedgerState {
-        let matches = { (budget: Budget) in budget.userId == state.currentUserId && budget.categoryId == categoryId }
-        var next = state
-        if let existing = state.budgets.first(where: matches) {
-            let replacement = Budget(id: existing.id, userId: existing.userId, categoryId: categoryId,
-                                     limitMinor: limitMinor, period: existing.period)
-            next.budgets = state.budgets.map { matches($0) ? replacement : $0 }
-        } else {
-            next.budgets = state.budgets + [Budget(id: newId("b"), userId: state.currentUserId,
-                                                   categoryId: categoryId, limitMinor: limitMinor)]
+    /// PaydContext.tsx:437-463. AED-only; the current user is the admin. No audit entry.
+    public static func createGroup(name: String, description: String, memberIds: [String], currency: String = "AED",
+                                   in state: LedgerState, context: ActionContext) -> (LedgerState, Group) {
+        let creator = LedgerQueries.currentUser(in: state).id
+        let group = Group(id: "g-\(context.epochMillis)", name: name, description: description, currency: "AED",
+                          creatorId: creator, createdAt: context.now)
+        let members = ([creator] + memberIds).uniqued().map {
+            GroupMember(groupId: group.id, userId: $0, role: $0 == creator ? .admin : .member, joinedAt: context.now)
         }
-        return next
+        return (state.with(groups: [group] + state.groups, groupMembers: state.groupMembers + members), group)
     }
 
-    public static func addRecurringBill(_ bill: RecurringBill, to state: LedgerState) throws(LedgerError) -> LedgerState {
-        guard !bill.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw .missingTitle }
-        _ = try Splits.verified(Dictionary(bill.splits.map { ($0.userId, $0.shareMinor) }, uniquingKeysWith: +),
-                                total: bill.amountMinor)
-        var next = state
-        next.recurringBills = [bill] + state.recurringBills
-        return next
+    /// PaydContext.tsx:465-499: a full invite URL, `/join/<token>`, a group id or a demo token.
+    public static func joinGroupByToken(_ input: String, in state: LedgerState,
+                                        context: ActionContext) -> (LedgerState, JoinGroupResult) {
+        let token = GroupLogic.extractJoinToken(input)
+        if token.isEmpty { return (state, JoinGroupResult(success: false, error: "Paste an invite link or code first.")) }
+        let lower = token.lowercased()
+        let target = state.groups.first { $0.id == token }
+            ?? (lower == "dubai-marina-2026" ? state.groups.first { $0.name.contains("Flatmates") } : nil)
+            ?? (lower == "hatta-camp-2026" ? state.groups.first { $0.name.contains("Hatta") } : nil)
+        guard let target else {
+            return (state, JoinGroupResult(success: false, error: "That invite link is invalid or has expired."))
+        }
+        let current = LedgerQueries.currentUser(in: state).id
+        if state.groupMembers.contains(where: { $0.groupId == target.id && $0.userId == current }) {
+            return (state, JoinGroupResult(success: true, group: target, alreadyMember: true,
+                                           message: "You're already a member of \(target.name)."))
+        }
+        let member = GroupMember(groupId: target.id, userId: current, role: .member, joinedAt: context.now)
+        return (state.with(groupMembers: state.groupMembers + [member]),
+                JoinGroupResult(success: true, group: target, alreadyMember: false, message: "Joined \(target.name)!"))
     }
 
-    public static func deleteRecurringBill(id: String, in state: LedgerState) -> LedgerState {
-        var next = state
-        next.recurringBills = state.recurringBills.filter { $0.id != id }
-        return next
+    /// PaydContext.tsx:501-525: replaces the limit of the first matching budget, else appends a monthly one.
+    public static func updateBudget(limitMinor: Int, categoryId: String?, in state: LedgerState,
+                                    context: ActionContext) -> LedgerState {
+        let current = LedgerQueries.currentUser(in: state).id
+        let category = categoryId.nonEmpty
+        if let index = state.budgets.firstIndex(where: { $0.userId == current && $0.categoryId == category }) {
+            let budgets = state.budgets.enumerated().map { $0.offset == index ? $0.element.withLimitMinor(limitMinor) : $0.element }
+            return state.with(budgets: budgets)
+        }
+        let budget = Budget(id: "b-\(context.epochMillis)", userId: current, categoryId: category,
+                            limitMinor: limitMinor, period: .monthly, createdAt: context.now)
+        return state.with(budgets: state.budgets + [budget])
     }
 
-    /// Posts one cycle of a recurring bill as a group expense and stamps `lastPostedAt`.
-    public static func triggerRecurringBill(id: String, in state: LedgerState,
-                                            now: Date = Date()) throws(LedgerError) -> (LedgerState, Transaction) {
-        guard let bill = state.recurringBills.first(where: { $0.id == id }) else { throw .notFound(id) }
-        let period: String = switch bill.frequency {
-        case .weekly: "Weekly"
+    /// PaydContext.tsx:527-532: applies the non-nil fields to the current user.
+    public static func updateUserProfile(_ update: UserProfileUpdate, in state: LedgerState) -> LedgerState {
+        let current = LedgerQueries.currentUser(in: state)
+        let updated = current.with(name: update.name, defaultCurrency: update.defaultCurrency)
+        return state.with(users: state.users.map { $0.id == current.id ? updated : $0 })
+    }
+
+    /// `switchUser`: only when the user exists.
+    public static func switchUser(to userId: String, in state: LedgerState) -> LedgerState {
+        guard state.users.contains(where: { $0.id == userId }) else { return state }
+        return state.with(currentUserId: userId)
+    }
+
+    public static func resetToDemoData(context: ActionContext) -> LedgerState {
+        SeedData.make(now: context.now)
+    }
+
+    /// PaydContext.tsx:535-543.
+    public static func addRecurringBill(_ bill: NewRecurringBill, to state: LedgerState,
+                                        context: ActionContext) -> (LedgerState, RecurringBill) {
+        let created = RecurringBill(
+            id: "rec-\(context.epochMillis)", title: bill.title, amountMinor: bill.amountMinor, currency: bill.currency,
+            categoryId: bill.categoryId, payerId: bill.payerId, groupId: bill.groupId, frequency: bill.frequency,
+            dueDay: bill.dueDay, notes: bill.notes, autoPost: bill.autoPost, lastPostedAt: bill.lastPostedAt,
+            splits: bill.splits, createdAt: context.now)
+        return (state.with(recurringBills: [created] + state.recurringBills), created)
+    }
+
+    public static func deleteRecurringBill(_ id: String, in state: LedgerState) -> LedgerState {
+        state.with(recurringBills: state.recurringBills.filter { $0.id != id })
+    }
+
+    /// PaydContext.tsx:549-575: posts one cycle through `addTransaction`, then stamps `last_posted_at`.
+    public static func triggerRecurringBillSplit(_ id: String, in state: LedgerState,
+                                                 context: ActionContext) throws(LedgerInvariantError) -> (LedgerState, Transaction) {
+        guard let bill = state.recurringBills.first(where: { $0.id == id }) else {
+            throw LedgerInvariantError("Recurring bill template not found")
+        }
+        let period = switch bill.frequency {
         case .monthly: "Monthly"
+        case .weekly: "Weekly"
         case .yearly: "Annual"
         }
         let input = NewTransaction(
             type: .expense, title: "\(bill.title) (\(period) Split)", amountMinor: bill.amountMinor,
             currency: bill.currency, categoryId: bill.categoryId, payerId: bill.payerId, groupId: bill.groupId,
-            paymentMethod: "Auto-Debit / Card", notes: bill.notes ?? "Recurring bill posted automatically",
-            occurredAt: now, splits: bill.splits
-        )
-        var (next, txn) = try addTransaction(input, to: state, now: now)
-        next.recurringBills = state.recurringBills.map { $0.id == id ? $0.withLastPostedAt(now) : $0 }
-        return (next, txn)
-    }
-
-    public static func resetToDemo(now: Date = Date()) -> LedgerState {
-        SeedData.make(now: now)
-    }
-
-    // MARK: - Helpers
-
-    static func currentUser(in state: LedgerState) -> User? {
-        state.users.first { $0.id == state.currentUserId }
-    }
-
-    private static func replacingTransaction(_ id: String, in state: LedgerState,
-                                             transform: (Transaction) -> Transaction) throws(LedgerError) -> LedgerState {
-        guard state.transactions.contains(where: { $0.id == id }) else { throw .notFound(id) }
-        var next = state
-        next.transactions = state.transactions.map { $0.id == id ? transform($0) : $0 }
-        return next
-    }
-
-    private static func newId(_ prefix: String) -> String {
-        "\(prefix)-\(UUID().uuidString.lowercased())"
-    }
-}
-
-extension RecurringBill {
-    func withLastPostedAt(_ date: Date) -> RecurringBill {
-        RecurringBill(id: id, title: title, amountMinor: amountMinor, currency: currency, categoryId: categoryId,
-                      payerId: payerId, groupId: groupId, frequency: frequency, dueDay: dueDay, notes: notes,
-                      autoPost: autoPost, lastPostedAt: date, splits: splits, createdAt: createdAt)
+            paymentMethod: "Auto-Debit / Card",
+            notes: bill.notes.nonEmpty ?? "Recurring subscription automatically triggered on \(PaydFormat.aeDate(context.now))",
+            splits: bill.splits)
+        let (posted, txn) = try addTransaction(input, to: state, context: context)
+        let bills = posted.recurringBills.map { $0.id == id ? $0.withLastPostedAt(context.now) : $0 }
+        return (posted.with(recurringBills: bills), txn)
     }
 }

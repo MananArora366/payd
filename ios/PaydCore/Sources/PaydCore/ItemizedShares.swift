@@ -1,46 +1,54 @@
 import Foundation
 
-// Port of calculateItemizedShares in web/src/lib/ai/receipt-scan.ts (Tap-to-Claim).
-// Each line item is split among the people who claimed it; the subtotals are then scaled
-// to the receipt total so VAT and rounding are shared proportionally with zero loss.
-
+/// Port of `calculateItemizedShares` (web/src/lib/ai/receipt-scan.ts:123-196, Tap-to-Claim).
+/// Each item is split among its claimants (remainder fils to the first claimants in the assignment's
+/// own order), the subtotals are scaled to the receipt total by floor, and leftover fils go to the
+/// participants with the largest subtotals (ties keep participant order).
 public enum ItemizedShares {
-    /// - Parameter assignments: line-item index → user IDs who claimed it. Unclaimed items are shared by everyone.
-    public static func calculate(totalMinor: Int, lineItems: [ReceiptLineItem], assignments: [Int: [String]],
-                                 participants: [String]) throws(LedgerError) -> Shares {
-        guard !participants.isEmpty else { throw .noParticipants }
+    /// - Parameter assignments: item index → user IDs; an empty/missing entry means "shared by everyone".
+    public static func calculate(totalMinor: Int, lineItems: [ReceiptItem], assignments: [Int: [String]],
+                                 participantIds: [String]) throws(LedgerInvariantError) -> Shares {
+        if participantIds.isEmpty { throw LedgerInvariantError("Cannot split receipt without participants") }
         let hasAssignments = assignments.values.contains { !$0.isEmpty }
-        guard hasAssignments, !lineItems.isEmpty else {
-            return try Splits.equal(totalMinor, among: participants)
-        }
+        if !hasAssignments || lineItems.isEmpty { return try Splits.equal(totalMinor, among: participantIds) }
 
-        let subtotals = claimedSubtotals(lineItems: lineItems, assignments: assignments, participants: participants)
-        let itemsTotal = lineItems.map(\.priceMinor).reduce(0, +)
-        guard itemsTotal > 0 else { return try Splits.equal(totalMinor, among: participants) }
-
-        let scaled = Dictionary(uniqueKeysWithValues: participants.map { id in
-            (id, subtotals[id, default: 0] * totalMinor / itemsTotal)
-        })
-        // Largest claimers absorb leftover minor units first (ties broken by ID for determinism).
-        let byClaimSize = participants.sorted { lhs, rhs in
-            let (left, right) = (subtotals[lhs, default: 0], subtotals[rhs, default: 0])
-            return left != right ? left > right : lhs < rhs
-        }
-        return try Splits.verified(Splits.correctingDrift(scaled, ids: byClaimSize, total: totalMinor), total: totalMinor)
-    }
-
-    private static func claimedSubtotals(lineItems: [ReceiptLineItem], assignments: [Int: [String]],
-                                         participants: [String]) -> Shares {
-        var subtotals = Dictionary(uniqueKeysWithValues: participants.map { ($0, 0) })
+        var subtotals = Shares()
+        for id in participantIds { subtotals.set(id, 0) }
+        var rawItemsTotal = 0
         for (index, item) in lineItems.enumerated() {
-            let claimed = assignments[index] ?? []
-            let owners = claimed.isEmpty ? participants : claimed
-            let base = item.priceMinor / owners.count
-            let remainder = item.priceMinor - base * owners.count
-            for (position, owner) in owners.enumerated() {
-                subtotals[owner, default: 0] += base + (position < remainder ? 1 : 0)
+            let assigned = assignments[index] ?? []
+            let targets = assigned.isEmpty ? participantIds : assigned
+            rawItemsTotal += item.priceMinor
+            let base = item.priceMinor / targets.count
+            var remainder = item.priceMinor - base * targets.count
+            for uid in targets {
+                var share = base
+                if remainder > 0 {
+                    share += 1
+                    remainder -= 1
+                }
+                subtotals.add(uid, share)
             }
         }
-        return subtotals
+        if rawItemsTotal == 0 { return try Splits.equal(totalMinor, among: participantIds) }
+
+        var finalShares = Shares()
+        var distributed = 0
+        for uid in participantIds {
+            let scaled = PaydMath.mulDiv(subtotals[uid] ?? 0, totalMinor, rawItemsTotal).quotient
+            finalShares.set(uid, scaled)
+            distributed += scaled
+        }
+        var diff = totalMinor - distributed
+        if diff > 0 {
+            let ranked = participantIds.stableSorted { (subtotals[$0] ?? 0) > (subtotals[$1] ?? 0) }
+            var index = 0
+            while diff > 0 {
+                finalShares.add(ranked[index % ranked.count], 1)
+                diff -= 1
+                index += 1
+            }
+        }
+        return finalShares
     }
 }

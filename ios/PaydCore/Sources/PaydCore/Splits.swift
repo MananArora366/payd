@@ -1,115 +1,142 @@
 import Foundation
 
 // Port of web/src/lib/ledger/splits.ts.
-// Invariant 3: the sum of all shares must equal the total exactly. Remainders go to
-// participants in ascending user-ID order so every device produces the same result.
-
-public enum LedgerError: Error, Equatable, Sendable, CustomStringConvertible {
-    case noParticipants
-    case negativeAmount
-    case sumMismatch(expected: Int, actual: Int)
-    case invalidPercentages(sum: Double)
-    case zeroTotalWeight
-    case settlementExceedsDebt(amount: Int, debt: Int)
-    case selfSettlement
-    case missingTitle
-    case notFound(String)
-    case invalidInvite
-
-    public var description: String {
-        switch self {
-        case .noParticipants: return "Cannot split with zero participants"
-        case .negativeAmount: return "Amounts and weights cannot be negative"
-        case let .sumMismatch(expected, actual):
-            return "Shares sum to \(actual) minor units, but total is \(expected) (difference: \(expected - actual))"
-        case let .invalidPercentages(sum): return "Percentages sum to \(sum)%, but must sum to 100%"
-        case .zeroTotalWeight: return "Total shares cannot be zero"
-        case let .settlementExceedsDebt(amount, debt):
-            return "Settlement of \(amount) exceeds outstanding debt of \(debt)"
-        case .selfSettlement: return "Sender and recipient cannot be the same person"
-        case .missingTitle: return "A name is required"
-        case let .notFound(id): return "Record \(id) was not found"
-        case .invalidInvite: return "Invalid or expired invite token"
-        }
-    }
-}
-
-public typealias Shares = [String: Int]
+// Invariant 3: the shares always sum exactly to the total. Equal splits give remainders to the first
+// IDs in ascending order; percentage/share splits use largest-remainder allocation with exact integer
+// maths (ties by ascending user ID). Weights are fixed-point integers scaled by 1_000_000.
 
 public enum Splits {
-    /// Tolerance for percentage inputs such as 33.33 × 3 = 99.99.
-    static let percentageTolerance = 0.15
+    /// `WEIGHT_SCALE`.
+    public static let weightScale = 1_000_000
+    /// `PERCENTAGE_SUM_TOLERANCE` (0.15 %) in the scaled domain.
+    public static let percentageSumToleranceScaled = 150_000
 
-    /// Equal split; duplicate IDs are collapsed and the remainder goes to the lowest IDs first.
-    public static func equal(_ totalMinor: Int, among userIds: [String]) throws(LedgerError) -> Shares {
-        let sortedIds = Array(Set(userIds)).sorted()
-        guard !sortedIds.isEmpty else { throw .noParticipants }
-        guard totalMinor >= 0 else { throw .negativeAmount }
+    private static func assertValidTotal(_ totalMinor: Int) throws(LedgerInvariantError) {
+        if totalMinor < 0 { throw LedgerInvariantError("Total amount cannot be negative") }
+    }
 
+    /// `splitEqual`: dedupes, sorts IDs ascending; remainder goes to the first IDs.
+    public static func equal(_ totalMinor: Int, among userIds: [String]) throws(LedgerInvariantError) -> Shares {
+        if userIds.isEmpty { throw LedgerInvariantError("Cannot split with zero participants") }
+        try assertValidTotal(totalMinor)
+        let sortedIds = userIds.uniqued().stableSorted(by: jsLess)
         let base = totalMinor / sortedIds.count
-        let remainder = totalMinor % sortedIds.count
-        let result = Dictionary(uniqueKeysWithValues: sortedIds.enumerated().map { index, id in
-            (id, base + (index < remainder ? 1 : 0))
-        })
-        return try verified(result, total: totalMinor)
-    }
-
-    /// Exact split; every share is given and must add up to the total.
-    public static func exact(_ totalMinor: Int, allocations: Shares) throws(LedgerError) -> Shares {
-        guard allocations.values.allSatisfy({ $0 >= 0 }) else { throw .negativeAmount }
-        return try verified(allocations, total: totalMinor)
-    }
-
-    /// Percentage split; rounding drift is corrected one minor unit at a time in ID order.
-    public static func percentage(_ totalMinor: Int, percentages: [String: Double]) throws(LedgerError) -> Shares {
-        let ids = percentages.keys.sorted()
-        guard !ids.isEmpty else { throw .noParticipants }
-        let percentSum = ids.reduce(0) { $0 + (percentages[$1] ?? 0) }
-        guard abs(percentSum - 100) <= percentageTolerance else { throw .invalidPercentages(sum: percentSum) }
-
-        let raw = Dictionary(uniqueKeysWithValues: ids.map { id in
-            (id, Int((Double(totalMinor) * (percentages[id] ?? 0) / 100).rounded()))
-        })
-        return try verified(correctingDrift(raw, ids: ids, total: totalMinor), total: totalMinor)
-    }
-
-    /// Weighted split (e.g. 2:1:1); floors each share then hands out the remainder in ID order.
-    public static func shares(_ totalMinor: Int, weights: [String: Double]) throws(LedgerError) -> Shares {
-        let ids = weights.keys.sorted()
-        guard !ids.isEmpty else { throw .noParticipants }
-        guard weights.values.allSatisfy({ $0 >= 0 }) else { throw .negativeAmount }
-        let totalWeight = weights.values.reduce(0, +)
-        guard totalWeight > 0 else { throw .zeroTotalWeight }
-
-        let floored = Dictionary(uniqueKeysWithValues: ids.map { id in
-            (id, Int((Double(totalMinor) * (weights[id] ?? 0) / totalWeight).rounded(.down)))
-        })
-        return try verified(correctingDrift(floored, ids: ids, total: totalMinor), total: totalMinor)
-    }
-
-    /// Adds or removes single minor units, cycling through `ids`, until the sum matches `total`.
-    static func correctingDrift(_ shares: Shares, ids: [String], total: Int) -> Shares {
-        var result = shares
-        var diff = total - result.values.reduce(0, +)
-        var index = 0
-        let maxSteps = max(ids.count * 2, abs(diff) * 2 + ids.count)
-        while diff != 0 && index < maxSteps {
-            let id = ids[index % ids.count]
-            if diff > 0 {
-                result[id, default: 0] += 1
-                diff -= 1
-            } else if result[id, default: 0] > 0 {
-                result[id, default: 0] -= 1
-                diff += 1
-            }
-            index += 1
+        var remainder = totalMinor % sortedIds.count
+        var result = Shares()
+        for id in sortedIds {
+            result.set(id, base + (remainder > 0 ? 1 : 0))
+            if remainder > 0 { remainder -= 1 }
+        }
+        let sum = result.total
+        if sum != totalMinor {
+            throw LedgerInvariantError("Split sum (\(sum)) does not match totalMinor (\(totalMinor))")
         }
         return result
     }
 
-    static func verified(_ shares: Shares, total: Int) throws(LedgerError) -> Shares {
-        let sum = shares.values.reduce(0, +)
-        guard sum == total else { throw .sumMismatch(expected: total, actual: sum) }
-        return shares
+    /// `splitExact`: every value must be >= 0 and they must sum to the total.
+    public static func exact(_ totalMinor: Int, allocations: Shares) throws(LedgerInvariantError) -> Shares {
+        try assertValidTotal(totalMinor)
+        var result = Shares()
+        for (id, value) in allocations {
+            if value < 0 { throw LedgerInvariantError("Individual split amount cannot be negative") }
+            result.set(id, value)
+        }
+        let sum = result.total
+        if sum != totalMinor {
+            throw LedgerInvariantError(
+                "Exact split allocations sum to \(sum) minor units, but total is \(totalMinor) minor units (difference: \(totalMinor - sum))")
+        }
+        return result
+    }
+
+    /// `splitPercentage` with percentages already scaled by `weightScale` (33.33 % = 33_330_000).
+    public static func percentage(_ totalMinor: Int, scaledPercentages: Shares) throws(LedgerInvariantError) -> Shares {
+        try assertValidTotal(totalMinor)
+        let userIds = scaledPercentages.keys.stableSorted(by: jsLess)
+        if userIds.isEmpty { throw LedgerInvariantError("Cannot split with zero participants") }
+        var weights: [String: Int] = [:]
+        var scaledSum = 0
+        for id in userIds {
+            let weight = scaledPercentages[id] ?? 0
+            if weight < 0 { throw LedgerInvariantError("Percentage cannot be negative") }
+            weights[id] = weight
+            scaledSum = try checkedAdd(scaledSum, weight)
+        }
+        let target = 100 * weightScale
+        if abs(scaledSum - target) > percentageSumToleranceScaled {
+            let shown = PaydMath.jsNumberString(Decimal(scaledSum) / Decimal(weightScale))
+            throw LedgerInvariantError("Percentages sum to \(shown)%, but must sum to 100%")
+        }
+        return try allocateLargestRemainder(totalMinor, sortedIds: userIds, weights: weights)
+    }
+
+    /// `splitShares` with share counts already scaled by `weightScale` (1.5 shares = 1_500_000).
+    public static func shares(_ totalMinor: Int, scaledWeights: Shares) throws(LedgerInvariantError) -> Shares {
+        try assertValidTotal(totalMinor)
+        let userIds = scaledWeights.keys.stableSorted(by: jsLess)
+        if userIds.isEmpty { throw LedgerInvariantError("Cannot split with zero participants") }
+        var weights: [String: Int] = [:]
+        var totalShares = 0
+        for id in userIds {
+            let weight = scaledWeights[id] ?? 0
+            if weight < 0 { throw LedgerInvariantError("Shares cannot be negative") }
+            weights[id] = weight
+            totalShares = try checkedAdd(totalShares, weight)
+        }
+        if totalShares == 0 { throw LedgerInvariantError("Total shares cannot be zero") }
+        return try allocateLargestRemainder(totalMinor, sortedIds: userIds, weights: weights)
+    }
+
+    private static let weightPattern = JSRegex("^\\d+(\\.\\d*)?$|^\\.\\d+$")
+
+    /// Plain non-negative decimal text → weight scaled by 1e6 ("33.33" → 33_330_000).
+    /// nil when not `^\d+(\.\d*)?$|^\.\d+$`, more than 6 decimals, or too large for Int.
+    public static func parseScaledWeight(_ text: String) -> Int? {
+        guard weightPattern.test(text) else { return nil }
+        let parts = text.split(separator: ".", omittingEmptySubsequences: false)
+        let whole = parts.first.map(String.init) ?? ""
+        let fraction = parts.count > 1 ? String(parts[1]) : ""
+        guard fraction.count <= 6 else { return nil }
+        let wholeValue = whole.isEmpty ? 0 : Int(whole)
+        let fractionValue = Int(fraction + String(repeating: "0", count: 6 - fraction.count)) ?? 0
+        guard let wholeValue else { return nil }
+        let (scaled, overflow) = wholeValue.multipliedReportingOverflow(by: weightScale)
+        let (sum, addOverflow) = scaled.addingReportingOverflow(fractionValue)
+        return overflow || addOverflow ? nil : sum
+    }
+
+    private static func checkedAdd(_ a: Int, _ b: Int) throws(LedgerInvariantError) -> Int {
+        let (sum, overflow) = a.addingReportingOverflow(b)
+        if overflow { throw LedgerInvariantError("Total weight is too large") }
+        return sum
+    }
+
+    /// Largest-remainder (Hamilton) allocation in exact integer maths (128-bit products).
+    private static func allocateLargestRemainder(_ totalMinor: Int, sortedIds: [String],
+                                                 weights: [String: Int]) throws(LedgerInvariantError) -> Shares {
+        let totalWeight = sortedIds.reduce(0) { $0 + (weights[$1] ?? 0) }
+        if totalWeight <= 0 { throw LedgerInvariantError("Total weight cannot be zero") }
+        var result = Shares()
+        var remainders: [(id: String, rem: Int, order: Int)] = []
+        var allocated = 0
+        for (order, id) in sortedIds.enumerated() {
+            let (base, rem) = PaydMath.mulDiv(totalMinor, weights[id] ?? 0, totalWeight)
+            result.set(id, base)
+            allocated += base
+            remainders.append((id, rem, order))
+        }
+        var leftover = totalMinor - allocated
+        let ranked = remainders.stableSorted { $0.rem != $1.rem ? $0.rem > $1.rem : $0.order < $1.order }
+        for entry in ranked where leftover > 0 {
+            if entry.rem == 0 { break }
+            result.add(entry.id, 1)
+            leftover -= 1
+        }
+        let finalSum = result.total
+        if finalSum != totalMinor {
+            throw LedgerInvariantError("Weighted split failed invariant: \(finalSum) !== \(totalMinor)")
+        }
+        return result
     }
 }

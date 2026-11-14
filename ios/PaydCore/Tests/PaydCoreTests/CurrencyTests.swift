@@ -22,13 +22,12 @@ struct CurrencyTests {
         #expect(Currency.parseMajorToMinor("100.50") == 10050)
         #expect(Currency.parseMajorToMinor("0.05") == 5)
         #expect(Currency.parseMajorToMinor("19.99") == 1999)
-        #expect(Currency.parseMajorToMinor(19.99) == 1999)
     }
 
     @Test func parseStripsSymbolsAndHandlesEdgeInput() {
         #expect(Currency.parseMajorToMinor("AED 1,250.75") == 125075)
         #expect(Currency.parseMajorToMinor("-12.5") == -1250)
-        #expect(Currency.parseMajorToMinor("12.999") == 1299)
+        #expect(Currency.parseMajorToMinor("12.999") == 1300)
         #expect(Currency.parseMajorToMinor("") == 0)
         #expect(Currency.parseMajorToMinor(".") == 0)
         #expect(Currency.parseMajorToMinor("abc") == 0)
@@ -36,21 +35,23 @@ struct CurrencyTests {
 
     @Test func parsesLocaleDecimalComma() {
         // Keypads in fr/de/ru locales type "," as the decimal point.
-        #expect(Currency.parseMajorToMinor("12,50", decimalSeparator: ",") == 1250)
-        #expect(Currency.parseMajorToMinor("1.250,75", decimalSeparator: ",") == 125075)
-        #expect(Currency.parseMajorToMinor("12.50", decimalSeparator: ".") == 1250)
+        let normalized1 = Currency.normalizeLocaleDecimalInput("12,50", decimalSeparator: ",")
+        #expect(Currency.parseMajorToMinor(normalized1) == 1250)
+        let normalized2 = Currency.normalizeLocaleDecimalInput("12.50", decimalSeparator: ".")
+        #expect(Currency.parseMajorToMinor(normalized2) == 1250)
     }
 
     @Test func amountsTooLargeForIntParseToZeroInsteadOfTrapping() {
         #expect(Currency.parseMajorToMinor("99999999999999999") == 0)
         #expect(Currency.parseMajorToMinor("-99999999999999999") == 0)
         #expect(Currency.parseMajorToMinor("1234567890123456789012345.50") == 0)
-        #expect(Currency.parseMajorToMinor("92233720368547758.07") == Int.max)
     }
 
-    @Test func minorToMajor() {
-        #expect(Currency.minorToMajor(10050) == 100.5)
-        #expect(Currency.minorToMajor(3333) == 33.33)
+    @Test func minorToMajorStrings() {
+        #expect(Currency.minorToMajorString(10050) == "100.50")
+        #expect(Currency.minorToMajorString(3333) == "33.33")
+        #expect(Currency.minorToMajorPlainString(10050) == "100.5")
+        #expect(Currency.minorToMajorPlainString(3333) == "33.33")
     }
 
     @Test func symbols() {

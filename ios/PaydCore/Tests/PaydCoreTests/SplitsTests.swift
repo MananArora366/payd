@@ -14,7 +14,8 @@ struct SplitsTests {
 
     @Test func equalHundredThreeWays() throws {
         let splits = try Splits.equal(100, among: ["u1", "u2", "u3"])
-        #expect(splits == ["u1": 34, "u2": 33, "u3": 33])
+        let expected: Shares = ["u1": 34, "u2": 33, "u3": 33]
+        #expect(splits == expected)
     }
 
     @Test func equalSevenWaysAndInvalidInput() throws {
@@ -26,36 +27,55 @@ struct SplitsTests {
 
     @Test func equalDeduplicatesParticipants() throws {
         let splits = try Splits.equal(100, among: ["u1", "u1", "u2"])
-        #expect(splits == ["u1": 50, "u2": 50])
+        let expected: Shares = ["u1": 50, "u2": 50]
+        #expect(splits == expected)
     }
 
     @Test func exactValidatesSum() throws {
-        let exact = ["user-1": 6000, "user-2": 4000]
+        let exact: Shares = ["user-1": 6000, "user-2": 4000]
         #expect(try Splits.exact(10000, allocations: exact) == exact)
-        #expect(throws: (any Error).self) { try Splits.exact(10000, allocations: ["user-1": 6000, "user-2": 3999]) }
-        #expect(throws: (any Error).self) { try Splits.exact(0, allocations: ["user-1": -1, "user-2": 1]) }
+        let invalidSum: Shares = ["user-1": 6000, "user-2": 3999]
+        #expect(throws: (any Error).self) { try Splits.exact(10000, allocations: invalidSum) }
+        let negative: Shares = ["user-1": -1, "user-2": 1]
+        #expect(throws: (any Error).self) { try Splits.exact(0, allocations: negative) }
     }
 
     @Test func percentage() throws {
-        let splits = try Splits.percentage(10000, percentages: ["u1": 50, "u2": 25, "u3": 25])
-        #expect(splits == ["u1": 5000, "u2": 2500, "u3": 2500])
-        #expect(throws: (any Error).self) { try Splits.percentage(10000, percentages: ["u1": 50, "u2": 40]) }
+        let percentages: Shares = ["u1": 50 * Splits.weightScale, "u2": 25 * Splits.weightScale, "u3": 25 * Splits.weightScale]
+        let splits = try Splits.percentage(10000, scaledPercentages: percentages)
+        let expected: Shares = ["u1": 5000, "u2": 2500, "u3": 2500]
+        #expect(splits == expected)
+        let invalid: Shares = ["u1": 50 * Splits.weightScale, "u2": 40 * Splits.weightScale]
+        #expect(throws: (any Error).self) { try Splits.percentage(10000, scaledPercentages: invalid) }
     }
 
     @Test func percentageThirdsKeepZeroSum() throws {
-        let splits = try Splits.percentage(10000, percentages: ["u1": 33.33, "u2": 33.33, "u3": 33.34])
+        let p1 = Splits.parseScaledWeight("33.33") ?? 0
+        let p2 = Splits.parseScaledWeight("33.33") ?? 0
+        let p3 = Splits.parseScaledWeight("33.34") ?? 0
+        let percentages: Shares = ["u1": p1, "u2": p2, "u3": p3]
+        let splits = try Splits.percentage(10000, scaledPercentages: percentages)
         #expect(splits.values.reduce(0, +) == 10000)
     }
 
     @Test func shares() throws {
-        let splits = try Splits.shares(10000, weights: ["rahul": 2, "sarah": 1, "prakarsh": 1])
-        #expect(splits == ["rahul": 5000, "sarah": 2500, "prakarsh": 2500])
-        #expect(throws: (any Error).self) { try Splits.shares(100, weights: ["a": 0]) }
-        #expect(throws: (any Error).self) { try Splits.shares(100, weights: ["a": -1, "b": 2]) }
+        let weights: Shares = [
+            "rahul": 2 * Splits.weightScale,
+            "sarah": 1 * Splits.weightScale,
+            "prakarsh": 1 * Splits.weightScale
+        ]
+        let splits = try Splits.shares(10000, scaledWeights: weights)
+        let expected: Shares = ["prakarsh": 2500, "rahul": 5000, "sarah": 2500]
+        #expect(splits == expected)
+        let zeroWeight: Shares = ["a": 0]
+        #expect(throws: (any Error).self) { try Splits.shares(100, scaledWeights: zeroWeight) }
+        let negWeight: Shares = ["a": -1, "b": 2 * Splits.weightScale]
+        #expect(throws: (any Error).self) { try Splits.shares(100, scaledWeights: negWeight) }
     }
 
     @Test func sharesRemainderKeepsZeroSum() throws {
-        let splits = try Splits.shares(100, weights: ["a": 1, "b": 1, "c": 1])
+        let weights: Shares = ["a": 1 * Splits.weightScale, "b": 1 * Splits.weightScale, "c": 1 * Splits.weightScale]
+        let splits = try Splits.shares(100, scaledWeights: weights)
         #expect(splits.values.reduce(0, +) == 100)
     }
 

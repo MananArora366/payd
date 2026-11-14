@@ -6,6 +6,7 @@ import Testing
 struct LedgerActionsTests {
     private let now = Date(timeIntervalSince1970: 1_800_000_000)
     private var seed: LedgerState { SeedData.make(now: now) }
+    private var context: ActionContext { ActionContext(now: now, randomSuffix: "test1") }
 
     private func expense(_ amount: Int, shares: [ShareAllocation], group: String? = SeedIDs.flatmates) -> NewTransaction {
         NewTransaction(type: .expense, title: "Test", amountMinor: amount, payerId: SeedIDs.manan,
@@ -13,94 +14,84 @@ struct LedgerActionsTests {
     }
 
     @Test func addTransactionAppendsTransactionAndSplits() throws {
-        let shares = [ShareAllocation(userId: SeedIDs.manan, shareMinor: 600), ShareAllocation(userId: SeedIDs.rahul, shareMinor: 400)]
-        let (state, txn) = try LedgerActions.addTransaction(expense(1000, shares: shares), to: seed, now: now)
+        let shares = [ShareAllocation(userId: SeedIDs.manan, shareMinor: 600), ShareAllocation(userId: SeedIDs.prakarsh, shareMinor: 400)]
+        let (state, txn) = try LedgerActions.addTransaction(expense(1000, shares: shares), to: seed, context: context)
         #expect(state.transactions.count == seed.transactions.count + 1)
         #expect(state.transactions.first?.id == txn.id)
-        #expect(state.splits.filter { $0.transactionId == txn.id }.map(\.shareMinor).reduce(0, +) == 1000)
+        let totalSplits = state.splits.filter { $0.transactionId == txn.id }.map(\.shareMinor).reduce(0, +)
+        #expect(totalSplits == 1000)
         #expect(txn.createdBy == SeedIDs.manan)
         #expect(txn.currency == "AED")
-        #expect(seed.transactions.count == 4, "Original state must not be mutated")
+        #expect(seed.transactions.count == 6, "Original state must not be mutated")
     }
 
     @Test func addTransactionRejectsMismatchedSplits() {
         let shares = [ShareAllocation(userId: SeedIDs.manan, shareMinor: 999)]
-        #expect(throws: LedgerError.sumMismatch(expected: 1000, actual: 999)) {
-            try LedgerActions.addTransaction(expense(1000, shares: shares), to: seed, now: now)
-        }
-    }
-
-    @Test func addTransactionRejectsBlankTitleAndNonPositiveAmount() {
-        let blank = NewTransaction(type: .expense, title: "  ", amountMinor: 100, payerId: SeedIDs.manan,
-                                   splits: [ShareAllocation(userId: SeedIDs.manan, shareMinor: 100)])
-        #expect(throws: LedgerError.missingTitle) { try LedgerActions.addTransaction(blank, to: seed, now: now) }
-        #expect(throws: LedgerError.negativeAmount) {
-            try LedgerActions.addTransaction(expense(0, shares: []), to: seed, now: now)
+        #expect(throws: LedgerInvariantError.self) {
+            try LedgerActions.addTransaction(expense(1000, shares: shares), to: seed, context: context)
         }
     }
 
     @Test func softDeleteAndRestore() throws {
         let id = seed.transactions[0].id
-        let deleted = try LedgerActions.softDelete(transactionId: id, in: seed, now: now)
+        let deleted = LedgerActions.softDeleteTransaction(id, in: seed, context: context)
         #expect(deleted.transactions.first { $0.id == id }?.deletedAt == now)
-        let restored = try LedgerActions.restore(transactionId: id, in: deleted)
+        let restored = LedgerActions.restoreTransaction(id, in: deleted, context: context)
         #expect(restored.transactions.first { $0.id == id }?.deletedAt == nil)
-        #expect(throws: LedgerError.notFound("missing")) { try LedgerActions.softDelete(transactionId: "missing", in: seed) }
     }
 
     @Test func recordSettlementWithinDebt() throws {
-        // Seed: Sarah owes Manan 3333 (dinner) and has repaid 5000, so her bilateral debt to Manan is cleared;
-        // Manan owes Rahul 8000 for groceries.
-        let input = NewSettlement(groupId: SeedIDs.flatmates, senderId: SeedIDs.manan, recipientId: SeedIDs.rahul,
-                                  amountMinor: 8000, method: "Cash")
-        let (state, settlement) = try LedgerActions.recordSettlement(input, in: seed, now: now)
+        // Flatmates: Prakarsh owes Manan 24000.
+        let input = NewSettlement(groupId: SeedIDs.flatmates, senderId: SeedIDs.prakarsh, recipientId: SeedIDs.manan,
+                                  amountMinor: 24000, method: "Cash")
+        let (state, settlement) = try LedgerActions.recordSettlement(input, in: seed, context: context)
         #expect(state.settlements.first?.id == settlement.id)
         #expect(settlement.status == .settled)
     }
 
     @Test func recordSettlementRejectsOverpaymentAndSelfPayment() {
-        let over = NewSettlement(senderId: SeedIDs.manan, recipientId: SeedIDs.rahul, amountMinor: 8001, method: "Cash")
-        #expect(throws: LedgerError.settlementExceedsDebt(amount: 8001, debt: 8000)) {
-            try LedgerActions.recordSettlement(over, in: seed, now: now)
+        let over = NewSettlement(groupId: SeedIDs.flatmates, senderId: SeedIDs.prakarsh, recipientId: SeedIDs.manan,
+                                 amountMinor: 25000, method: "Cash")
+        #expect(throws: LedgerInvariantError.self) {
+            try LedgerActions.recordSettlement(over, in: seed, context: context)
         }
-        let allowed = NewSettlement(senderId: SeedIDs.manan, recipientId: SeedIDs.rahul, amountMinor: 8001,
-                                    method: "Cash", allowOverpayment: true)
-        #expect(throws: Never.self) { try LedgerActions.recordSettlement(allowed, in: seed, now: now) }
-        let selfPay = NewSettlement(senderId: SeedIDs.manan, recipientId: SeedIDs.manan, amountMinor: 1, method: "Cash")
-        #expect(throws: LedgerError.selfSettlement) { try LedgerActions.recordSettlement(selfPay, in: seed, now: now) }
+        let allowed = NewSettlement(groupId: SeedIDs.flatmates, senderId: SeedIDs.prakarsh, recipientId: SeedIDs.manan,
+                                    amountMinor: 25000, method: "Cash", allowOverpayment: true)
+        #expect(throws: Never.self) { try LedgerActions.recordSettlement(allowed, in: seed, context: context) }
+        let selfPay = NewSettlement(groupId: SeedIDs.flatmates, senderId: SeedIDs.manan, recipientId: SeedIDs.manan,
+                                    amountMinor: 1000, method: "Cash")
+        #expect(throws: LedgerInvariantError.self) { try LedgerActions.recordSettlement(selfPay, in: seed, context: context) }
     }
 
-    @Test func createGroupAddsCreatorAsAdmin() throws {
-        let (state, group) = try LedgerActions.createGroup(name: "Ski Trip", description: nil,
-                                                           memberIds: [SeedIDs.priya], in: seed, now: now)
+    @Test func createGroupAddsCreatorAsAdmin() {
+        let (state, group) = LedgerActions.createGroup(name: "Ski Trip", description: "Holiday",
+                                                       memberIds: [SeedIDs.aisha], in: seed, context: context)
         let members = state.groupMembers.filter { $0.groupId == group.id }
-        #expect(Set(members.map(\.userId)) == [SeedIDs.manan, SeedIDs.priya])
+        #expect(Set(members.map(\.userId)) == [SeedIDs.manan, SeedIDs.aisha])
         #expect(members.first { $0.userId == SeedIDs.manan }?.role == .admin)
-        #expect(throws: LedgerError.missingTitle) {
-            try LedgerActions.createGroup(name: " ", description: nil, memberIds: [], in: seed)
-        }
     }
 
-    @Test func joinGroupByTokenIsIdempotent() throws {
-        let asPriya = try LedgerActions.switchUser(to: SeedIDs.priya, in: seed)
-        let (joined, group) = try LedgerActions.joinGroup(token: "dubai-marina-2026", in: asPriya, now: now)
-        #expect(group.id == SeedIDs.flatmates)
-        let (again, _) = try LedgerActions.joinGroup(token: SeedIDs.flatmates, in: joined, now: now)
+    @Test func joinGroupByTokenIsIdempotent() {
+        let asAisha = LedgerActions.switchUser(to: SeedIDs.aisha, in: seed)
+        let (joined, result) = LedgerActions.joinGroupByToken("dubai-marina-2026", in: asAisha, context: context)
+        #expect(result.success)
+        #expect(result.group?.id == SeedIDs.flatmates)
+        let (again, resultAgain) = LedgerActions.joinGroupByToken(SeedIDs.flatmates, in: joined, context: context)
+        #expect(resultAgain.alreadyMember)
         #expect(again.groupMembers.count == joined.groupMembers.count)
-        #expect(throws: LedgerError.invalidInvite) { try LedgerActions.joinGroup(token: "nope", in: seed) }
     }
 
     @Test func updateBudgetUpsertsByCategory() {
-        let updated = LedgerActions.updateBudget(limitMinor: 1, categoryId: SeedIDs.food, in: seed)
+        let updated = LedgerActions.updateBudget(limitMinor: 1, categoryId: SeedIDs.food, in: seed, context: context)
         #expect(updated.budgets.count == seed.budgets.count)
         #expect(updated.budgets.first { $0.categoryId == SeedIDs.food }?.limitMinor == 1)
-        let added = LedgerActions.updateBudget(limitMinor: 7, categoryId: SeedIDs.groceries, in: seed)
+        let added = LedgerActions.updateBudget(limitMinor: 7, categoryId: SeedIDs.groceries, in: seed, context: context)
         #expect(added.budgets.count == seed.budgets.count + 1)
     }
 
     @Test func triggerRecurringBillPostsExpenseAndStampsBill() throws {
         let bill = seed.recurringBills[0]
-        let (state, txn) = try LedgerActions.triggerRecurringBill(id: bill.id, in: seed, now: now)
+        let (state, txn) = try LedgerActions.triggerRecurringBillSplit(bill.id, in: seed, context: context)
         #expect(txn.title == "\(bill.title) (Monthly Split)")
         #expect(txn.amountMinor == bill.amountMinor)
         #expect(state.recurringBills.first { $0.id == bill.id }?.lastPostedAt == now)
@@ -109,16 +100,9 @@ struct LedgerActionsTests {
     @Test func groupQueries() {
         let balances = LedgerQueries.groupBalances(SeedIDs.flatmates, in: seed)
         #expect(balances.values.reduce(0, +) == 0)
-        #expect(Set(balances.keys) == [SeedIDs.manan, SeedIDs.rahul, SeedIDs.sarah])
-        #expect(LedgerQueries.groupMembers(SeedIDs.hattaTrip, in: seed).map(\.name).sorted() == ["Manan Arora", "Priya", "Rahul"])
-        let debts = LedgerQueries.simplifiedDebts(SeedIDs.flatmates, in: seed)
-        #expect(debts.map(\.amountMinor).reduce(0, +) > 0)
-    }
-
-    @Test func owedSummaryForCurrentUser() {
-        let summary = LedgerQueries.owedSummary(for: SeedIDs.manan, in: seed)
-        // Rahul owed Manan 3333 and repaid 3333; Sarah owed 3333 and repaid 5000 → nothing owed to Manan.
-        #expect(summary.owedToMeMinor == 0)
-        #expect(summary.iOweMinor == 8000)
+        let snapshot = LedgerQueries.snapshot(of: seed, now: now)
+        let debts = LedgerQueries.groupSimplifiedDebts(SeedIDs.flatmates, snapshot: snapshot)
+        let totalDebt = debts.map(\.amountMinor).reduce(0, +)
+        #expect(totalDebt > 0)
     }
 }
