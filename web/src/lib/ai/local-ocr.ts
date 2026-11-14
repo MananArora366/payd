@@ -10,11 +10,21 @@ export interface LocalOcrLine {
   text: string;
 }
 
+export interface LocalOcrResult {
+  /** 'unavailable' = no OCR binary on this host (e.g. not macOS); 'failed' = binary errored. */
+  status: 'ok' | 'unavailable' | 'failed';
+  lines: string[];
+}
+
 /**
  * Runs local Apple Vision OCR on macOS via the compiled Swift binary.
  * Takes a base64 string or image buffer, saves temporarily, runs OCR, and returns lines.
  */
 export async function runLocalOcr(imageBase64: string): Promise<string[]> {
+  return (await runLocalOcrDetailed(imageBase64)).lines;
+}
+
+export async function runLocalOcrDetailed(imageBase64: string): Promise<LocalOcrResult> {
   const binaryPath = path.resolve(process.cwd(), 'bin/payd-ocr');
   const sourcePath = path.resolve(process.cwd(), 'scripts/ocr.swift');
   
@@ -29,10 +39,10 @@ export async function runLocalOcr(imageBase64: string): Promise<string[]> {
   }
 
   if (!fs.existsSync(binaryPath)) {
-    return [];
+    return { status: 'unavailable', lines: [] };
   }
 
-  const cleanBase64 = imageBase64.replace(/^data:image\/[a-z]+;base64,/, '');
+  const cleanBase64 = imageBase64.replace(/^data:[^,]*;base64,/, '');
   const tempDir = os.tmpdir();
   const tempFilePath = path.join(tempDir, `payd_scan_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`);
 
@@ -51,10 +61,13 @@ export async function runLocalOcr(imageBase64: string): Promise<string[]> {
 
     const { stdout } = await execFileAsync(binaryPath, [tempFilePath], { timeout: 15000 });
     const parsed = JSON.parse(stdout || '{}');
-    return Array.isArray(parsed.lines) ? parsed.lines : [];
+    const lines = Array.isArray(parsed.lines)
+      ? parsed.lines.filter((l: unknown): l is string => typeof l === 'string')
+      : [];
+    return { status: 'ok', lines };
   } catch (err) {
     console.warn('Local OCR execution failed:', err);
-    return [];
+    return { status: 'failed', lines: [] };
   } finally {
     try {
       if (fs.existsSync(tempFilePath)) {

@@ -2,6 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { splitEqual, splitExact } from '@/lib/ledger';
 import { calculateItemizedShares } from '@/lib/ai/receipt-scan';
 import { RecurringBill } from '@/types/database';
+import {
+  getPeriodKey,
+  isPostedInCurrentPeriod,
+  clampDueDay,
+  formatDueDay,
+} from '@/components/recurring/recurringPeriod';
 
 describe('Feature Suite: Tap-to-Claim, Recurring Subscriptions & Cash Flow Health', () => {
   const users = {
@@ -67,5 +73,52 @@ describe('Feature Suite: Tap-to-Claim, Recurring Subscriptions & Cash Flow Healt
     expect(shares[users.rahul]).toBe(1500);
     expect(shares[users.sarah]).toBe(1500);
     expect(shares[users.manan] + shares[users.rahul] + shares[users.sarah]).toBe(coffeeTotal);
+  });
+});
+
+describe('Recurring bills: per-period "Post Split Now" guard', () => {
+  const at = (y: number, m: number, d: number, h = 12) => new Date(y, m - 1, d, h);
+
+  it('never-posted bills are not blocked', () => {
+    expect(isPostedInCurrentPeriod({ frequency: 'monthly', last_posted_at: null }, at(2026, 11, 14))).toBe(false);
+  });
+
+  it('monthly: same calendar month is blocked, next month is not', () => {
+    const bill = { frequency: 'monthly' as const, last_posted_at: at(2026, 11, 1).toISOString() };
+    expect(isPostedInCurrentPeriod(bill, at(2026, 11, 30))).toBe(true);
+    expect(isPostedInCurrentPeriod(bill, at(2026, 12, 1))).toBe(false);
+    // Same month number in a different year is a different period
+    expect(isPostedInCurrentPeriod(bill, at(2027, 11, 5))).toBe(false);
+  });
+
+  it('weekly: same ISO week (Mon-Sun) is blocked, next week is not', () => {
+    // 2026-11-09 is a Monday, 2026-11-15 the Sunday of the same week
+    const bill = { frequency: 'weekly' as const, last_posted_at: at(2026, 11, 9).toISOString() };
+    expect(isPostedInCurrentPeriod(bill, at(2026, 11, 15))).toBe(true);
+    expect(isPostedInCurrentPeriod(bill, at(2026, 11, 16))).toBe(false);
+  });
+
+  it('weekly keys handle the ISO year boundary', () => {
+    // 2026-12-31 (Thu) and 2027-01-01 (Fri) are in the same ISO week (2026-W53)
+    expect(getPeriodKey(at(2026, 12, 31), 'weekly')).toBe(getPeriodKey(at(2027, 1, 1), 'weekly'));
+  });
+
+  it('yearly: same year is blocked', () => {
+    const bill = { frequency: 'yearly' as const, last_posted_at: at(2026, 1, 2).toISOString() };
+    expect(isPostedInCurrentPeriod(bill, at(2026, 12, 31))).toBe(true);
+    expect(isPostedInCurrentPeriod(bill, at(2027, 1, 1))).toBe(false);
+  });
+
+  it('ignores malformed timestamps', () => {
+    expect(isPostedInCurrentPeriod({ frequency: 'monthly', last_posted_at: 'not-a-date' })).toBe(false);
+  });
+
+  it('due day is clamped to 1-7 for weekly and 1-31 otherwise', () => {
+    expect(clampDueDay(15, 'weekly')).toBe(7);
+    expect(clampDueDay(0, 'monthly')).toBe(1);
+    expect(clampDueDay(45, 'monthly')).toBe(31);
+    expect(formatDueDay(1, 'weekly')).toBe('Every Monday');
+    expect(formatDueDay(2, 'monthly')).toBe('Due on the 2nd');
+    expect(formatDueDay(11, 'monthly')).toBe('Due on the 11th');
   });
 });

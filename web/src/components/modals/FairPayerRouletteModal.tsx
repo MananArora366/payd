@@ -2,8 +2,17 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { usePayd } from '@/lib/store/PaydContext';
-import { formatMinorUnits, parseMajorToMinor, splitEqual } from '@/lib/ledger';
-import { X, Coffee, Sparkles, ShieldCheck, RotateCw, Trophy, Users, Dices } from 'lucide-react';
+import { formatMinorUnits, splitEqual } from '@/lib/ledger';
+import { useVisibleGroups } from '@/components/groups/useVisibleGroups';
+import {
+  computeRouletteWeights,
+  parseAmountInput,
+  pickWeightedIndex,
+  ROULETTE_FILS_PER_EXTRA_SLICE,
+  ROULETTE_MAX_EXTRA_SLICES,
+} from '@/components/groups/groupLogic';
+import { X, Coffee, Scale, ShieldCheck, RotateCw, Trophy, Users, Dices } from 'lucide-react';
+import { useDialog } from '@/lib/hooks/useDialog';
 
 interface FairPayerRouletteModalProps {
   isOpen: boolean;
@@ -15,7 +24,7 @@ const SLICE_COLORS = [
   '#10b981', // emerald-500
   '#06b6d4', // cyan-500
   '#3b82f6', // blue-500
-  '#8b5cf6', // purple-500
+  '#8b5cf6', // silver-500
   '#f59e0b', // amber-500
   '#ec4899', // pink-500
   '#14b8a6', // teal-500
@@ -27,12 +36,20 @@ export function FairPayerRouletteModal({
   onClose,
   defaultGroupId = null,
 }: FairPayerRouletteModalProps) {
-  const { currentUser, users, groups, addTransaction, getGroupBalances, userOwedToMe } = usePayd();
+  const { users, addTransaction, getGroupBalances, getGroupMembers } = usePayd();
+  const groups = useVisibleGroups();
 
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(defaultGroupId || groups[0]?.id || null);
+  const pickInitialGroupId = () =>
+    (defaultGroupId && groups.some((g) => g.id === defaultGroupId) ? defaultGroupId : groups[0]?.id) || null;
+
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(pickInitialGroupId);
   const [amountStr, setAmountStr] = useState('45.00');
-  const [selectedUserIds, setSelectedUserIds] = useState<string[]>(users.map((u) => u.id));
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>(() => {
+    const gid = pickInitialGroupId();
+    return gid ? getGroupMembers(gid).map((u) => u.id) : [];
+  });
   const [mode, setMode] = useState<'debt_weighted' | 'equal'>('debt_weighted');
+  const [error, setError] = useState<string | null>(null);
 
   const [isSpinning, setIsSpinning] = useState(false);
   const [currentRotation, setCurrentRotation] = useState(0);
@@ -40,35 +57,63 @@ export function FairPayerRouletteModal({
   const [showCelebration, setShowCelebration] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const spinTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Group balances for weighting
-  const groupBalances = selectedGroupId ? getGroupBalances(selectedGroupId) : {};
-
-  // Compute probability weights for each selected user
-  const participants = users.filter((u) => selectedUserIds.includes(u.id));
-
-  // Compute slice weights
-  const sliceWeights = React.useMemo(() => {
-    if (participants.length === 0) return [];
-
-    if (mode === 'equal') {
-      return participants.map((p) => ({ user: p, weight: 1 }));
+  const clearSpinTimer = () => {
+    if (spinTimerRef.current) {
+      clearTimeout(spinTimerRef.current);
+      spinTimerRef.current = null;
     }
+  };
 
-    // Debt-weighted: users who owe money (negative balance) get more weight!
-    // Minimum base weight of 1 for everyone
-    return participants.map((p) => {
-      const net = groupBalances[p.id] ?? 0;
-      // If user owes 100 AED, net is -10000. Give them extra weight!
-      const debtWeight = net < 0 ? Math.min(10, Math.ceil(Math.abs(net) / 2500)) : 0;
-      return {
-        user: p,
-        weight: 1 + debtWeight,
-      };
-    });
-  }, [participants, mode, groupBalances]);
+  const resetRound = () => {
+    clearSpinTimer();
+    setIsSpinning(false);
+    setWinnerId(null);
+    setShowCelebration(false);
+    setError(null);
+  };
+
+  const selectGroup = (groupId: string | null) => {
+    setSelectedGroupId(groupId);
+    setSelectedUserIds(groupId ? getGroupMembers(groupId).map((u) => u.id) : []);
+    resetRound();
+  };
+
+  // Reset everything each time the modal opens
+  useEffect(() => {
+    if (!isOpen) {
+      clearSpinTimer();
+      return;
+    }
+    selectGroup(pickInitialGroupId());
+    setAmountStr('45.00');
+    setMode('debt_weighted');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, defaultGroupId]);
+
+  useEffect(() => () => clearSpinTimer(), []);
+
+  // Only members of the selected group can be in the wheel
+  const groupMembers = selectedGroupId ? getGroupMembers(selectedGroupId) : [];
+  const groupBalances = selectedGroupId ? getGroupBalances(selectedGroupId) : {};
+  const participants = groupMembers.filter((u) => selectedUserIds.includes(u.id));
+  const participantKey = participants.map((p) => p.id).join(',');
+  const balanceKey = participants.map((p) => groupBalances[p.id] ?? 0).join(',');
+
+  // Compute slice weights (debt-weighted uses this group's balances only)
+  const sliceWeights = React.useMemo(() => {
+    const weights = computeRouletteWeights(
+      participants.map((p) => p.id),
+      groupBalances,
+      mode
+    );
+    return weights.map((w, i) => ({ user: participants[i], weight: w.weight }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [participantKey, balanceKey, mode]);
 
   const totalWeight = sliceWeights.reduce((acc, s) => acc + s.weight, 0);
+  const amountCheck = parseAmountInput(amountStr);
 
   // Draw the roulette wheel on canvas
   useEffect(() => {
@@ -143,38 +188,38 @@ export function FairPayerRouletteModal({
     ctx.fillText('☕', center, center);
   }, [isOpen, sliceWeights, totalWeight, mode]);
 
+  const { dialogProps, titleId } = useDialog(isOpen, onClose);
+
   if (!isOpen) return null;
 
   const toggleUser = (userId: string) => {
+    if (isSpinning) return;
     if (selectedUserIds.includes(userId)) {
-      if (selectedUserIds.length <= 2) return; // Keep at least 2 for roulette
+      if (participants.length <= 2) {
+        setError('Keep at least 2 people in the wheel.');
+        return;
+      }
       setSelectedUserIds(selectedUserIds.filter((id) => id !== userId));
     } else {
       setSelectedUserIds([...selectedUserIds, userId]);
     }
-    setWinnerId(null);
-    setShowCelebration(false);
+    resetRound();
   };
 
   const handleSpin = () => {
     if (isSpinning || sliceWeights.length < 2) return;
+    if (!amountCheck.ok) {
+      setError(amountCheck.error);
+      return;
+    }
 
+    setError(null);
     setIsSpinning(true);
     setWinnerId(null);
     setShowCelebration(false);
 
     // Pick random target index weighted by sliceWeights
-    const rand = Math.random() * totalWeight;
-    let accumulated = 0;
-    let selectedIndex = 0;
-
-    for (let i = 0; i < sliceWeights.length; i++) {
-      accumulated += sliceWeights[i].weight;
-      if (rand <= accumulated) {
-        selectedIndex = i;
-        break;
-      }
-    }
+    const selectedIndex = Math.max(0, pickWeightedIndex(sliceWeights.map((s) => s.weight), Math.random()));
 
     // Compute target angle for selectedIndex
     // Canvas 0 radians is at 3 o'clock. The pointer is at 12 o'clock (270 degrees / 1.5 * PI).
@@ -194,37 +239,57 @@ export function FairPayerRouletteModal({
 
     setCurrentRotation(nextRotation);
 
-    setTimeout(() => {
+    const winner = sliceWeights[selectedIndex].user.id;
+    clearSpinTimer();
+    spinTimerRef.current = setTimeout(() => {
+      spinTimerRef.current = null;
       setIsSpinning(false);
-      setWinnerId(sliceWeights[selectedIndex].user.id);
+      setWinnerId(winner);
       setShowCelebration(true);
     }, 4000);
   };
 
   const handleRecordTransaction = () => {
-    if (!winnerId) return;
+    if (!winnerId || !selectedGroupId) return;
+    setError(null);
 
-    const totalMinor = parseMajorToMinor(amountStr, currentUser.default_currency);
-    const splitObj = splitEqual(totalMinor, selectedUserIds);
-    const splits = Object.entries(splitObj).map(([uid, share]) => ({
-      user_id: uid,
-      share_minor: share,
-    }));
+    const parsed = parseAmountInput(amountStr);
+    if (!parsed.ok) {
+      setError(parsed.error);
+      return;
+    }
+    const memberIds = new Set(groupMembers.map((m) => m.id));
+    const splitIds = participants.map((p) => p.id).filter((id) => memberIds.has(id));
+    if (splitIds.length < 2 || !memberIds.has(winnerId)) {
+      setError('Pick at least 2 group members and spin again.');
+      return;
+    }
 
     const winner = users.find((u) => u.id === winnerId);
 
-    addTransaction({
-      type: 'expense',
-      title: `Coffee & Treats Round (Covered by ${winner?.name?.split(' ')[0]})`,
-      amount_minor: totalMinor,
-      currency: currentUser.default_currency,
-      category_id: 'c0000001-0000-0000-0000-000000000001', // Food and dining
-      payer_id: winnerId,
-      group_id: selectedGroupId || null,
-      payment_method: 'Card / Apple Pay',
-      notes: `Fair Payer Roulette round • ${mode === 'debt_weighted' ? 'Debt-Weighted Fairness' : 'Pure Random'}`,
-      splits,
-    });
+    try {
+      const splitObj = splitEqual(parsed.value, splitIds);
+      const splits = Object.entries(splitObj).map(([uid, share]) => ({
+        user_id: uid,
+        share_minor: share,
+      }));
+
+      addTransaction({
+        type: 'expense',
+        title: `Coffee & Treats Round (Covered by ${winner?.name?.split(' ')[0] || 'Winner'})`,
+        amount_minor: parsed.value,
+        currency: 'AED',
+        category_id: 'c0000001-0000-0000-0000-000000000001', // Food and dining
+        payer_id: winnerId,
+        group_id: selectedGroupId,
+        payment_method: 'Card / Apple Pay',
+        notes: `Fair Payer Roulette round • ${mode === 'debt_weighted' ? 'Debt-Weighted Fairness' : 'Pure Random'}`,
+        splits,
+      });
+    } catch {
+      setError("We couldn't record this round. Check the amount and try again.");
+      return;
+    }
 
     onClose();
   };
@@ -233,7 +298,7 @@ export function FairPayerRouletteModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
-      <div className="w-full max-w-md bg-[#18181b] border border-white/10 rounded-3xl p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto text-white font-body">
+      <div {...dialogProps} className="focus:outline-none w-full max-w-md bg-[#18181b] border border-white/10 rounded-2xl p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto text-white font-body">
         {/* Header */}
         <div className="flex items-center justify-between pb-2 border-b border-white/8">
           <div className="flex items-center gap-2">
@@ -241,10 +306,10 @@ export function FairPayerRouletteModal({
               <Coffee className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-heading text-base text-white flex items-center gap-1.5">
-                FAIR PAYER ROULETTE
+              <h3 id={titleId} className="font-heading text-base text-white flex items-center gap-1.5">
+                Fair payer roulette
                 <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-heading border border-amber-500/30">
-                  MINI-GAME
+                  Mini-game
                 </span>
               </h3>
               <p className="text-[11px] text-zinc-400 font-body">Who covers coffee or lunch today?</p>
@@ -252,12 +317,46 @@ export function FairPayerRouletteModal({
           </div>
 
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close"
             className="p-1 rounded-full text-zinc-400 hover:text-white transition"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Group Picker */}
+        {groups.length === 0 ? (
+          <div className="p-3 text-xs text-zinc-400 bg-[#09090b] border border-white/10 rounded-xl text-center">
+            Join or create a group to play Fair Payer Roulette.
+          </div>
+        ) : (
+          <div>
+            <label htmlFor="roulette-group" className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+              Group
+            </label>
+            <select
+              id="roulette-group"
+              value={selectedGroupId || ''}
+              disabled={isSpinning}
+              onChange={(e) => selectGroup(e.target.value || null)}
+              className="w-full mt-1 px-3 py-2 text-sm bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-amber-500 text-white"
+            >
+              {groups.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {error && (
+          <div role="alert" className="p-3 text-xs bg-rose-500/10 border border-rose-500/30 text-rose-400 rounded-xl">
+            {error}
+          </div>
+        )}
 
         {/* Amount & Mode Selector */}
         <div className="space-y-2.5">
@@ -268,7 +367,10 @@ export function FairPayerRouletteModal({
                 <button
                   key={preset}
                   type="button"
-                  onClick={() => setAmountStr(preset)}
+                  onClick={() => {
+                    setAmountStr(preset);
+                    setError(null);
+                  }}
                   className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold transition ${
                     amountStr === preset
                       ? 'bg-amber-500 text-white'
@@ -283,11 +385,15 @@ export function FairPayerRouletteModal({
 
           <div className="relative">
             <input
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
+              aria-label="Bill amount in AED"
               value={amountStr}
-              onChange={(e) => setAmountStr(e.target.value)}
-              className="w-full px-4 py-2 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-2xl text-slate-900 dark:text-white font-extrabold focus:outline-none focus:ring-2 focus:ring-amber-500 pr-14 text-center"
+              onChange={(e) => {
+                setAmountStr(e.target.value);
+                setError(null);
+              }}
+              className="w-full px-4 py-2 text-sm bg-[#09090b] border border-white/10 rounded-2xl text-white font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 pr-14 text-center"
             />
             <span className="absolute right-4 top-2.5 text-xs text-slate-400 font-bold pointer-events-none">
               AED
@@ -305,7 +411,7 @@ export function FairPayerRouletteModal({
                   : 'text-slate-500'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Scale className="w-3.5 h-3.5" />
               <span>Smart Debt-Weighted</span>
             </button>
             <button
@@ -324,7 +430,7 @@ export function FairPayerRouletteModal({
 
           {mode === 'debt_weighted' && (
             <p className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-500/10 p-2 rounded-xl text-center">
-              ⚖️ Members with negative balances (who owe the group money) receive a wider slice!
+              ⚖️ Members who owe this group get +1 slice per AED {ROULETTE_FILS_PER_EXTRA_SLICE / 100} owed (up to +{ROULETTE_MAX_EXTRA_SLICES}). Everyone else gets 1 slice.
             </p>
           )}
         </div>
@@ -338,9 +444,10 @@ export function FairPayerRouletteModal({
 
           {/* Spinning Wheel */}
           <div
-            className="transition-transform duration-[4000ms] cubic-bezier(0.15, 0.9, 0.2, 1)"
+            className="transition-transform duration-[4000ms]"
             style={{
               transform: `rotate(${currentRotation}deg)`,
+              transitionTimingFunction: 'cubic-bezier(0.15, 0.9, 0.2, 1)',
             }}
           >
             <canvas ref={canvasRef} width={260} height={260} className="rounded-full shadow-2xl" />
@@ -348,15 +455,15 @@ export function FairPayerRouletteModal({
 
           {/* Winner Display Badge */}
           {winnerUser && showCelebration && (
-            <div className="mt-3 p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-amber-500/20 border border-amber-500/40 text-center animate-in zoom-in-95 duration-200 w-full">
-              <div className="flex items-center justify-center gap-1.5 text-xs font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+            <div className="mt-3 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/40 text-center animate-in zoom-in-95 duration-200 w-full">
+              <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
                 <Trophy className="w-4 h-4" /> Winner Covers The Bill!
               </div>
-              <div className="text-lg font-black text-slate-900 dark:text-white mt-0.5">
+              <div className="text-lg font-semibold text-slate-900 dark:text-white mt-0.5">
                 {winnerUser.name}
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Pays AED {amountStr} • Split equally among {selectedUserIds.length} friends
+                Pays {amountCheck.ok ? formatMinorUnits(amountCheck.value, 'AED') : 'the bill'} • Split equally among {participants.length} friends
               </p>
             </div>
           )}
@@ -365,17 +472,23 @@ export function FairPayerRouletteModal({
         {/* Participants Selector */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>In the Wheel ({selectedUserIds.length})</span>
+            <span>In the Wheel ({participants.length})</span>
             <span className="text-[10px]">Tap to include/exclude</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {users.map((u) => {
+            {groupMembers.length < 2 && (
+              <span className="text-[11px] text-zinc-500">
+                This group needs at least 2 members to spin.
+              </span>
+            )}
+            {groupMembers.map((u) => {
               const inWheel = selectedUserIds.includes(u.id);
               return (
                 <button
                   key={u.id}
                   type="button"
                   onClick={() => toggleUser(u.id)}
+                  aria-pressed={inWheel}
                   className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition ${
                     inWheel
                       ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 font-semibold'
@@ -397,7 +510,7 @@ export function FairPayerRouletteModal({
               type="button"
               onClick={handleSpin}
               disabled={isSpinning || sliceWeights.length < 2}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-400 text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-amber-500/25 transition active:scale-98 disabled:opacity-50"
+              className="w-full py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-semibold text-sm flex items-center justify-center gap-2 transition active:scale-98 disabled:opacity-50"
             >
               <RotateCw className={`w-4 h-4 ${isSpinning ? 'animate-spin' : ''}`} />
               <span>{isSpinning ? 'Spinning...' : 'Spin The Wheel!'}</span>
@@ -407,6 +520,7 @@ export function FairPayerRouletteModal({
               <button
                 type="button"
                 onClick={handleSpin}
+                disabled={isSpinning}
                 className="py-3 px-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-200 transition"
               >
                 Re-spin
@@ -414,7 +528,7 @@ export function FairPayerRouletteModal({
               <button
                 type="button"
                 onClick={handleRecordTransaction}
-                className="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs shadow-lg shadow-emerald-600/25 transition"
+                className="flex-1 py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition"
               >
                 Record {winnerUser.name.split(' ')[0]}&apos;s Bill to Ledger
               </button>

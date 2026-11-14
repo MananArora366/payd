@@ -18,14 +18,14 @@ export function VoiceWaveform({ isRecording }: VoiceWaveformProps) {
       {/* Concentric ripple orb */}
       <div className="relative w-28 h-28 mx-auto flex items-center justify-center">
         <span
-          className="absolute w-20 h-20 rounded-full border-2 border-violet-400/40 animate-mic-ripple pointer-events-none"
+          className="absolute w-20 h-20 rounded-full border-2 border-silver-400/40 animate-mic-ripple pointer-events-none"
           style={{ animationDelay: '0s' }}
         />
         <span
-          className="absolute w-28 h-28 rounded-full border-2 border-violet-400/30 animate-mic-ripple pointer-events-none"
+          className="absolute w-28 h-28 rounded-full border-2 border-silver-400/30 animate-mic-ripple pointer-events-none"
           style={{ animationDelay: '0.5s' }}
         />
-        <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-violet-600 to-violet-400 flex items-center justify-center text-white shadow-xl shadow-violet-600/60 z-10">
+        <div className="w-16 h-16 rounded-full bg-silver-100 flex items-center justify-center text-zinc-900 z-10">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
             <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
@@ -40,7 +40,7 @@ export function VoiceWaveform({ isRecording }: VoiceWaveformProps) {
         {barHeights.map((height, idx) => (
           <span
             key={idx}
-            className="w-1.5 bg-gradient-to-t from-violet-600 via-violet-400 to-purple-300 rounded-full animate-bar-jump"
+            className="w-1.5 bg-silver-300 rounded-full animate-bar-jump"
             style={{
               height: `${height}px`,
               animationDelay: `${barDelays[idx]}s`,

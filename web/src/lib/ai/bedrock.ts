@@ -2,14 +2,22 @@ import {
   BedrockRuntimeClient,
   ConverseCommand,
 } from '@aws-sdk/client-bedrock-runtime';
-import { VoiceIntent, VoiceIntentSchema, deterministicParseIntent } from './gemini';
+import {
+  VoiceIntent,
+  VoiceIntentSchema,
+  deterministicParseIntent,
+  deterministicAnswerQuery,
+  sanitizeIntent,
+  type AiProvider,
+  type InterpretContext,
+} from './gemini';
 
 const region = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'us-east-1';
 const defaultModelId = process.env.BEDROCK_MODEL_ID || 'global.anthropic.claude-opus-5-5';
 
 let client: BedrockRuntimeClient | null = null;
 
-function getBedrockClient(): BedrockRuntimeClient {
+export function getBedrockClient(): BedrockRuntimeClient {
   if (!client) {
     const credentials =
       process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
@@ -41,12 +49,84 @@ export const CAREEM_AGENT_PLAYBOOK = `
 > The Golden Rule: Read-only tools are free to call while reasoning. Mutating tools spend user's money or change real-world state - ALWAYS confirm first, never blind-retry after a timeout.
 `;
 
+/**
+ * Bedrock is strictly opt-in: it is used only when BEDROCK_ENABLED === 'true'.
+ * Ambient AWS credentials (AWS_ACCESS_KEY_ID, AWS_PROFILE, ...) inherited from a
+ * shell or another tool must NOT enable it, because every call is billed.
+ */
 export function isBedrockConfigured(): boolean {
-  return !!(
-    (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) ||
-    process.env.AWS_PROFILE ||
-    process.env.BEDROCK_ENABLED === 'true'
-  );
+  return process.env.BEDROCK_ENABLED === 'true';
+}
+
+export const BEDROCK_MODEL_ID = defaultModelId;
+
+/**
+ * Returns the first content block that carries a non-empty string `text`.
+ * Reasoning models return e.g. [{ reasoningContent }, { text }], so block 0 is
+ * not necessarily the answer.
+ */
+export function extractModelText(content: unknown): string | null {
+  if (!Array.isArray(content)) return null;
+  for (const block of content) {
+    if (block && typeof block === 'object' && typeof (block as { text?: unknown }).text === 'string') {
+      const text = ((block as { text: string }).text).trim();
+      if (text) return text;
+    }
+  }
+  return null;
+}
+
+/**
+ * Robustly extracts a JSON object from model output: strips ``` / ```json fences,
+ * tries a direct parse, then falls back to the first balanced {...} object
+ * (string-aware, so braces inside strings are ignored). Returns null on failure.
+ */
+export function extractJsonObject(text: string): unknown | null {
+  if (typeof text !== 'string') return null;
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidate = (fenced ? fenced[1] : text).trim();
+  try {
+    return JSON.parse(candidate);
+  } catch {
+    // fall through to brace scanning
+  }
+  const start = candidate.indexOf('{');
+  if (start < 0) return null;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < candidate.length; i++) {
+    const ch = candidate[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === '\\') escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') inString = true;
+    else if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) {
+        try {
+          return JSON.parse(candidate.slice(start, i + 1));
+        } catch {
+          return null;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+/** Parse a Bedrock Converse output content array into a validated VoiceIntent, or null. */
+export function parseIntentFromContent(content: unknown): VoiceIntent | null {
+  const text = extractModelText(content);
+  if (!text) return null;
+  const parsed = extractJsonObject(text);
+  if (!parsed) return null;
+  const validated = VoiceIntentSchema.safeParse(parsed);
+  return validated.success ? validated.data : null;
 }
 
 /**
@@ -57,12 +137,22 @@ export async function interpretVoiceTranscriptBedrock(
   transcript: string,
   context: any
 ): Promise<VoiceIntent> {
-  const fallback = deterministicParseIntent(transcript, context);
+  return (await interpretVoiceTranscriptBedrockWithSource(transcript, context)).intent;
+}
 
-  if (!isBedrockConfigured() && process.env.NODE_ENV !== 'test') {
-    return fallback;
+/**
+ * Same as interpretVoiceTranscriptBedrock, but reports whether Bedrock actually
+ * produced the intent ('aws-bedrock') or the deterministic parser did.
+ */
+export async function interpretVoiceTranscriptBedrockWithSource(
+  transcript: string,
+  context: InterpretContext
+): Promise<{ intent: VoiceIntent; provider: AiProvider }> {
+  const fallback = () => ({ intent: deterministicParseIntent(transcript, context), provider: 'deterministic' as const });
+
+  if (!isBedrockConfigured()) {
+    return fallback();
   }
-
   try {
     const bedrock = getBedrockClient();
 
@@ -103,41 +193,41 @@ Return ONLY valid JSON matching this schema:
       system: [{ text: systemPrompt }],
       inferenceConfig: {
         maxTokens: 512,
-        temperature: 0.1,
       },
     });
 
     const response = await bedrock.send(command);
-    const outputText = response.output?.message?.content?.[0]?.text;
-
-    if (!outputText) {
-      return fallback;
+    const intent = parseIntentFromContent(response.output?.message?.content);
+    if (!intent) {
+      console.warn('[AWS Bedrock] No parseable intent in response; using deterministic parser.');
+      return fallback();
     }
-
-    const cleanJson = outputText.replace(/```(?:json)?\s*/g, '').replace(/```\s*$/g, '').trim();
-    const parsed = JSON.parse(cleanJson);
-    const validated = VoiceIntentSchema.safeParse(parsed);
-
-    if (validated.success) {
-      return validated.data;
-    }
-
-    return fallback;
+    return { intent: sanitizeIntent(intent, context, transcript), provider: 'aws-bedrock' };
   } catch (error) {
     console.warn('[AWS Bedrock] Fallback to deterministic parser:', error);
-    return fallback;
+    return fallback();
   }
 }
 
 /**
  * Ask ledger questions using AWS Bedrock (Claude via BEDROCK_MODEL_ID).
+ * Falls back to a deterministic answer computed from ledgerSummary.
  */
 export async function queryLedgerBedrock(
   question: string,
   ledgerSummary: any
 ): Promise<string> {
+  return (await queryLedgerBedrockWithSource(question, ledgerSummary)).answer;
+}
+
+export async function queryLedgerBedrockWithSource(
+  question: string,
+  ledgerSummary: Record<string, unknown>
+): Promise<{ answer: string; provider: AiProvider }> {
+  const fallback = () => ({ answer: deterministicAnswerQuery(question, ledgerSummary), provider: 'deterministic' as const });
+
   if (!isBedrockConfigured()) {
-    return `[AWS Bedrock Offline] Based on your active ledger: You have a net balance of AED ${(ledgerSummary?.net_balance || 0).toFixed(2)}. All calculations verified with zero-loss precision.`;
+    return fallback();
   }
 
   try {
@@ -149,29 +239,28 @@ export async function queryLedgerBedrock(
           role: 'user',
           content: [
             {
-              text: `Context on user's social debts and ledger:\n${JSON.stringify(ledgerSummary, null, 2)}\n\nQuestion: ${question}`,
+              text: `Context on user's social debts and ledger (all *Minor values are integer fils; 100 fils = AED 1; people[].netMinor > 0 means that person owes the user):\n${JSON.stringify(ledgerSummary, null, 2)}\n\nQuestion: ${question}`,
             },
           ],
         },
       ],
       system: [
         {
-          text: 'You are the Payd Financial Intelligence Assistant on AWS Bedrock. Answer clearly, accurately, and concisely in 1-2 sentences with AED figures.',
+          text: 'You are the Payd Financial Intelligence Assistant on AWS Bedrock. Answer clearly, accurately, and concisely in 1-2 sentences with AED figures. Use only the numbers in the provided context.',
         },
       ],
       inferenceConfig: {
         maxTokens: 256,
-        temperature: 0.2,
       },
     });
 
     const response = await bedrock.send(command);
-    return (
-      response.output?.message?.content?.[0]?.text ||
-      'No answer could be generated from AWS Bedrock.'
-    );
+    const text = extractModelText(response.output?.message?.content);
+    const answer = text?.replace(/^```\w*\s*|```$/g, '').trim();
+    if (!answer) return fallback();
+    return { answer, provider: 'aws-bedrock' };
   } catch (err: any) {
     console.warn('[AWS Bedrock Query Error]:', err);
-    return `[AWS Bedrock] You currently have ${ledgerSummary?.groups?.length || 2} active groups with AED ${(ledgerSummary?.net_balance || 0).toFixed(2)} net balance.`;
+    return fallback();
   }
 }

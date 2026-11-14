@@ -29,7 +29,7 @@ export function ClarificationCard({ intent, onAnswer, onCancel }: ClarificationC
   };
 
   return (
-    <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-800/60 rounded-3xl p-5 shadow-2xl space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-200">
+    <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-800/60 rounded-2xl p-5 shadow-2xl space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-200">
       <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-2">
           <span className="p-1.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400">
@@ -59,7 +59,7 @@ export function ClarificationCard({ intent, onAnswer, onCancel }: ClarificationC
           <input
             type="text"
             autoFocus
-            placeholder="e.g. 150 dirhams with Rahul"
+            placeholder="e.g. 150 dirhams with Veer"
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
             className="flex-1 px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"

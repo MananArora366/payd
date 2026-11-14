@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Home, Receipt, Users, HandCoins, Mic, Sparkles } from 'lucide-react';
+import { Home, Receipt, Users, HandCoins, Mic } from 'lucide-react';
 import { usePayd } from '@/lib/store/PaydContext';
 
 interface BottomNavProps {
@@ -20,9 +20,10 @@ export function BottomNav({ activeTab, onTabChange, onTriggerVoice }: BottomNavP
         {/* Tab 1: Home / Dashboard */}
         <button
           onClick={() => onTabChange('home')}
+          aria-current={activeTab === 'home' ? 'page' : undefined}
           className={`flex flex-col items-center justify-center w-14 py-1 transition ${
             activeTab === 'home'
-              ? 'text-violet-400 font-bold'
+              ? 'text-silver-400 font-bold'
               : 'text-zinc-500 hover:text-zinc-300'
           }`}
           title="Home Dashboard"
@@ -34,9 +35,10 @@ export function BottomNav({ activeTab, onTabChange, onTriggerVoice }: BottomNavP
         {/* Tab 2: Groups */}
         <button
           onClick={() => onTabChange('groups')}
+          aria-current={activeTab === 'groups' ? 'page' : undefined}
           className={`flex flex-col items-center justify-center w-14 py-1 transition ${
             activeTab === 'groups'
-              ? 'text-violet-400 font-bold'
+              ? 'text-silver-400 font-bold'
               : 'text-zinc-500 hover:text-zinc-300'
           }`}
           title="Active Groups"
@@ -57,21 +59,21 @@ export function BottomNav({ activeTab, onTabChange, onTriggerVoice }: BottomNavP
                 if (micBtn) micBtn.click();
               }
             }}
-            className="group relative w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-violet-600 via-violet-500 to-purple-400 text-white flex items-center justify-center shadow-xl shadow-violet-600/50 ring-4 ring-[#09090b] hover:scale-105 active:scale-95 transition-all duration-200"
-            title="Tap to speak expense with AI"
+            className="group relative w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-silver-100 hover:bg-white text-zinc-900 flex items-center justify-center ring-4 ring-[#09090b] active:scale-95 transition-all duration-200"
+            title="Speak an expense"
+            aria-label="Speak an expense"
           >
-            {/* Concentric pulse rings matching iOS prototype */}
-            <span className="absolute inset-0 rounded-full border border-violet-400/40 animate-mic-ripple pointer-events-none" />
-            <Mic className="w-6 h-6 text-white group-hover:scale-110 transition-transform relative z-10" />
+            <Mic className="w-6 h-6 relative z-10" />
           </button>
         </div>
 
         {/* Tab 3: Settlements */}
         <button
           onClick={() => onTabChange('settlements')}
+          aria-current={activeTab === 'settlements' ? 'page' : undefined}
           className={`relative flex flex-col items-center justify-center w-14 py-1 transition ${
             activeTab === 'settlements'
-              ? 'text-violet-400 font-bold'
+              ? 'text-silver-400 font-bold'
               : 'text-zinc-500 hover:text-zinc-300'
           }`}
           title="Smart Settlements"
@@ -79,7 +81,7 @@ export function BottomNav({ activeTab, onTabChange, onTriggerVoice }: BottomNavP
           <div className="relative">
             <HandCoins className={`w-5 h-5 transition-transform ${activeTab === 'settlements' ? 'scale-110' : ''}`} />
             {hasSettlementBadge && (
-              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400" />
             )}
           </div>
           <span className="text-[10px] mt-0.5 font-medium tracking-tight">Settle</span>
@@ -88,9 +90,10 @@ export function BottomNav({ activeTab, onTabChange, onTriggerVoice }: BottomNavP
         {/* Tab 4: Transactions / Activity */}
         <button
           onClick={() => onTabChange('transactions')}
+          aria-current={activeTab === 'transactions' ? 'page' : undefined}
           className={`flex flex-col items-center justify-center w-14 py-1 transition ${
             activeTab === 'transactions'
-              ? 'text-violet-400 font-bold'
+              ? 'text-silver-400 font-bold'
               : 'text-zinc-500 hover:text-zinc-300'
           }`}
           title="Expense Activity"

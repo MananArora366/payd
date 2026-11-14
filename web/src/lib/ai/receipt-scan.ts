@@ -19,7 +19,11 @@ export const ReceiptScanSchema = z.object({
   total_minor: z.number().int().positive(), // in fils
   category: z.string().default('Food and dining'),
   line_items: z.array(ReceiptItemSchema).default([]),
+  /** Service charges / tips minus discounts printed on the receipt (signed fils). */
+  charges_minor: z.number().int().optional(),
   confidence: z.number().min(0).max(1).default(0.95),
+  /** Reconciliation problems (e.g. items + VAT != total) the user should check. */
+  warnings: z.array(z.string()).optional(),
   notes: z.string().nullable().default(null),
   engine: z.string().optional().default('local_ocr'),
 });

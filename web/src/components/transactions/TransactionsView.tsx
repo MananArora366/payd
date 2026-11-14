@@ -1,20 +1,21 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { usePayd } from '@/lib/store/PaydContext';
 import { formatMinorUnits } from '@/lib/ledger';
 import { Transaction } from '@/types/database';
-import {
-  Search,
-  Filter,
-  Plus,
-  ArrowUpRight,
-  ArrowDownLeft,
-  Calendar,
-  Layers,
-  Tag,
-  AlertCircle,
-} from 'lucide-react';
+import { Search, Filter, Plus } from 'lucide-react';
+import { sortByDateDesc, volumeByType } from '@/components/analytics/spendMath';
+
+// Remember "Include Deleted" for the browser session so it survives tab switches.
+const SHOW_DELETED_KEY = 'payd:activity:showDeleted';
+
+const onActivateKey = (fn: () => void) => (e: React.KeyboardEvent) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    fn();
+  }
+};
 
 interface TransactionsViewProps {
   onOpenAddExpense: (type?: 'expense' | 'income') => void;
@@ -28,7 +29,24 @@ export function TransactionsView({ onOpenAddExpense, onSelectTransaction }: Tran
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
   const [selectedGroupId, setSelectedGroupId] = useState<string>('all');
-  const [showDeleted, setShowDeleted] = useState(false);
+  const [showDeleted, setShowDeletedState] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (window.sessionStorage.getItem(SHOW_DELETED_KEY) === '1') setShowDeletedState(true);
+    } catch {
+      // sessionStorage unavailable (private mode etc.): keep the default
+    }
+  }, []);
+
+  const setShowDeleted = (value: boolean) => {
+    setShowDeletedState(value);
+    try {
+      window.sessionStorage.setItem(SHOW_DELETED_KEY, value ? '1' : '0');
+    } catch {
+      // ignore
+    }
+  };
 
   // Category emoji helper
   const getCategoryEmoji = (catName?: string) => {
@@ -43,13 +61,13 @@ export function TransactionsView({ onOpenAddExpense, onSelectTransaction }: Tran
     return '💳';
   };
 
-  // Filter transactions
-  const filtered = transactions.filter((t) => {
+  // Filter transactions, newest first
+  const filtered = sortByDateDesc(transactions).filter((t) => {
     if (!showDeleted && t.deleted_at) return false;
     if (selectedType !== 'all' && t.type !== selectedType) return false;
     if (selectedCategoryId !== 'all' && t.category_id !== selectedCategoryId) return false;
     if (selectedGroupId !== 'all') {
-      if (selectedGroupId === 'personal' && t.group_id !== null) return false;
+      if (selectedGroupId === 'personal' && t.group_id) return false;
       if (selectedGroupId !== 'personal' && t.group_id !== selectedGroupId) return false;
     }
     if (search.trim()) {
@@ -64,25 +82,23 @@ export function TransactionsView({ onOpenAddExpense, onSelectTransaction }: Tran
     return true;
   });
 
-  const totalFilteredMinor = filtered.reduce((acc, t) => {
-    if (t.deleted_at) return acc;
-    return t.type === 'expense' ? acc + t.amount_minor : acc;
-  }, 0);
+  // Active volume excludes deleted entries; expenses and income are reported separately.
+  const { expenseMinor, incomeMinor } = volumeByType(filtered);
 
   return (
     <div className="space-y-6 pb-28">
       {/* Title & Top Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="font-heading text-xl sm:text-2xl text-white tracking-wide">EXPENSE ACTIVITY</h2>
+          <h2 className="font-heading text-xl sm:text-2xl text-white tracking-wide">Expense activity</h2>
           <p className="text-xs text-zinc-400 mt-1 font-body">
-            Deterministic immutable ledger history with zero-loss precision
+            Every expense and income entry in one place. Settlements live in the Settle tab
           </p>
         </div>
 
         <button
           onClick={() => onOpenAddExpense('expense')}
-          className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-violet-600 to-violet-500 hover:from-violet-500 hover:to-violet-400 text-white font-heading text-xs tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-violet-600/30 transition active:scale-95 self-start sm:self-auto"
+          className="px-4 py-2.5 rounded-2xl bg-silver-100 hover:bg-white text-zinc-900 font-semibold text-sm flex items-center justify-center gap-2 transition active:scale-95 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4 stroke-[3]" />
           <span>+ Add Expense</span>
@@ -95,11 +111,12 @@ export function TransactionsView({ onOpenAddExpense, onSelectTransaction }: Tran
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3.5 top-3 text-zinc-400" />
           <input
-            type="text"
+            type="search"
+            aria-label="Search transactions"
             placeholder="Search by title, notes, payer, or category..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-xs bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-violet-500 text-white placeholder:text-zinc-600 font-body"
+            className="w-full pl-10 pr-4 py-2 text-xs bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-silver-500 text-white placeholder:text-zinc-600 font-body"
           />
         </div>
 
@@ -107,9 +124,10 @@ export function TransactionsView({ onOpenAddExpense, onSelectTransaction }: Tran
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
           {/* Type Filter */}
           <select
+            aria-label="Filter by type"
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
-            className="px-3 py-2 bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-violet-500 text-zinc-300"
+            className="px-3 py-2 bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-silver-500 text-zinc-300"
           >
             <option value="all">All Types</option>
             <option value="expense">Expenses</option>
@@ -118,9 +136,10 @@ export function TransactionsView({ onOpenAddExpense, onSelectTransaction }: Tran
 
           {/* Category Filter */}
           <select
+            aria-label="Filter by category"
             value={selectedCategoryId}
             onChange={(e) => setSelectedCategoryId(e.target.value)}
-            className="px-3 py-2 bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-violet-500 text-zinc-300"
+            className="px-3 py-2 bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-silver-500 text-zinc-300"
           >
             <option value="all">All Categories</option>
             {categories.map((c) => (
@@ -132,9 +151,10 @@ export function TransactionsView({ onOpenAddExpense, onSelectTransaction }: Tran
 
           {/* Group Filter */}
           <select
+            aria-label="Filter by group"
             value={selectedGroupId}
             onChange={(e) => setSelectedGroupId(e.target.value)}
-            className="px-3 py-2 bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-violet-500 text-zinc-300"
+            className="px-3 py-2 bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-silver-500 text-zinc-300"
           >
             <option value="all">All Groups</option>
             <option value="personal">Personal Only</option>
@@ -151,7 +171,7 @@ export function TransactionsView({ onOpenAddExpense, onSelectTransaction }: Tran
               type="checkbox"
               checked={showDeleted}
               onChange={(e) => setShowDeleted(e.target.checked)}
-              className="rounded accent-violet-600"
+              className="rounded accent-silver-600"
             />
             <span className="text-[11px] whitespace-nowrap">Include Deleted</span>
           </label>
@@ -160,10 +180,18 @@ export function TransactionsView({ onOpenAddExpense, onSelectTransaction }: Tran
         {/* Filter Summary */}
         <div className="flex justify-between items-center text-[11px] text-zinc-400 pt-1">
           <span>
-            Showing {filtered.length} entries &bull; Active volume:{' '}
-            <strong className="text-white">
-              {formatMinorUnits(totalFilteredMinor, currentUser.default_currency)}
-            </strong>
+            Showing {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'} &bull; Active volume:{' '}
+            {selectedType !== 'income' && (
+              <strong className="text-white">
+                {formatMinorUnits(expenseMinor, currentUser.default_currency)} spent
+              </strong>
+            )}
+            {selectedType === 'all' && incomeMinor > 0 && ' · '}
+            {selectedType !== 'expense' && (selectedType === 'income' || incomeMinor > 0) && (
+              <strong className="text-[#10B981]">
+                +{formatMinorUnits(incomeMinor, currentUser.default_currency)} income
+              </strong>
+            )}
           </span>
         </div>
       </div>
@@ -171,7 +199,7 @@ export function TransactionsView({ onOpenAddExpense, onSelectTransaction }: Tran
       {/* Transaction List */}
       <div className="space-y-2 font-body">
         {filtered.length === 0 ? (
-          <div className="p-12 text-center bg-[#18181b] border border-white/8 rounded-3xl">
+          <div className="p-12 text-center bg-[#18181b] border border-white/8 rounded-2xl">
             <Filter className="w-8 h-8 text-zinc-500 mx-auto mb-2 opacity-50" />
             <h4 className="font-heading text-sm text-white">No matching transactions</h4>
             <p className="text-xs text-zinc-400 mt-1 font-body">Try clearing search filters or add a new transaction.</p>
@@ -187,15 +215,18 @@ export function TransactionsView({ onOpenAddExpense, onSelectTransaction }: Tran
             return (
               <div
                 key={t.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => onSelectTransaction(t)}
+                onKeyDown={onActivateKey(() => onSelectTransaction(t))}
                 className={`p-4 rounded-2xl border transition flex items-center justify-between cursor-pointer shadow-sm ${
                   isDeleted
                     ? 'bg-rose-500/5 border-rose-500/20 opacity-60'
-                    : 'bg-[#18181b] hover:bg-[#202025] border-white/8 hover:border-violet-500/40'
+                    : 'bg-[#18181b] hover:bg-[#202025] border-white/8 hover:border-silver-500/40'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center text-lg shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-silver-500/10 flex items-center justify-center text-lg shrink-0">
                     {getCategoryEmoji(cat?.name)}
                   </div>
 
@@ -210,7 +241,7 @@ export function TransactionsView({ onOpenAddExpense, onSelectTransaction }: Tran
                         </span>
                       )}
                       {group && (
-                        <span className="text-[10px] font-heading px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300">
+                        <span className="text-[10px] font-heading px-2 py-0.5 rounded-full bg-silver-500/20 text-silver-300">
                           {group.name}
                         </span>
                       )}
@@ -219,7 +250,9 @@ export function TransactionsView({ onOpenAddExpense, onSelectTransaction }: Tran
                     <div className="text-[11px] text-zinc-400 mt-1 flex items-center gap-2">
                       <span>{cat?.name}</span>
                       <span>&bull;</span>
-                      <span>Paid by {payer?.id === currentUser.id ? 'You' : payer?.name}</span>
+                      <span>
+                        {isIncome ? 'Received by' : 'Paid by'} {payer?.id === currentUser.id ? 'You' : payer?.name}
+                      </span>
                       <span>&bull;</span>
                       <span>
                         {new Date(t.occurred_at).toLocaleDateString('en-US', {
@@ -243,9 +276,6 @@ export function TransactionsView({ onOpenAddExpense, onSelectTransaction }: Tran
                   >
                     {isIncome ? '+' : ''}
                     {formatMinorUnits(t.amount_minor, t.currency)}
-                  </div>
-                  <div className="text-[10px] text-zinc-500 font-mono">
-                    {t.amount_minor} minor units
                   </div>
                 </div>
               </div>

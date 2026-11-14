@@ -194,8 +194,8 @@ describe('Payd Acceptance Test Suite (All 10 Invariants & Criteria)', () => {
     expect(shareSplits['u1'] + shareSplits['u2']).toBe(10000);
   });
 
-  // Criterion 11: Careem Pay & Aani instant settlements zero-out liability
-  it('Criterion 11: Careem Pay & Aani settlements satisfy Invariant 4 and zero-out liabilities', () => {
+  // Criterion 11: Careem Pay instant settlements zero-out liability
+  it('Criterion 11: Careem Pay settlements satisfy Invariant 4 and zero-out liabilities', () => {
     const txn = {
       id: 't-careem-1',
       type: 'expense' as const,
@@ -214,7 +214,7 @@ describe('Payd Acceptance Test Suite (All 10 Invariants & Criteria)', () => {
     const initialBilateral = calculateBilateralDebts([txn], splits, []);
     expect(initialBilateral.get(users.rahul)?.get(users.prakarsh)).toBe(5000);
 
-    // Rahul settles via Careem Pay / Aani
+    // Rahul settles via Careem Pay
     const careemSettlement = {
       id: 's-careem-1',
       group_id: 'g1',
@@ -222,7 +222,7 @@ describe('Payd Acceptance Test Suite (All 10 Invariants & Criteria)', () => {
       recipient_id: users.prakarsh,
       amount_minor: 5000,
       currency: 'AED',
-      method: 'Careem Pay / Aani',
+      method: 'Careem Pay',
       reference: 'Instant Careem Pay QR settlement',
       status: 'settled' as const,
       settled_at: new Date().toISOString(),

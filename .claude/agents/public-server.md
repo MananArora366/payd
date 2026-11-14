@@ -20,10 +20,12 @@ HTTPS matters: phone browsers only allow the Payd Lens camera on HTTPS, so the n
 3. Wait for the `Payd is live:` line or a failure line (`Build failed`, `Server did not start`, `ngrok failed`) in its output, then fetch the URL with `curl -s -o /dev/null -w '%{http_code}' <url>` to confirm it responds.
 4. Report: the public URL, that free ngrok shows visitors a one-time "Visit Site" warning page first, and how to stop it.
 
-Options: `SHARE_PASSWORD=<8+ chars>` adds a login (username `payd`). `SHARE_SKIP_BUILD=1` reuses the last build for a faster restart.
+Auth is now required: `npm run share` refuses to start unless you pass `SHARE_PASSWORD=<8+ chars>` (adds a login, username `payd`) or explicitly opt out with `SHARE_NO_AUTH=1` (or `npm run share -- --no-auth` from `web/`). Ask the user for a password; only use `SHARE_NO_AUTH=1` if they explicitly want an open link.
+
+Options: `SHARE_SKIP_BUILD=1` reuses the last build for a faster restart.
 
 ## Warn before starting
-The link is public: anyone who has it can use the app, including API routes that call AWS Bedrock / Gemini with the keys in `web/.env.local`, which can run up costs. Suggest `SHARE_PASSWORD` unless the user already declined, and tell them to stop the share when the demo is over.
+The link is public: anyone who has it can use the app, including API routes that call AWS Bedrock / Gemini with the keys in `web/.env.local`, which can run up costs. Use `SHARE_PASSWORD` unless the user explicitly declined (then `SHARE_NO_AUTH=1`), and tell them to stop the share when the demo is over.
 
 ## Stopping
 Stop the background task that runs `npm run share`; its cleanup kills both the server and ngrok. If it was started outside this session: `pkill -f "next start -p 3001"; pkill -f "ngrok http 3001"`.

@@ -53,10 +53,11 @@
 
 /* ─── Global Design Tokens ────────────────────────────────────────────── */
 :root {
-  --violet-primary: #7C3AED;
-  --violet-light: #A78BFA;
-  --violet-dark: #5B21B6;
-  --violet-soft: rgba(124, 58, 237, 0.12);
+  --silver-primary: #8e959e;
+  --silver-light: #cdd2d8;
+  --silver-dark: #535960;
+  --silver-soft: rgba(176, 182, 190, 0.12);
+  --silver-gradient: linear-gradient(135deg, #e3e6ea 0%, #b0b6be 30%, #8e959e 55%, #cdd2d8 80%, #8e959e 100%);
   --emerald: #10B981;
   --emerald-soft: rgba(16, 185, 129, 0.12);
   --rose: #F43F5E;
@@ -99,9 +100,8 @@ body {
 
 .font-heading {
   font-family: 'DM Sans', sans-serif !important;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .font-body {

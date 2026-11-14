@@ -3,26 +3,14 @@
 import React, { useState } from 'react';
 import { usePayd } from '@/lib/store/PaydContext';
 import { formatMinorUnits } from '@/lib/ledger';
-import {
-  Activity,
-  Zap,
-  Clock,
-  AlertTriangle,
-  ArrowRight,
-  TrendingDown,
-  ShieldCheck,
-  Send,
-  Sparkles,
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react';
+import { Activity, Zap, Clock, AlertTriangle, Send, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface CashFlowAnalyticsCardProps {
   onNavigateSettlements?: () => void;
 }
 
 export function CashFlowAnalyticsCard({ onNavigateSettlements }: CashFlowAnalyticsCardProps) {
-  const { currentUser, cashFlowExposure, reimbursementVelocities, userSpending } = usePayd();
+  const { currentUser, cashFlowExposure, reimbursementVelocities, budgets } = usePayd();
   const [isExpanded, setIsExpanded] = useState(false);
 
   const {
@@ -44,30 +32,32 @@ export function CashFlowAnalyticsCard({ onNavigateSettlements }: CashFlowAnalyti
         )
       : 100;
 
-  // Exposure of monthly budget (using 5,000 AED default)
-  const exposurePercent = Math.min(100, Math.round((outstanding_exposure_minor / 500000) * 100));
+  // Exposure as a share of the user's monthly budget (AED 5,000 default when none is set)
+  const monthlyBudget = budgets.find((b) => b.user_id === currentUser.id && !b.category_id);
+  const budgetLimitMinor = monthlyBudget && monthlyBudget.limit_minor > 0 ? monthlyBudget.limit_minor : 500000;
+  const exposurePercent = Math.min(100, Math.round((outstanding_exposure_minor / budgetLimitMinor) * 100));
 
   const handleWhatsAppNudge = (name: string, owedMinor: number) => {
     const amountFormatted = formatMinorUnits(owedMinor, currentUser.default_currency);
     const text = encodeURIComponent(
-      `Hey ${name.split(' ')[0]}! 👋 Just checking in on our Payd balance (${amountFormatted}) whenever you get a chance to settle up. Thanks! ✨`
+      `Hi ${name.split(' ')[0]}, just checking in on our Payd balance (${amountFormatted}) whenever you get a chance to settle up. Thanks!`
     );
     window.open(`https://wa.me/?text=${text}`, '_blank');
   };
 
   return (
-    <div className="rounded-3xl bg-[#18181b] border border-white/8 p-5 shadow-md space-y-4 font-body">
+    <div className="rounded-2xl bg-[#18181b] border border-white/8 p-5 shadow-md space-y-4 font-body">
       {/* Top Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-violet-500/20 text-violet-400">
+          <div className="p-2 rounded-xl bg-silver-500/20 text-silver-400">
             <Activity className="w-4 h-4" />
           </div>
           <div>
             <h3 className="font-heading text-xs text-white flex items-center gap-1.5">
-              CASH FLOW HEALTH & REIMBURSEMENT LAG
-              <span className="text-[9px] px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 font-heading border border-violet-500/30">
-                ANALYTICS
+              Cash flow health & reimbursement lag
+              <span className="text-[9px] px-2 py-0.5 rounded-full bg-silver-500/20 text-silver-300 font-heading border border-silver-500/30">
+                Analytics
               </span>
             </h3>
             <p className="text-[11px] text-zinc-400 font-body">
@@ -79,6 +69,8 @@ export function CashFlowAnalyticsCard({ onNavigateSettlements }: CashFlowAnalyti
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
+          aria-expanded={isExpanded}
+          aria-label={isExpanded ? 'Hide friend reimbursement details' : 'Show friend reimbursement details'}
           className="p-1 rounded-lg text-zinc-400 hover:text-white transition"
         >
           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -90,7 +82,7 @@ export function CashFlowAnalyticsCard({ onNavigateSettlements }: CashFlowAnalyti
         {/* Outstanding Exposure */}
         <div className="p-3.5 rounded-2xl bg-[#202025] border border-white/6">
           <div className="text-[10px] font-heading text-zinc-400">
-            OUT-OF-POCKET EXPOSURE
+            Out-of-pocket exposure
           </div>
           <div className="text-xl font-bold text-[#F43F5E] mt-1">
             {formatMinorUnits(outstanding_exposure_minor, currentUser.default_currency)}
@@ -103,7 +95,7 @@ export function CashFlowAnalyticsCard({ onNavigateSettlements }: CashFlowAnalyti
         {/* Repayment Velocity Rate */}
         <div className="p-3.5 rounded-2xl bg-[#202025] border border-white/6">
           <div className="text-[10px] font-heading text-zinc-400">
-            SETTLEMENT RECOVERY RATE
+            Settlement recovery rate
           </div>
           <div className="text-xl font-bold text-[#10B981] mt-1">
             {recoveryPercent}%
@@ -116,9 +108,9 @@ export function CashFlowAnalyticsCard({ onNavigateSettlements }: CashFlowAnalyti
         {/* Personal vs Group Fronted Ratio */}
         <div className="p-3.5 rounded-2xl bg-[#202025] border border-white/6">
           <div className="text-[10px] font-heading text-zinc-400">
-            FAIR SHARE CONSUMPTION
+            Fair share consumption
           </div>
-          <div className="text-xl font-black text-slate-800 dark:text-slate-200 mt-1">
+          <div className="text-xl font-semibold text-slate-800 dark:text-slate-200 mt-1">
             {formatMinorUnits(personal_consumption_minor, currentUser.default_currency)}
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
@@ -158,7 +150,7 @@ export function CashFlowAnalyticsCard({ onNavigateSettlements }: CashFlowAnalyti
               <strong className="font-semibold text-slate-900 dark:text-white">
                 {top_lagging_user.name}
               </strong>{' '}
-              owes you {formatMinorUnits(top_lagging_user.current_owed_minor, currentUser.default_currency)} (avg {top_lagging_user.avg_lag_days} days lag).
+              owes you {formatMinorUnits(top_lagging_user.current_owed_minor, currentUser.default_currency)} {top_lagging_user.avg_lag_days === null ? '(no repayment history yet).' : `(avg ${top_lagging_user.avg_lag_label} lag).`}
             </span>
           </div>
 
@@ -195,7 +187,7 @@ export function CashFlowAnalyticsCard({ onNavigateSettlements }: CashFlowAnalyti
                   <div>
                     <div className="font-bold text-slate-800 dark:text-slate-200">{item.name}</div>
                     <div className="text-[10px] text-slate-400">
-                      Avg turnaround: <strong className="text-slate-600 dark:text-slate-300">{item.avg_lag_days} days</strong>
+                      Avg turnaround: <strong className="text-slate-600 dark:text-slate-300">{item.avg_lag_label}</strong>
                     </div>
                   </div>
                 </div>
@@ -208,13 +200,21 @@ export function CashFlowAnalyticsCard({ onNavigateSettlements }: CashFlowAnalyti
                         ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                         : item.tier === 'average'
                         ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                        : item.tier === 'unknown'
+                        ? 'bg-slate-500/10 text-slate-500 dark:text-slate-400'
                         : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
                     }`}
                   >
                     {item.tier === 'speedy' && <Zap className="w-3 h-3" />}
                     {item.tier === 'average' && <Clock className="w-3 h-3" />}
                     {item.tier === 'lagging' && <AlertTriangle className="w-3 h-3" />}
-                    {item.tier === 'speedy' ? 'Speedy ⚡' : item.tier === 'average' ? 'Average ⏱️' : 'Lagging 🐢'}
+                    {item.tier === 'speedy'
+                      ? 'Speedy ⚡'
+                      : item.tier === 'average'
+                      ? 'Average ⏱️'
+                      : item.tier === 'unknown'
+                      ? 'No history'
+                      : 'Lagging 🐢'}
                   </span>
 
                   {/* Owed amount + Nudge */}
@@ -227,6 +227,7 @@ export function CashFlowAnalyticsCard({ onNavigateSettlements }: CashFlowAnalyti
                         type="button"
                         onClick={() => handleWhatsAppNudge(item.name, item.current_owed_minor)}
                         title="Send friendly WhatsApp reminder"
+                        aria-label={`Send ${item.name} a friendly WhatsApp reminder`}
                         className="p-1 rounded-md bg-emerald-500/10 hover:bg-emerald-500 text-emerald-600 hover:text-white transition"
                       >
                         <Send className="w-3 h-3" />
@@ -239,6 +240,16 @@ export function CashFlowAnalyticsCard({ onNavigateSettlements }: CashFlowAnalyti
               </div>
             ))}
           </div>
+
+          {onNavigateSettlements && (
+            <button
+              type="button"
+              onClick={onNavigateSettlements}
+              className="text-xs font-bold text-silver-400 hover:text-silver-300 transition"
+            >
+              Open settlements &rarr;
+            </button>
+          )}
         </div>
       )}
     </div>

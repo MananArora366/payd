@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { usePayd } from '@/lib/store/PaydContext';
 import { X, Users, Check } from 'lucide-react';
+import { useDialog } from '@/lib/hooks/useDialog';
 
 interface CreateGroupModalProps {
   isOpen: boolean;
@@ -14,9 +15,21 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [currency, setCurrency] = useState(currentUser.default_currency || 'AED');
+  // AED-only ledger (multi-currency coming soon)
+  const currency = 'AED';
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([currentUser.id]);
   const [error, setError] = useState<string | null>(null);
+
+  // Reset the form every time the modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+    setName('');
+    setDescription('');
+    setSelectedUserIds([currentUser.id]);
+    setError(null);
+  }, [isOpen, currentUser.id]);
+
+  const { dialogProps, titleId } = useDialog(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -37,23 +50,28 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
       setError('Please provide a group name.');
       return;
     }
+    if (name.trim().length > 60) {
+      setError('Group name must be 60 characters or fewer.');
+      return;
+    }
+    const members = Array.from(new Set([currentUser.id, ...selectedUserIds]));
 
     try {
-      createGroup(name.trim(), description.trim(), selectedUserIds, currency);
+      createGroup(name.trim(), description.trim(), members, currency);
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Failed to create group');
+    } catch {
+      setError("We couldn't create that group. Please try again.");
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
-      <div className="w-full max-w-md bg-[#18181b] border border-white/10 rounded-3xl p-6 shadow-2xl space-y-4 text-white font-body">
+      <div {...dialogProps} className="focus:outline-none w-full max-w-md bg-[#18181b] border border-white/10 rounded-2xl p-6 shadow-2xl space-y-4 text-white font-body">
         <div className="flex items-center justify-between pb-3 border-b border-white/8">
           <div className="flex items-center gap-2">
-            <span className="font-heading text-sm text-white">CREATE NEW GROUP</span>
+            <h2 id={titleId} className="font-heading text-sm text-white">Create new group</h2>
           </div>
-          <button onClick={onClose} className="p-1 rounded-full text-zinc-400 hover:text-white transition">
+          <button type="button" onClick={onClose} aria-label="Close" className="p-1 rounded-full text-zinc-400 hover:text-white transition">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -66,41 +84,41 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-[11px] font-heading text-zinc-400">GROUP NAME</label>
+            <label className="text-[11px] font-heading text-zinc-400">Group name</label>
             <input
               type="text"
               required
               placeholder="e.g. Dubai Villa, Supper Club"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full mt-1 px-3.5 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-violet-500 text-white placeholder:text-zinc-600 font-body"
+              className="w-full mt-1 px-3.5 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-silver-500 text-white placeholder:text-zinc-600 font-body"
             />
           </div>
 
           <div>
-            <label className="text-[11px] font-heading text-zinc-400">DESCRIPTION</label>
+            <label className="text-[11px] font-heading text-zinc-400">Description</label>
             <input
               type="text"
               placeholder="e.g. Shared expenses, rent, groceries"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full mt-1 px-3.5 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-violet-500 text-white placeholder:text-zinc-600 font-body"
+              className="w-full mt-1 px-3.5 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-silver-500 text-white placeholder:text-zinc-600 font-body"
             />
           </div>
 
           <div>
-            <label className="text-[11px] font-heading text-zinc-400">LEDGER CURRENCY</label>
+            <label className="text-[11px] font-heading text-zinc-400">Ledger currency</label>
             <select
               value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
-              className="w-full mt-1 px-3 py-2 text-sm bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-violet-500 text-white font-body"
+              disabled
+              aria-describedby="group-currency-note"
+              className="w-full mt-1 px-3 py-2 text-sm bg-[#09090b] border border-white/10 rounded-xl text-zinc-400 font-body cursor-not-allowed"
             >
               <option value="AED">AED (UAE Dirham)</option>
-              <option value="USD">USD ($)</option>
-              <option value="EUR">EUR (€)</option>
-              <option value="GBP">GBP (£)</option>
-              <option value="INR">INR (₹)</option>
             </select>
+            <p id="group-currency-note" className="mt-1 text-[10px] text-zinc-500">
+              AED only for now (multi-currency coming soon)
+            </p>
           </div>
 
           <div>
@@ -117,19 +135,19 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
                     onClick={() => toggleUser(u.id)}
                     className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition ${
                       isSelected
-                        ? 'border-violet-500 bg-[#22222a]'
+                        ? 'border-silver-500 bg-[#22222a]'
                         : 'border-white/6 hover:bg-[#202025]'
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white">
+                      <div className="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center text-[10px] font-bold text-white">
                         {u.name.slice(0, 1)}
                       </div>
                       <span className="text-sm font-medium">
                         {u.name} {isCreator ? '(Creator)' : ''}
                       </span>
                     </div>
-                    {isSelected && <Check className="w-4 h-4 text-violet-400" />}
+                    {isSelected && <Check className="w-4 h-4 text-silver-400" />}
                   </div>
                 );
               })}
@@ -140,13 +158,13 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 rounded-xl border border-white/10 text-zinc-300 hover:bg-[#27272a] text-xs font-heading tracking-wider transition"
+              className="flex-1 py-3 rounded-xl border border-white/10 text-zinc-300 hover:bg-[#27272a] text-sm font-semibold transition"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 hover:from-violet-500 hover:to-violet-400 text-white text-xs font-heading tracking-wider shadow-lg shadow-violet-600/30 transition active:scale-95"
+              className="flex-1 py-3 rounded-xl bg-silver-100 hover:bg-white text-zinc-900 text-sm font-semibold transition active:scale-95"
             >
               Create Group
             </button>

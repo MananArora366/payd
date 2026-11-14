@@ -137,9 +137,12 @@ export interface UserReimbursementVelocity {
   user_id: string;
   name: string;
   avatar_url?: string | null;
-  avg_lag_days: number;
+  /** Average repayment lag in days; null when there is no history to measure. */
+  avg_lag_days: number | null;
+  /** Display text: "3.5 days" or "n/a" when there is no history. */
+  avg_lag_label: string;
   total_settlements_count: number;
-  tier: 'speedy' | 'average' | 'lagging'; // < 2 days, 2-7 days, > 7 days
+  tier: 'speedy' | 'average' | 'lagging' | 'unknown'; // <= 2.5 days, <= 7 days, > 7 days, no history
   current_owed_minor: number;
 }
 

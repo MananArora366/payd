@@ -53,7 +53,7 @@ export function getCategoryIcon(iconName?: string | null, className = 'w-4 h-4')
 
 export function getPaymentMethodIcon(method?: string, className = 'w-4 h-4') {
   const m = (method || '').toLowerCase();
-  if (m.includes('careem') || m.includes('aani')) {
+  if (m.includes('careem')) {
     return <Zap className={`${className} text-emerald-500`} />;
   }
   if (m.includes('card') || m.includes('visa') || m.includes('mastercard')) {
@@ -66,4 +66,18 @@ export function getPaymentMethodIcon(method?: string, className = 'w-4 h-4') {
     return <ArrowUpRight className={className} />;
   }
   return <Banknote className={className} />;
+}
+
+/** One emoji rule for groups, shared by Home and Groups so the same group shows the same emoji. */
+export function getGroupEmoji(name: string): string {
+  // Single source of truth for group emojis (Home + Groups). More specific words win over place names.
+  const lower = (name || '').toLowerCase();
+  const has = (...words: string[]) => words.some((w) => lower.includes(w));
+  if (has('flat', 'apartment', 'villa', 'home', 'house', 'rent', 'roommate')) return '🏙️';
+  if (has('supper', 'food', 'dinner', 'lunch', 'brunch', 'coffee')) return '🍷';
+  if (has('camp', 'hatta', 'road', 'desert')) return '🏕️';
+  if (has('trip', 'holiday', 'vacation', 'beach', 'travel')) return '🌴';
+  if (has('office', 'work', 'team')) return '💼';
+  if (has('dubai', 'abu dhabi', 'sharjah')) return '🌆';
+  return '👥';
 }

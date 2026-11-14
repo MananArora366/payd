@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { usePayd } from '@/lib/store/PaydContext';
 import { formatMinorUnits, SimplifiedDebt } from '@/lib/ledger';
 import { Group, Transaction } from '@/types/database';
@@ -13,11 +13,14 @@ import {
   ShieldCheck,
   ChevronRight,
   Receipt,
-  Sparkles,
+  ArrowRightLeft,
   Coffee,
   Zap,
 } from 'lucide-react';
 import { RecurringBillsSection } from '@/components/recurring/RecurringBillsSection';
+import { extractInviteToken, resolveInviteGroup, sumBalances } from './groupLogic';
+import { getGroupEmoji } from '@/lib/icons';
+import { useVisibleGroups } from './useVisibleGroups';
 
 interface GroupsViewProps {
   onOpenCreateGroup: () => void;
@@ -32,6 +35,8 @@ interface GroupsViewProps {
   }) => void;
   onSelectTransaction: (txn: Transaction) => void;
   onOpenRoulette?: (groupId?: string | null) => void;
+  /** Group to select when the view mounts or when this value changes (e.g. opened from Home). */
+  initialGroupId?: string | null;
 }
 
 export function GroupsView({
@@ -41,11 +46,13 @@ export function GroupsView({
   onOpenCareemPay,
   onSelectTransaction,
   onOpenRoulette,
+  initialGroupId,
 }: GroupsViewProps) {
   const {
     currentUser,
     users,
     groups,
+    groupMembers: allGroupMembers,
     transactions,
     splits,
     getGroupMembers,
@@ -54,46 +61,118 @@ export function GroupsView({
     joinGroupByToken,
   } = usePayd();
 
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(groups[0]?.id || null);
+  // Only groups the current user belongs to
+  const visibleGroups = useVisibleGroups();
+
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(
+    (initialGroupId && visibleGroups.some((g) => g.id === initialGroupId) ? initialGroupId : null) ||
+      visibleGroups[0]?.id ||
+      null
+  );
   const [copiedToken, setCopiedToken] = useState(false);
   const [joinTokenInput, setJoinTokenInput] = useState('');
-  const [joinMessage, setJoinMessage] = useState<string | null>(null);
+  const [joinMessage, setJoinMessage] = useState<{ kind: 'success' | 'info' | 'error'; text: string } | null>(null);
+  const [scrollRequest, setScrollRequest] = useState(0);
+  const detailRef = useRef<HTMLDivElement | null>(null);
 
-  const selectedGroup = groups.find((g) => g.id === selectedGroupId) || groups[0];
+  const selectedGroup = visibleGroups.find((g) => g.id === selectedGroupId) || visibleGroups[0];
   const groupMembers = selectedGroup ? getGroupMembers(selectedGroup.id) : [];
   const groupBalances = selectedGroup ? getGroupBalances(selectedGroup.id) : {};
   const simplifiedDebts = selectedGroup ? getGroupSimplifiedDebts(selectedGroup.id) : [];
+  const balanceSum = sumBalances(groupBalances);
 
   const groupTransactions = selectedGroup
     ? transactions.filter((t) => t.group_id === selectedGroup.id && !t.deleted_at)
     : [];
 
-  const getGroupEmoji = (name: string) => {
-    const lower = name.toLowerCase();
-    if (lower.includes('dubai') || lower.includes('trip')) return '🌴';
-    if (lower.includes('apartment') || lower.includes('flat')) return '🏙️';
-    if (lower.includes('supper') || lower.includes('food')) return '🍷';
-    return '👥';
+  // Auto-select a group that newly appears for this user (e.g. just created or joined)
+  const knownGroupIdsRef = useRef<Set<string> | null>(null);
+  const userIdRef = useRef(currentUser.id);
+  useEffect(() => {
+    const ids = new Set(visibleGroups.map((g) => g.id));
+    const prev = knownGroupIdsRef.current;
+    if (prev && userIdRef.current === currentUser.id) {
+      const added = visibleGroups.find((g) => !prev.has(g.id));
+      if (added) {
+        setSelectedGroupId(added.id);
+        setScrollRequest((n) => n + 1);
+      }
+    }
+    knownGroupIdsRef.current = ids;
+    userIdRef.current = currentUser.id;
+  }, [visibleGroups, currentUser.id]);
+
+  // On small screens the detail section sits below the grid; scroll it into view.
+  useEffect(() => {
+    if (scrollRequest === 0 || typeof window === 'undefined') return;
+    if (!window.matchMedia || !window.matchMedia('(max-width: 767px)').matches) return;
+    detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [scrollRequest]);
+
+  // Follow external selection requests (e.g. tapping a group card on Home).
+  useEffect(() => {
+    if (initialGroupId && visibleGroups.some((g) => g.id === initialGroupId)) {
+      setSelectedGroupId(initialGroupId);
+      setScrollRequest((n) => n + 1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialGroupId]);
+
+  const selectGroup = (groupId: string) => {
+    setSelectedGroupId(groupId);
+    setScrollRequest((n) => n + 1);
   };
 
-  const handleCopyInviteLink = () => {
-    const inviteUrl = `${window.location.origin}/join/${selectedGroup?.id || 'demo'}`;
-    navigator.clipboard.writeText(inviteUrl);
-    setCopiedToken(true);
-    setTimeout(() => setCopiedToken(false), 2000);
+  const handleCopyInviteLink = async () => {
+    if (!selectedGroup) return;
+    const inviteUrl = `${window.location.origin}/join/${selectedGroup.id}`;
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setCopiedToken(true);
+      setTimeout(() => setCopiedToken(false), 2000);
+    } catch {
+      setJoinMessage({ kind: 'info', text: `Copy this invite link: ${inviteUrl}` });
+    }
   };
 
   const handleJoinByToken = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!joinTokenInput.trim()) return;
+    const token = extractInviteToken(joinTokenInput);
+    if (!token) {
+      setJoinMessage({ kind: 'error', text: 'Paste an invite link or token first.' });
+      return;
+    }
 
-    const res = joinGroupByToken(joinTokenInput.trim());
+    const target = resolveInviteGroup(token, groups);
+    if (
+      target &&
+      allGroupMembers.some((m) => m.group_id === target.id && m.user_id === currentUser.id)
+    ) {
+      selectGroup(target.id);
+      setJoinMessage({ kind: 'info', text: `You're already a member of ${target.name}.` });
+      setJoinTokenInput('');
+      return;
+    }
+
+    let res: { success: boolean; group?: Group; error?: string; alreadyMember?: boolean; message?: string };
+    try {
+      res = joinGroupByToken(token);
+    } catch {
+      res = { success: false };
+    }
     if (res.success && res.group) {
-      setSelectedGroupId(res.group.id);
-      setJoinMessage(`Successfully joined ${res.group.name}!`);
+      selectGroup(res.group.id);
+      setJoinMessage(
+        res.alreadyMember
+          ? { kind: 'info', text: res.message || `You're already a member of ${res.group.name}.` }
+          : { kind: 'success', text: res.message || `Joined ${res.group.name}!` }
+      );
       setJoinTokenInput('');
     } else {
-      setJoinMessage(res.error || 'Could not join group');
+      setJoinMessage({
+        kind: 'error',
+        text: "Invite not found or expired. Check the link and try again.",
+      });
     }
   };
 
@@ -102,16 +181,16 @@ export function GroupsView({
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="font-heading text-xl sm:text-2xl text-white tracking-wide">ACTIVE LEDGERS</h2>
+          <h2 className="font-heading text-xl sm:text-2xl text-white tracking-wide">Active ledgers</h2>
           <p className="text-xs text-zinc-400 mt-1 font-body">
-            Deterministic min-cash-flow debt simplification & zero-sum balance guarantees
+            Fewest payments to settle up, so everyone's square
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={onOpenCreateGroup}
-            className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-violet-600 to-violet-500 hover:from-violet-500 hover:to-violet-400 text-white font-heading text-xs tracking-wider flex items-center gap-2 shadow-lg shadow-violet-600/30 transition active:scale-95"
+            className="px-4 py-2.5 rounded-2xl bg-silver-100 hover:bg-white text-zinc-900 font-semibold text-sm flex items-center gap-2 transition active:scale-95"
           >
             <Plus className="w-4 h-4 stroke-[3]" />
             <span>+ New Group</span>
@@ -123,33 +202,51 @@ export function GroupsView({
       <div className="p-4 bg-[#18181b] border border-white/8 rounded-2xl shadow-sm font-body">
         <form onSubmit={handleJoinByToken} className="flex flex-col sm:flex-row items-center gap-2">
           <div className="flex items-center gap-2 w-full sm:w-auto text-xs font-heading text-zinc-400 pl-1">
-            <LinkIcon className="w-3.5 h-3.5 text-violet-400" />
+            <LinkIcon className="w-3.5 h-3.5 text-silver-400" />
             <span>Join Ledger:</span>
           </div>
           <input
             type="text"
             placeholder="Paste invite link or token (e.g. dubai-marina-2026)..."
             value={joinTokenInput}
-            onChange={(e) => setJoinTokenInput(e.target.value)}
-            className="flex-1 w-full px-3.5 py-2 text-xs bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-violet-500 text-white placeholder:text-zinc-600 font-body"
+            onChange={(e) => {
+              setJoinTokenInput(e.target.value);
+              if (joinMessage?.kind === 'error') setJoinMessage(null);
+            }}
+            aria-label="Invite link or token"
+            className="flex-1 w-full px-3.5 py-2 text-xs bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-silver-500 text-white placeholder:text-zinc-600 font-body"
           />
           <button
             type="submit"
-            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#27272a] hover:bg-violet-600 text-xs font-heading text-white transition active:scale-95"
+            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#27272a] hover:bg-silver-600 text-xs font-heading text-white transition active:scale-95"
           >
             Join
           </button>
         </form>
         {joinMessage && (
-          <div className="mt-2 text-xs text-emerald-400 font-medium">
-            {joinMessage}
+          <div
+            role={joinMessage.kind === 'error' ? 'alert' : 'status'}
+            className={`mt-2 text-xs font-medium ${
+              joinMessage.kind === 'error'
+                ? 'text-rose-400'
+                : joinMessage.kind === 'success'
+                ? 'text-emerald-400'
+                : 'text-zinc-300'
+            }`}
+          >
+            {joinMessage.text}
           </div>
         )}
       </div>
 
       {/* Groups Grid / Selector Cards */}
+      {visibleGroups.length === 0 && (
+        <div className="p-8 text-center bg-[#18181b] border border-white/8 rounded-2xl text-xs text-zinc-400 font-body">
+          You&apos;re not in any groups yet. Create one or paste an invite link above to join.
+        </div>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-        {groups.map((group) => {
+        {visibleGroups.map((group) => {
           const isSelected = selectedGroup?.id === group.id;
           const members = getGroupMembers(group.id);
           const balances = getGroupBalances(group.id);
@@ -158,10 +255,19 @@ export function GroupsView({
           return (
             <div
               key={group.id}
-              onClick={() => setSelectedGroupId(group.id)}
+              role="button"
+              tabIndex={0}
+              aria-pressed={isSelected}
+              onClick={() => selectGroup(group.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  selectGroup(group.id);
+                }
+              }}
               className={`p-4 rounded-2xl border cursor-pointer transition shadow-md ${
                 isSelected
-                  ? 'border-violet-500 bg-[#22222a] ring-2 ring-violet-500/30'
+                  ? 'border-silver-500 bg-[#22222a] ring-2 ring-silver-500/30'
                   : 'border-white/8 bg-[#18181b] hover:border-white/20'
               }`}
             >
@@ -174,7 +280,7 @@ export function GroupsView({
                   </div>
                 </div>
                 <span className="text-[10px] font-heading px-2 py-0.5 rounded-full bg-[#27272a] text-zinc-300">
-                  {group.currency}
+                  AED
                 </span>
               </div>
 
@@ -184,7 +290,7 @@ export function GroupsView({
                   {members.map((m) => (
                     <div
                       key={m.id}
-                      className="w-6 h-6 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white ring-2 ring-[#18181b]"
+                      className="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center text-[10px] font-bold text-white ring-2 ring-[#18181b]"
                       title={m.name}
                     >
                       {m.name.slice(0, 1)}
@@ -204,7 +310,7 @@ export function GroupsView({
                     }`}
                   >
                     {myBalance > 0 ? '+' : ''}
-                    {formatMinorUnits(myBalance, group.currency)}
+                    {formatMinorUnits(myBalance, 'AED')}
                   </div>
                 </div>
               </div>
@@ -215,14 +321,14 @@ export function GroupsView({
 
       {/* Selected Group Detail Section */}
       {selectedGroup && (
-        <div className="space-y-6 animate-in fade-in duration-150">
+        <div ref={detailRef} className="space-y-6 animate-in fade-in duration-150 scroll-mt-4">
           {/* Group Header Controls */}
-          <div className="p-5 bg-[#18181b] border border-white/8 rounded-3xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 font-body">
+          <div className="p-5 bg-[#18181b] border border-white/8 rounded-2xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 font-body">
             <div>
               <div className="flex items-center gap-2.5">
                 <span className="text-2xl">{getGroupEmoji(selectedGroup.name)}</span>
                 <h3 className="font-heading text-lg text-white">{selectedGroup.name}</h3>
-                <span className="text-[10px] font-heading px-2.5 py-0.5 rounded-full bg-violet-500/20 text-violet-300">
+                <span className="text-[10px] font-heading px-2.5 py-0.5 rounded-full bg-silver-500/20 text-silver-300">
                   {groupMembers.length} MEMBERS
                 </span>
               </div>
@@ -250,7 +356,7 @@ export function GroupsView({
 
               <button
                 onClick={() => onOpenAddExpenseForGroup(selectedGroup.id)}
-                className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-heading tracking-wider flex items-center gap-1.5 shadow-lg shadow-violet-600/30 transition active:scale-95"
+                className="px-4 py-2 rounded-xl bg-silver-600 hover:bg-silver-500 text-white text-sm font-semibold flex items-center gap-1.5 transition active:scale-95"
               >
                 <Plus className="w-3.5 h-3.5 stroke-[3]" />
                 <span>Add Expense</span>
@@ -259,15 +365,24 @@ export function GroupsView({
           </div>
 
           {/* Member Roster with Zero-Sum Balances */}
-          <div className="p-5 bg-[#18181b] border border-white/8 rounded-3xl shadow-sm space-y-3 font-body">
+          <div className="p-5 bg-[#18181b] border border-white/8 rounded-2xl shadow-sm space-y-3 font-body">
             <div className="flex items-center justify-between">
               <span className="font-heading text-xs text-zinc-400 flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-violet-400" />
-                MEMBER BALANCES (ZERO-SUM INVARIANT)
+                <Users className="w-3.5 h-3.5 text-silver-400" />
+                Member balances
               </span>
-              <span className="text-[11px] text-emerald-400 flex items-center gap-1 font-body">
+              <span
+                className={`text-[11px] flex items-center gap-1 font-body ${
+                  balanceSum === 0 ? 'text-emerald-400' : 'text-amber-400'
+                }`}
+                title={
+                  balanceSum === 0
+                    ? 'Every fils is accounted for: member balances sum to zero'
+                    : 'Member balances do not sum to zero, so some activity involves non-members'
+                }
+              >
                 <ShieldCheck className="w-3.5 h-3.5" />
-                &Sigma; Balances = 0.00 AED
+                &Sigma; Balances = {formatMinorUnits(balanceSum, 'AED')}
               </span>
             </div>
 
@@ -282,7 +397,7 @@ export function GroupsView({
                     className="p-3 bg-[#202025] border border-white/6 rounded-2xl flex items-center justify-between"
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-xs font-bold text-white">
+                      <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-xs font-bold text-white">
                         {member.name.slice(0, 1)}
                       </div>
                       <div>
@@ -305,7 +420,7 @@ export function GroupsView({
                       }`}
                     >
                       {bal > 0 ? '+' : ''}
-                      {formatMinorUnits(bal, selectedGroup.currency)}
+                      {formatMinorUnits(bal, 'AED')}
                     </div>
                   </div>
                 );
@@ -314,14 +429,14 @@ export function GroupsView({
           </div>
 
           {/* Min-Cash-Flow Debt Simplification Box */}
-          <div className="p-5 bg-gradient-to-br from-violet-950/40 via-[#18181b] to-black border border-violet-500/30 rounded-3xl space-y-3 font-body">
+          <div className="p-5 bg-[#18181b] border border-silver-500/30 rounded-2xl space-y-3 font-body">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="p-1.5 rounded-full bg-violet-500/20 text-violet-400">
-                  <Sparkles className="w-4 h-4" />
+                <span className="p-1.5 rounded-full bg-silver-500/20 text-silver-400">
+                  <ArrowRightLeft className="w-4 h-4" />
                 </span>
-                <span className="font-heading text-xs text-violet-300">
-                  OPTIMAL DEBT SIMPLIFICATION
+                <span className="font-heading text-xs text-silver-300">
+                  Optimal debt simplification
                 </span>
               </div>
               <span className="text-[11px] text-zinc-400">
@@ -356,7 +471,7 @@ export function GroupsView({
 
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-[#10B981] mr-1 text-sm">
-                          {formatMinorUnits(debt.amountMinor, selectedGroup.currency)}
+                          {formatMinorUnits(debt.amountMinor, 'AED')}
                         </span>
 
                         {onOpenCareemPay && (
@@ -370,8 +485,8 @@ export function GroupsView({
                                 groupId: selectedGroup.id,
                               })
                             }
-                            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-[11px] flex items-center gap-1 shadow-sm transition active:scale-95"
-                            title="Instant Careem Pay / Aani Transfer"
+                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] flex items-center gap-1 shadow-sm transition active:scale-95"
+                            title="Instant Careem Pay Transfer"
                           >
                             <Zap className="w-3 h-3" />
                             <span>Careem Pay</span>
@@ -400,7 +515,7 @@ export function GroupsView({
 
             <div className="space-y-2">
               {groupTransactions.length === 0 ? (
-                <div className="p-8 text-center bg-[#18181b] border border-white/8 rounded-3xl text-xs text-zinc-400">
+                <div className="p-8 text-center bg-[#18181b] border border-white/8 rounded-2xl text-xs text-zinc-400">
                   No expenses added to this group yet.
                 </div>
               ) : (
@@ -412,7 +527,7 @@ export function GroupsView({
                     <div
                       key={t.id}
                       onClick={() => onSelectTransaction(t)}
-                      className="p-3.5 bg-[#18181b] hover:bg-[#202025] border border-white/8 hover:border-violet-500/40 rounded-2xl flex items-center justify-between cursor-pointer transition shadow-sm"
+                      className="p-3.5 bg-[#18181b] hover:bg-[#202025] border border-white/8 hover:border-silver-500/40 rounded-2xl flex items-center justify-between cursor-pointer transition shadow-sm"
                     >
                       <div>
                         <div className="text-sm font-bold text-white leading-tight">

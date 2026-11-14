@@ -1,191 +1,79 @@
 #!/usr/bin/env node
 
 /**
- * Payd Model Context Protocol (MCP) Server
- * Runs over standard input/output (stdio) for Claude Desktop, Cursor, and Antigravity.
+ * Payd Model Context Protocol (MCP) server over stdio, for Claude Desktop,
+ * Cursor and similar clients.
+ *
+ * This is a thin stdio <-> HTTP bridge. Each newline-delimited JSON-RPC
+ * message from stdin is forwarded to the Payd HTTP MCP endpoint
+ * (src/app/api/mcp/route.ts), and the reply is written to stdout. The tool
+ * set, schemas and validation therefore live in exactly one place
+ * (src/lib/mcp/tools.ts), and stdio and HTTP always expose the same tools.
+ *
+ * Requires the Payd web app to be running (`npm run dev`).
+ * Endpoint: PAYD_MCP_URL (default http://127.0.0.1:3000/api/mcp).
  */
 
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { z } from 'zod';
+import { createInterface } from 'node:readline';
 
-const server = new McpServer({
-  name: 'payd-mcp',
-  version: '1.0.0',
-});
+const ENDPOINT = process.env.PAYD_MCP_URL || 'http://127.0.0.1:3000/api/mcp';
+const TIMEOUT_MS = Number(process.env.PAYD_MCP_TIMEOUT_MS) || 30_000;
 
-// Tool 1: Balances
-server.tool(
-  'payd_get_balances',
-  'Retrieve current net balances, who owes whom, and total outstanding debt in AED.',
-  { groupId: z.string().optional().describe('Optional group ID or name') },
-  async ({ groupId }) => {
-    return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(
-            {
-              status: 'success',
-              scope: groupId || 'All Groups',
-              currency: 'AED',
-              netBalances: [
-                { name: 'Manan Arora', balance: '-AED 96.67', status: 'Owes' },
-                { name: 'Rahul', balance: 'AED 160.00', status: 'Gets back' },
-                { name: 'Sarah', balance: '-AED 63.33', status: 'Owes' },
-              ],
-              bilateralDebts: [
-                { from: 'Sarah', to: 'Rahul', amount: 'AED 80.00' },
-                { from: 'Manan Arora', to: 'Rahul', amount: 'AED 80.00' },
-              ],
-            },
-            null,
-            2
-          ),
-        },
-      ],
-    };
-  }
-);
+const write = (obj) => process.stdout.write(JSON.stringify(obj) + '\n');
+const rpcError = (id, code, message) => ({ jsonrpc: '2.0', id, error: { code, message } });
 
-// Tool 2: Debt Simplification
-server.tool(
-  'payd_simplify_debts',
-  'Run greedy min-cash-flow graph debt simplification to minimize total transactions.',
-  { groupId: z.string().describe('The group ID or name to simplify debts for') },
-  async ({ groupId }) => {
-    return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(
-            {
-              group: groupId,
-              currency: 'AED',
-              originalDebtsCount: 6,
-              simplifiedSettlementsCount: 2,
-              transactions: [
-                { from: 'Sarah', to: 'Rahul', amount: 'AED 113.33' },
-                { from: 'Manan Arora', to: 'Rahul', amount: 'AED 13.34' },
-              ],
-              algorithm: 'Greedy Minimum-Cash-Flow Invariant Solver',
-            },
-            null,
-            2
-          ),
-        },
-      ],
-    };
-  }
-);
-
-// Tool 3: Add Expense
-server.tool(
-  'payd_add_expense',
-  'Record a new expense into the Payd ledger with strict integer minor units (fils).',
-  {
-    title: z.string().describe('Description of the expense'),
-    amount_aed: z.number().describe('Total amount in AED'),
-    payer_name: z.string().optional().describe('Name of the payer (default: Manan)'),
-    split_mode: z.enum(['equal', 'itemized']).optional().describe('Split mode'),
-  },
-  async ({ title, amount_aed, payer_name = 'Manan', split_mode = 'equal' }) => {
-    const amountMinor = Math.round(amount_aed * 100);
-    return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(
-            {
-              success: true,
-              transactionId: `txn-${Date.now()}`,
-              title,
-              amount_aed,
-              amount_minor: amountMinor,
-              payer: payer_name,
-              currency: 'AED',
-              split_mode,
-              share_per_person: `AED ${(amount_aed / 3).toFixed(2)}`,
-              invariant: 'Sum of splits equals total (Zero-Loss Verified)',
-            },
-            null,
-            2
-          ),
-        },
-      ],
-    };
-  }
-);
-
-// Tool 4: Reimbursement Lag
-server.tool(
-  'payd_check_reimbursement_lag',
-  'Analyze friend repayment turnaround time (lag index in days) and out-of-pocket exposure.',
-  {},
-  async () => {
-    return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(
-            {
-              totalFrontedCapital: 'AED 2,340.00',
-              recoveredCapital: 'AED 1,490.00',
-              outstandingExposure: 'AED 850.00',
-              reimbursementTurnaround: [
-                { name: 'Sarah', avgLagDays: 1.8, badge: 'Speedy ⚡' },
-                { name: 'Rahul', avgLagDays: 8.5, badge: 'Lagging 🐢' },
-                { name: 'Priya', avgLagDays: 3.2, badge: 'Average ⏱️' },
-              ],
-            },
-            null,
-            2
-          ),
-        },
-      ],
-    };
-  }
-);
-
-// Tool 5: Coffee Roulette
-server.tool(
-  'payd_spin_coffee_roulette',
-  'Run Fair Payer Roulette to decide who covers coffee or lunch based on debt weights.',
-  {
-    amount_aed: z.number().optional().describe('Bill amount in AED (default: 45.00)'),
-    mode: z.enum(['debt_weighted', 'equal']).optional(),
-  },
-  async ({ amount_aed = 45.0, mode = 'debt_weighted' }) => {
-    return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(
-            {
-              selectedPayer: 'Rahul',
-              reason:
-                mode === 'debt_weighted'
-                  ? 'Rahul selected via Smart Debt-Weighted Roulette (owes AED 80.00 to group).'
-                  : 'Rahul selected via Pure Chance Roulette.',
-              billAmount: `AED ${amount_aed.toFixed(2)}`,
-              split: 'Split equally among 3 participants',
-            },
-            null,
-            2
-          ),
-        },
-      ],
-    };
-  }
-);
-
-async function run() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error('Payd MCP Server running on stdio');
+/** ids of the request(s) in a message, so bridge failures can be reported against them. */
+function requestIds(msg) {
+  const list = Array.isArray(msg) ? msg : [msg];
+  return list
+    .filter((m) => m && typeof m === 'object' && Object.prototype.hasOwnProperty.call(m, 'id'))
+    .map((m) => m.id ?? null);
 }
 
-run().catch((error) => {
-  console.error('Fatal error running Payd MCP server:', error);
-  process.exit(1);
+async function forward(line) {
+  let msg;
+  try {
+    msg = JSON.parse(line);
+  } catch {
+    write(rpcError(null, -32700, 'Parse error: message is not valid JSON'));
+    return;
+  }
+
+  try {
+    const res = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: line,
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (res.status === 202) return; // notification(s) acknowledged, nothing to send
+    const text = await res.text();
+    if (!text.trim()) return;
+    try {
+      write(JSON.parse(text));
+    } catch {
+      for (const id of requestIds(msg)) write(rpcError(id, -32603, `Payd server returned an unexpected response (HTTP ${res.status})`));
+    }
+  } catch (err) {
+    console.error(`[payd-mcp] could not reach ${ENDPOINT}:`, err?.message || err);
+    for (const id of requestIds(msg)) {
+      write(rpcError(id, -32603, `Payd server is not reachable at ${ENDPOINT}. Start it with "npm run dev".`));
+    }
+  }
+}
+
+const rl = createInterface({ input: process.stdin, crlfDelay: Infinity });
+let chain = Promise.resolve();
+
+rl.on('line', (line) => {
+  if (!line.trim()) return;
+  // Keep replies in request order.
+  chain = chain.then(() => forward(line));
 });
+
+rl.on('close', async () => {
+  await chain;
+  process.exit(0);
+});
+
+console.error(`Payd MCP stdio bridge running -> ${ENDPOINT}`);
