@@ -82,13 +82,13 @@ export function RecurringBillsSection({ groupId = null }: RecurringBillsSectionP
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-silver-500/20 text-silver-400">
+          <div className="p-2 rounded-xl bg-brand-500/20 text-brand-400">
             <Repeat className="w-4 h-4" />
           </div>
           <div>
             <h3 className="font-heading text-xs text-white flex items-center gap-1.5">
               Shared subscriptions & recurring bills
-              <span className="text-[9px] px-2 py-0.5 rounded-full bg-silver-500/20 text-silver-300 font-heading border border-silver-500/30">
+              <span className="text-[9px] px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 font-heading border border-brand-500/30">
                 {displayedBills.length} ACTIVE
               </span>
             </h3>
@@ -101,7 +101,7 @@ export function RecurringBillsSection({ groupId = null }: RecurringBillsSectionP
         <button
           type="button"
           onClick={() => setModalOpen(true)}
-          className="px-3.5 py-1.5 rounded-xl bg-silver-600 hover:bg-silver-500 text-white font-semibold text-sm flex items-center gap-1 transition active:scale-95"
+          className="px-3.5 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-sm flex items-center gap-1 transition active:scale-95"
         >
           <Plus className="w-3.5 h-3.5 stroke-[3]" />
           <span>+ Subscription</span>
@@ -142,12 +142,12 @@ export function RecurringBillsSection({ groupId = null }: RecurringBillsSectionP
             return (
               <div
                 key={bill.id}
-                className="p-4 bg-[#18181b] border border-white/8 hover:border-silver-500/40 rounded-2xl shadow-sm space-y-3 flex flex-col justify-between transition text-white font-body"
+                className="p-4 bg-[#18181b] border border-white/8 hover:border-brand-500/40 rounded-2xl shadow-sm space-y-3 flex flex-col justify-between transition text-white font-body"
               >
                 <div>
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-silver-600 dark:text-silver-400 flex items-center gap-1">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-400 flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
                         {formatDueDay(bill.due_day, bill.frequency)} • {bill.frequency}
                       </span>
@@ -255,7 +255,7 @@ export function RecurringBillsSection({ groupId = null }: RecurringBillsSectionP
                       className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition ${
                         isPostedRecently
                           ? 'bg-emerald-500 text-white'
-                          : 'bg-slate-100 hover:bg-silver-600 hover:text-white text-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                          : 'bg-slate-100 hover:bg-brand-600 hover:text-white text-slate-700 dark:bg-slate-800 dark:text-slate-200'
                       }`}
                     >
                       {isPostedRecently ? (

@@ -16,6 +16,7 @@ import { TransactionDetailDrawer } from '@/components/modals/TransactionDetailDr
 import { ReceiptScannerModal } from '@/components/modals/ReceiptScannerModal';
 import { FairPayerRouletteModal } from '@/components/modals/FairPayerRouletteModal';
 import { CareemPayModal } from '@/components/modals/CareemPayModal';
+import { NewSplitModal } from '@/components/modals/NewSplitModal';
 import { CareemSplitPrompt } from '@/components/careem/CareemSplitPrompt';
 import { useCareemEvents, type CareemEvent } from '@/lib/careem/useCareemEvents';
 import { Transaction } from '@/types/database';
@@ -44,6 +45,7 @@ export default function AppHome() {
   const [receiptScannerOpen, setReceiptScannerOpen] = useState(false);
   const [rouletteOpen, setRouletteOpen] = useState(false);
   const [careemPayOpen, setCareemPayOpen] = useState(false);
+  const [newSplitOpen, setNewSplitOpen] = useState(false);
   const [careemPayParams, setCareemPayParams] = useState<{
     senderId?: string;
     recipientId?: string;
@@ -91,7 +93,7 @@ export default function AppHome() {
 
   const anyModalOpen =
     addExpenseOpen || settlementOpen || createGroupOpen || receiptScannerOpen ||
-    rouletteOpen || careemPayOpen || !!selectedTransaction;
+    rouletteOpen || careemPayOpen || newSplitOpen || !!selectedTransaction;
 
   const handleOpenRoulette = (groupId: string | null = null) => {
     setRouletteGroupId(groupId);
@@ -138,7 +140,7 @@ export default function AppHome() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#09090b] text-[#f4f4f5] font-body selection:bg-silver-600 selection:text-white transition-colors">
+    <div className="min-h-screen flex flex-col bg-[#09090b] text-[#f4f4f5] font-body selection:bg-brand-600 selection:text-white transition-colors">
       <Navbar
         onOpenReceiptScanner={() => setReceiptScannerOpen(true)}
         onOpenAddExpense={() => handleOpenAddExpense('expense')}
@@ -152,9 +154,9 @@ export default function AppHome() {
             onOpenAddExpense={(type?: 'expense' | 'income', groupId?: string | null) =>
               handleOpenAddExpense(type || 'expense', groupId ?? null)
             }
+            onOpenNewSplit={() => setNewSplitOpen(true)}
             onOpenReceiptScanner={() => setReceiptScannerOpen(true)}
             onOpenRoulette={() => handleOpenRoulette(null)}
-            onOpenCareemPay={() => handleOpenCareemPay()}
             onSelectTransaction={(txn) => setSelectedTransaction(txn)}
             onNavigateTab={(tab) => setActiveTab(tab)}
             onOpenGroup={(groupId) => {
@@ -202,6 +204,7 @@ export default function AppHome() {
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* Global Modals */}
+      <NewSplitModal isOpen={newSplitOpen} onClose={() => setNewSplitOpen(false)} defaultGroupId={null} />
       <AddExpenseModal
         isOpen={addExpenseOpen}
         onClose={() => {

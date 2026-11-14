@@ -10,8 +10,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Payd | Voice-First Expense & Group Tracker',
-  description: 'Split bills with friends, track your budget and settle up instantly with Careem Pay',
+  title: 'Payd | Split bills, settle up in one tap',
+  description: 'Settle up with friends in the fewest payments, fee-free with Careem Pay. Split bills by voice or by scanning the receipt.',
   manifest: '/manifest.json',
   icons: {
     icon: [
@@ -34,7 +34,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <body className="min-h-screen bg-[#09090b] text-[#f4f4f5] font-body antialiased selection:bg-silver-600 selection:text-white">
+      <body className="min-h-screen bg-[#09090b] text-[#f4f4f5] font-body antialiased selection:bg-brand-600 selection:text-white">
         <PaydProvider>{children}</PaydProvider>
       </body>
     </html>

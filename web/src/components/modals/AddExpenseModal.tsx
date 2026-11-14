@@ -291,7 +291,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
               onClick={() => setType('expense')}
               className={`py-2 text-sm font-semibold rounded-xl transition ${
                 type === 'expense'
-                  ? 'bg-silver-600 text-white shadow-md'
+                  ? 'bg-brand-600 text-white shadow-md'
                   : 'text-zinc-400 hover:text-white'
               }`}
             >
@@ -302,7 +302,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
               onClick={() => setType('income')}
               className={`py-2 text-sm font-semibold rounded-xl transition ${
                 type === 'income'
-                  ? 'bg-silver-600 text-white shadow-md'
+                  ? 'bg-brand-600 text-white shadow-md'
                   : 'text-zinc-400 hover:text-white'
               }`}
             >
@@ -318,9 +318,9 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
                 onClose();
                 onOpenReceiptScanner();
               }}
-              className="w-full py-2.5 px-3 rounded-xl bg-silver-500/15 hover:bg-silver-500/25 border border-silver-500/30 text-silver-300 text-sm font-semibold flex items-center justify-center gap-2 transition active:scale-95"
+              className="w-full py-2.5 px-3 rounded-xl bg-brand-500/15 hover:bg-brand-500/25 border border-brand-500/30 text-brand-300 text-sm font-semibold flex items-center justify-center gap-2 transition active:scale-95"
             >
-              <Camera className="w-4 h-4 text-silver-400" />
+              <Camera className="w-4 h-4 text-brand-400" />
               <span>Or scan paper receipt with Payd Lens</span>
             </button>
           )}
@@ -335,7 +335,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
               placeholder="e.g. Dinner with team, Grocery run, Salary"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full mt-1 px-3.5 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-silver-500 text-white placeholder:text-zinc-600 font-body"
+              className="w-full mt-1 px-3.5 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-brand-500 text-white placeholder:text-zinc-600 font-body"
             />
           </div>
 
@@ -344,7 +344,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
             <div>
               <label className="text-[11px] font-heading text-zinc-400">Amount</label>
               <div className="relative mt-1">
-                <span className="absolute left-3 top-2.5 text-xs font-bold text-silver-400">
+                <span className="absolute left-3 top-2.5 text-xs font-bold text-brand-400">
                   {LEDGER_CURRENCY}
                 </span>
                 <input
@@ -361,7 +361,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
                   }
                   value={amountStr}
                   onChange={(e) => isMoneyKeystroke(e.target.value) && setAmountStr(e.target.value)}
-                  className="w-full pl-14 pr-3 py-2.5 text-sm font-bold bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-silver-500 text-white font-body"
+                  className="w-full pl-14 pr-3 py-2.5 text-sm font-bold bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-brand-500 text-white font-body"
                 />
               </div>
             </div>
@@ -372,7 +372,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
                 aria-label="Category"
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full mt-1 px-3 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-silver-500 text-white font-body"
+                className="w-full mt-1 px-3 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-brand-500 text-white font-body"
               >
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -391,7 +391,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
                 aria-label="Paid by"
                 value={payerId}
                 onChange={(e) => setPayerId(e.target.value)}
-                className="w-full mt-1 px-3 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-silver-500 text-white font-body"
+                className="w-full mt-1 px-3 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-brand-500 text-white font-body"
               >
                 {availableUsers.map((u) => (
                   <option key={u.id} value={u.id}>
@@ -407,7 +407,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
                 aria-label="Ledger group"
                 value={groupId || ''}
                 onChange={(e) => handleGroupChange(e.target.value ? e.target.value : null)}
-                className="w-full mt-1 px-3 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-silver-500 text-white font-body"
+                className="w-full mt-1 px-3 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-brand-500 text-white font-body"
               >
                 <option value="">Personal (No group)</option>
                 {/* Only groups you belong to (plus a preselected one, e.g. from a prefill). */}
@@ -425,7 +425,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
             <div className="space-y-3.5 pt-2 border-t border-white/8">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-heading text-zinc-400 flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-silver-400" />
+                  <Users className="w-3.5 h-3.5 text-brand-400" />
                   SPLIT PARTICIPANTS ({selectedUserIds.length})
                 </span>
                 {/* Split Strategy Switcher */}
@@ -435,7 +435,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
                     onClick={() => setSplitMethod('equal')}
                     className={`px-2.5 py-1 rounded-md transition ${
                       splitMethod === 'equal'
-                        ? 'bg-silver-600 text-white shadow-xs'
+                        ? 'bg-brand-600 text-white shadow-xs'
                         : 'text-zinc-400 hover:text-white'
                     }`}
                   >
@@ -446,7 +446,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
                     onClick={() => setSplitMethod('itemized')}
                     className={`px-2.5 py-1 rounded-md transition ${
                       splitMethod === 'itemized'
-                        ? 'bg-silver-600 text-white shadow-xs'
+                        ? 'bg-brand-600 text-white shadow-xs'
                         : 'text-zinc-400 hover:text-white'
                     }`}
                   >
@@ -457,7 +457,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
                     onClick={() => setSplitMethod('exact')}
                     className={`px-2.5 py-1 rounded-md transition ${
                       splitMethod === 'exact'
-                        ? 'bg-silver-600 text-white shadow-xs'
+                        ? 'bg-brand-600 text-white shadow-xs'
                         : 'text-zinc-400 hover:text-white'
                     }`}
                   >
@@ -478,11 +478,11 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
                       aria-pressed={isSelected}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition ${
                         isSelected
-                          ? 'bg-silver-600 text-white shadow-xs font-bold'
+                          ? 'bg-brand-600 text-white shadow-xs font-bold'
                           : 'bg-[#27272a] text-zinc-400 hover:text-white'
                       }`}
                     >
-                      <div className="w-4 h-4 rounded-full bg-silver-400/30 text-white flex items-center justify-center text-[9px] font-bold">
+                      <div className="w-4 h-4 rounded-full bg-brand-400/30 text-white flex items-center justify-center text-[9px] font-bold">
                         {u.name.slice(0, 1)}
                       </div>
                       <span>{u.name}</span>
@@ -517,7 +517,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
                     <button
                       type="button"
                       onClick={handleAddManualItem}
-                      className="flex items-center gap-1 text-silver-400 text-xs font-bold hover:underline"
+                      className="flex items-center gap-1 text-brand-400 text-xs font-bold hover:underline"
                     >
                       <Plus className="w-3.5 h-3.5" /> Add Item
                     </button>
@@ -543,7 +543,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
                                   prev.map((i) => (i.id === item.id ? { ...i, name: val } : i))
                                 );
                               }}
-                              className="flex-1 px-2.5 py-1.5 text-xs bg-[#09090b] border border-white/10 rounded-lg focus:outline-none focus:border-silver-500 text-white"
+                              className="flex-1 px-2.5 py-1.5 text-xs bg-[#09090b] border border-white/10 rounded-lg focus:outline-none focus:border-brand-500 text-white"
                             />
                             <div className="w-28 relative">
                               <input
@@ -561,7 +561,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
                                     prev.map((i) => (i.id === item.id ? { ...i, amountStr: val } : i))
                                   );
                                 }}
-                                className="w-full px-2.5 py-1.5 text-xs bg-[#09090b] border border-white/10 rounded-lg focus:outline-none focus:border-silver-500 text-white text-right pr-9 font-semibold"
+                                className="w-full px-2.5 py-1.5 text-xs bg-[#09090b] border border-white/10 rounded-lg focus:outline-none focus:border-brand-500 text-white text-right pr-9 font-semibold"
                               />
                               <span className="absolute right-2 top-1.5 text-[10px] text-zinc-500 font-semibold pointer-events-none">
                                 AED
@@ -594,7 +594,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
                                   onClick={() => handleToggleManualItemUser(item.id, uid)}
                                   className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition ${
                                     isClaimed
-                                      ? 'bg-silver-600 text-white font-semibold'
+                                      ? 'bg-brand-600 text-white font-semibold'
                                       : 'bg-[#27272a] text-zinc-400 border border-white/6'
                                   }`}
                                 >
@@ -664,7 +664,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
                                 isMoneyKeystroke(e.target.value) &&
                                 setExactAmounts({ ...exactAmounts, [uid]: e.target.value })
                               }
-                              className="w-full px-2.5 py-1.5 text-xs bg-[#09090b] border border-white/10 rounded-lg text-right pr-9 font-semibold text-white focus:outline-none focus:border-silver-500"
+                              className="w-full px-2.5 py-1.5 text-xs bg-[#09090b] border border-white/10 rounded-lg text-right pr-9 font-semibold text-white focus:outline-none focus:border-brand-500"
                             />
                             <span className="absolute right-2 top-1.5 text-[10px] text-zinc-500 font-semibold pointer-events-none">
                               AED
@@ -717,7 +717,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
             </button>
             <button
               type="submit"
-              className="flex-1 py-3 rounded-xl bg-silver-100 hover:bg-white text-zinc-900 text-sm font-semibold transition active:scale-95"
+              className="flex-1 py-3 rounded-xl bg-brand-400 hover:bg-brand-300 text-zinc-950 text-sm font-semibold transition active:scale-95"
             >
               {type === 'income' ? 'Save Income' : 'Save Expense'}
             </button>

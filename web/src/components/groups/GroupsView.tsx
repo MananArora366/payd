@@ -190,7 +190,7 @@ export function GroupsView({
         <div className="flex items-center gap-2">
           <button
             onClick={onOpenCreateGroup}
-            className="px-4 py-2.5 rounded-2xl bg-silver-100 hover:bg-white text-zinc-900 font-semibold text-sm flex items-center gap-2 transition active:scale-95"
+            className="px-4 py-2.5 rounded-2xl bg-brand-400 hover:bg-brand-300 text-zinc-950 font-semibold text-sm flex items-center gap-2 transition active:scale-95"
           >
             <Plus className="w-4 h-4 stroke-[3]" />
             <span>+ New Group</span>
@@ -202,7 +202,7 @@ export function GroupsView({
       <div className="p-4 bg-[#18181b] border border-white/8 rounded-2xl shadow-sm font-body">
         <form onSubmit={handleJoinByToken} className="flex flex-col sm:flex-row items-center gap-2">
           <div className="flex items-center gap-2 w-full sm:w-auto text-xs font-heading text-zinc-400 pl-1">
-            <LinkIcon className="w-3.5 h-3.5 text-silver-400" />
+            <LinkIcon className="w-3.5 h-3.5 text-brand-400" />
             <span>Join Ledger:</span>
           </div>
           <input
@@ -214,11 +214,11 @@ export function GroupsView({
               if (joinMessage?.kind === 'error') setJoinMessage(null);
             }}
             aria-label="Invite link or token"
-            className="flex-1 w-full px-3.5 py-2 text-xs bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-silver-500 text-white placeholder:text-zinc-600 font-body"
+            className="flex-1 w-full px-3.5 py-2 text-xs bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-brand-500 text-white placeholder:text-zinc-600 font-body"
           />
           <button
             type="submit"
-            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#27272a] hover:bg-silver-600 text-xs font-heading text-white transition active:scale-95"
+            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#27272a] hover:bg-brand-600 text-xs font-heading text-white transition active:scale-95"
           >
             Join
           </button>
@@ -267,7 +267,7 @@ export function GroupsView({
               }}
               className={`p-4 rounded-2xl border cursor-pointer transition shadow-md ${
                 isSelected
-                  ? 'border-silver-500 bg-[#22222a] ring-2 ring-silver-500/30'
+                  ? 'border-brand-500 bg-[#22222a] ring-2 ring-brand-500/30'
                   : 'border-white/8 bg-[#18181b] hover:border-white/20'
               }`}
             >
@@ -328,7 +328,7 @@ export function GroupsView({
               <div className="flex items-center gap-2.5">
                 <span className="text-2xl">{getGroupEmoji(selectedGroup.name)}</span>
                 <h3 className="font-heading text-lg text-white">{selectedGroup.name}</h3>
-                <span className="text-[10px] font-heading px-2.5 py-0.5 rounded-full bg-silver-500/20 text-silver-300">
+                <span className="text-[10px] font-heading px-2.5 py-0.5 rounded-full bg-brand-500/20 text-brand-300">
                   {groupMembers.length} MEMBERS
                 </span>
               </div>
@@ -356,7 +356,7 @@ export function GroupsView({
 
               <button
                 onClick={() => onOpenAddExpenseForGroup(selectedGroup.id)}
-                className="px-4 py-2 rounded-xl bg-silver-600 hover:bg-silver-500 text-white text-sm font-semibold flex items-center gap-1.5 transition active:scale-95"
+                className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold flex items-center gap-1.5 transition active:scale-95"
               >
                 <Plus className="w-3.5 h-3.5 stroke-[3]" />
                 <span>Add Expense</span>
@@ -368,7 +368,7 @@ export function GroupsView({
           <div className="p-5 bg-[#18181b] border border-white/8 rounded-2xl shadow-sm space-y-3 font-body">
             <div className="flex items-center justify-between">
               <span className="font-heading text-xs text-zinc-400 flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-silver-400" />
+                <Users className="w-3.5 h-3.5 text-brand-400" />
                 Member balances
               </span>
               <span
@@ -429,13 +429,13 @@ export function GroupsView({
           </div>
 
           {/* Min-Cash-Flow Debt Simplification Box */}
-          <div className="p-5 bg-[#18181b] border border-silver-500/30 rounded-2xl space-y-3 font-body">
+          <div className="p-5 bg-[#18181b] border border-brand-500/30 rounded-2xl space-y-3 font-body">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="p-1.5 rounded-full bg-silver-500/20 text-silver-400">
+                <span className="p-1.5 rounded-full bg-brand-500/20 text-brand-400">
                   <ArrowRightLeft className="w-4 h-4" />
                 </span>
-                <span className="font-heading text-xs text-silver-300">
+                <span className="font-heading text-xs text-brand-300">
                   Optimal debt simplification
                 </span>
               </div>
@@ -527,7 +527,7 @@ export function GroupsView({
                     <div
                       key={t.id}
                       onClick={() => onSelectTransaction(t)}
-                      className="p-3.5 bg-[#18181b] hover:bg-[#202025] border border-white/8 hover:border-silver-500/40 rounded-2xl flex items-center justify-between cursor-pointer transition shadow-sm"
+                      className="p-3.5 bg-[#18181b] hover:bg-[#202025] border border-white/8 hover:border-brand-500/40 rounded-2xl flex items-center justify-between cursor-pointer transition shadow-sm"
                     >
                       <div>
                         <div className="text-sm font-bold text-white leading-tight">

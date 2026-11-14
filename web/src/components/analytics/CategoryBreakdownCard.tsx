@@ -14,7 +14,7 @@ interface CategoryBreakdownCardProps {
 const CATEGORY_COLORS = [
   'bg-emerald-500',
   'bg-sky-500',
-  'bg-silver-400',
+  'bg-zinc-400',
   'bg-amber-500',
   'bg-rose-500',
   'bg-teal-500',
@@ -69,13 +69,13 @@ export function CategoryBreakdownCard({ onNavigateTransactions }: CategoryBreakd
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-silver-500/20 text-silver-400">
+          <div className="p-2 rounded-xl bg-brand-500/20 text-brand-400">
             <PieChart className="w-4 h-4" />
           </div>
           <div>
             <h3 className="font-heading text-xs text-white flex items-center gap-1.5">
               Spending sectors & daily runway
-              <span className="text-[9px] px-2 py-0.5 rounded-full bg-silver-500/20 text-silver-300 font-heading border border-silver-500/30">
+              <span className="text-[9px] px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 font-heading border border-brand-500/30">
                 Insights
               </span>
             </h3>
@@ -155,7 +155,7 @@ export function CategoryBreakdownCard({ onNavigateTransactions }: CategoryBreakd
                   <button
                     type="button"
                     onClick={onNavigateTransactions}
-                    className="normal-case tracking-normal font-bold text-silver-400 hover:text-silver-300 transition"
+                    className="normal-case tracking-normal font-bold text-brand-400 hover:text-brand-300 transition"
                   >
                     Activity &rarr;
                   </button>

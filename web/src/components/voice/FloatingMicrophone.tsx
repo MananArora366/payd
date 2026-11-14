@@ -348,10 +348,10 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
         <div {...dialogProps} aria-labelledby={undefined} aria-label="Payd voice assistant" className="focus:outline-none fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-150">
           {/* 1. Live Recording State matching iOS Waveform Sheet */}
           {isRecording && (
-            <div className="w-full max-w-md bg-[#18181b] border border-silver-500/40 rounded-2xl p-6 shadow-2xl text-center space-y-4 animate-in slide-in-from-bottom-6">
-              <div className="flex justify-between items-center text-xs font-heading text-silver-400">
+            <div className="w-full max-w-md bg-[#18181b] border border-brand-500/40 rounded-2xl p-6 shadow-2xl text-center space-y-4 animate-in slide-in-from-bottom-6">
+              <div className="flex justify-between items-center text-xs font-heading text-brand-400">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-silver-400 animate-ping" />
+                  <span className="w-2 h-2 rounded-full bg-brand-400 animate-ping" />
                   Listening...
                 </span>
                 <button
@@ -378,7 +378,7 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
 
               <button
                 onClick={toggleRecording}
-                className="w-full py-3.5 rounded-2xl bg-silver-100 hover:bg-white text-zinc-900 font-semibold text-sm transition active:scale-95"
+                className="w-full py-3.5 rounded-2xl bg-brand-400 hover:bg-brand-300 text-zinc-950 font-semibold text-sm transition active:scale-95"
               >
                 Tap when you're done
               </button>
@@ -405,8 +405,8 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
           {/* 2. Processing Spinner */}
           {isProcessing && !isRecording && (
             <div className="w-full max-w-sm bg-[#18181b] border border-white/10 rounded-2xl p-6 shadow-2xl text-center space-y-4 animate-in zoom-in-95">
-              <div className="w-12 h-12 mx-auto rounded-full bg-silver-500/15 flex items-center justify-center">
-                <Loader2 className="w-6 h-6 text-silver-300 animate-spin" />
+              <div className="w-12 h-12 mx-auto rounded-full bg-brand-500/15 flex items-center justify-center">
+                <Loader2 className="w-6 h-6 text-brand-300 animate-spin" />
               </div>
               <div>
                 <h4 className="font-heading text-sm text-white">Interpreting Speech</h4>
@@ -443,10 +443,10 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
             <div className="w-full max-w-md bg-[#18181b] border border-white/10 rounded-2xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
               <div className="flex items-center justify-between pb-2 border-b border-white/8">
                 <div className="flex items-center gap-2">
-                  <span className="p-1.5 rounded-full bg-silver-500/20 text-silver-400">
+                  <span className="p-1.5 rounded-full bg-brand-500/20 text-brand-400">
                     <Bot className="w-4 h-4" />
                   </span>
-                  <span className="text-sm font-semibold text-silver-400">
+                  <span className="text-sm font-semibold text-brand-400">
                     Payd Financial Intelligence
                   </span>
                 </div>
@@ -481,7 +481,7 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
           {showTypedInput && !isProcessing && !activeIntent && !aiQueryAnswer && !isRecording && (
             <div className="w-full max-w-md bg-[#18181b] border border-white/10 rounded-2xl p-5 shadow-2xl space-y-4 animate-in zoom-in-95">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-silver-400">
+                <span className="text-sm font-semibold text-brand-400">
                   Type instead
                 </span>
                 <button
@@ -511,7 +511,7 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
                   placeholder="e.g. Paid 120 AED for dinner with Prakarsh and Veer"
                   value={typedCommand}
                   onChange={(e) => setTypedCommand(e.target.value)}
-                  className="w-full px-4 py-3 text-sm bg-[#09090b] border border-white/10 rounded-2xl text-white focus:outline-none focus:border-silver-500 font-body placeholder:text-zinc-600"
+                  className="w-full px-4 py-3 text-sm bg-[#09090b] border border-white/10 rounded-2xl text-white focus:outline-none focus:border-brand-500 font-body placeholder:text-zinc-600"
                 />
 
                 <div className="flex items-center justify-between gap-2">
@@ -519,21 +519,21 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
                     <button
                       type="button"
                       onClick={() => setTypedCommand('Paid 120 AED for dinner with Prakarsh and Veer')}
-                      className="px-2.5 py-1 bg-[#27272a] hover:bg-silver-600/30 text-zinc-300 rounded-lg whitespace-nowrap transition text-[11px]"
+                      className="px-2.5 py-1 bg-[#27272a] hover:bg-brand-600/30 text-zinc-300 rounded-lg whitespace-nowrap transition text-[11px]"
                     >
                       Dinner 120 split
                     </button>
                     <button
                       type="button"
                       onClick={() => setTypedCommand('How much did I spend this week?')}
-                      className="px-2.5 py-1 bg-[#27272a] hover:bg-silver-600/30 text-zinc-300 rounded-lg whitespace-nowrap transition text-[11px]"
+                      className="px-2.5 py-1 bg-[#27272a] hover:bg-brand-600/30 text-zinc-300 rounded-lg whitespace-nowrap transition text-[11px]"
                     >
                       Spend query
                     </button>
                     <button
                       type="button"
                       onClick={() => setTypedCommand('Prakarsh paid me back 80 AED')}
-                      className="px-2.5 py-1 bg-[#27272a] hover:bg-silver-600/30 text-zinc-300 rounded-lg whitespace-nowrap transition text-[11px]"
+                      className="px-2.5 py-1 bg-[#27272a] hover:bg-brand-600/30 text-zinc-300 rounded-lg whitespace-nowrap transition text-[11px]"
                     >
                       Repayment
                     </button>
@@ -541,7 +541,7 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
 
                   <button
                     type="submit"
-                    className="p-3 rounded-xl bg-silver-600 hover:bg-silver-500 text-white font-medium transition shrink-0"
+                    className="p-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-medium transition shrink-0"
                   >
                     <Send className="w-4 h-4" />
                   </button>
@@ -567,7 +567,7 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
             setShowTypedInput(true);
           }}
           aria-label="Type instead of speaking"
-          className="p-3 rounded-2xl bg-[#18181b] hover:bg-[#27272a] border border-white/10 shadow-xl text-zinc-300 transition hover:border-silver-500/40"
+          className="p-3 rounded-2xl bg-[#18181b] hover:bg-[#27272a] border border-white/10 shadow-xl text-zinc-300 transition hover:border-brand-500/40"
           title="Type instead of speaking"
         >
           <Keyboard className="w-4 h-4" />

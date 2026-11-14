@@ -24,7 +24,7 @@ const SLICE_COLORS = [
   '#10b981', // emerald-500
   '#06b6d4', // cyan-500
   '#3b82f6', // blue-500
-  '#8b5cf6', // silver-500
+  '#a1a1aa', // zinc-400
   '#f59e0b', // amber-500
   '#ec4899', // pink-500
   '#14b8a6', // teal-500

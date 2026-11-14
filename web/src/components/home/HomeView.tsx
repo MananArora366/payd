@@ -5,10 +5,11 @@ import { usePayd } from '@/lib/store/PaydContext';
 import { formatMinorUnits } from '@/lib/ledger';
 import { getGroupEmoji } from '@/lib/icons';
 import { Transaction } from '@/types/database';
-import { Plus, Receipt, Coffee, Zap, Camera } from 'lucide-react';
+import { Receipt, Coffee, Camera, HandCoins, Split } from 'lucide-react';
 import { CashFlowAnalyticsCard } from '@/components/analytics/CashFlowAnalyticsCard';
 import { CategoryBreakdownCard } from '@/components/analytics/CategoryBreakdownCard';
 import { RecurringBillsSection } from '@/components/recurring/RecurringBillsSection';
+import { SettleUpCard } from './SettleUpCard';
 import {
   getMyExpenseShareMinor,
   groupSpendMinor,
@@ -28,9 +29,10 @@ const onActivateKey = (fn: () => void) => (e: React.KeyboardEvent) => {
 
 interface HomeViewProps {
   onOpenAddExpense: (type?: 'expense' | 'income') => void;
+  /** Open the New split flow. */
+  onOpenNewSplit: () => void;
   onOpenReceiptScanner: () => void;
   onOpenRoulette?: () => void;
-  onOpenCareemPay?: () => void;
   onSelectTransaction: (txn: Transaction) => void;
   onNavigateTab: (tab: string) => void;
   /** Open the Groups tab with this group selected. Falls back to plain tab navigation. */
@@ -39,9 +41,9 @@ interface HomeViewProps {
 
 export function HomeView({
   onOpenAddExpense,
+  onOpenNewSplit,
   onOpenReceiptScanner,
   onOpenRoulette,
-  onOpenCareemPay,
   onSelectTransaction,
   onNavigateTab,
   onOpenGroup,
@@ -90,8 +92,8 @@ export function HomeView({
   return (
     <div className="space-y-6 pb-28">
       {/* ─── Hero Balance Card (Matching iOS Prototype) ──────────────────── */}
-      <div className="relative overflow-hidden rounded-2xl bg-silver-hero p-6 text-white">
-        <div className="balance-label font-heading text-[11px] text-silver-100 tracking-wider mb-2">
+      <div className="relative overflow-hidden rounded-2xl bg-brand-hero p-6 text-white">
+        <div className="balance-label font-heading text-[11px] text-brand-100 tracking-wider mb-2">
           Total net balance
         </div>
 
@@ -100,7 +102,7 @@ export function HomeView({
             {userNetBalance > 0 ? '+' : userNetBalance < 0 ? '-' : ''}
             {formatMinorUnits(Math.abs(userNetBalance), currentUser.default_currency).replace(/^[A-Z]{3}\s*/, '')}
           </span>
-          <span className="text-sm font-bold text-silver-100">{currentUser.default_currency}</span>
+          <span className="text-sm font-bold text-brand-100">{currentUser.default_currency}</span>
         </div>
 
         <div className="text-xs text-white/80 mt-1 font-body">
@@ -113,7 +115,7 @@ export function HomeView({
         {/* Metrics Row */}
         <div className="flex flex-wrap items-center justify-between gap-3 font-body">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] inline-block" />
+            <span className="w-2.5 h-2.5 rounded-full bg-lime-300 inline-block" />
             <div>
               <div className="text-[10px] text-white/70 uppercase tracking-wider font-semibold">Owed to you</div>
               <div className="text-sm font-bold text-white">
@@ -133,25 +135,28 @@ export function HomeView({
           </div>
         </div>
 
-        {/* Quick Action CTA Buttons */}
+        {/* Primary action: settle up. Adding expenses is secondary. */}
         <div className="flex gap-2.5 mt-5 font-body">
           <button
-            onClick={() => onOpenAddExpense('expense')}
-            className="flex-1 h-11 rounded-xl bg-white hover:bg-zinc-100 text-silver-800 font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition active:scale-95"
+            onClick={() => onNavigateTab('settlements')}
+            className="flex-[3] h-12 rounded-xl bg-white hover:bg-brand-50 text-brand-900 font-bold text-sm flex items-center justify-center gap-2 transition active:scale-95"
           >
-            <Plus className="w-4 h-4 stroke-[3]" />
-            <span>Add Expense</span>
+            <HandCoins className="w-4 h-4" />
+            <span>Settle up</span>
           </button>
 
           <button
-            onClick={() => (onOpenCareemPay ? onOpenCareemPay() : onNavigateTab('settlements'))}
-            className="flex-1 h-11 rounded-xl bg-white/15 hover:bg-white/20 text-white font-bold text-xs flex items-center justify-center gap-2 border border-white/20 transition active:scale-95"
+            onClick={onOpenNewSplit}
+            className="flex-[2] h-12 rounded-xl bg-white/15 hover:bg-white/20 text-white font-semibold text-xs flex items-center justify-center gap-2 border border-white/20 transition active:scale-95"
           >
-            <Zap className="w-4 h-4 fill-current text-[#00ea80]" />
-            <span>Careem Settle</span>
+            <Split className="w-4 h-4 stroke-[3]" />
+            <span>New split</span>
           </button>
         </div>
       </div>
+
+      {/* ─── Settle up: the core flow ──────────────────────────────────── */}
+      <SettleUpCard onOpenSettleUp={() => onNavigateTab('settlements')} />
 
       {/* ─── Active Groups Horizontal Carousel ──────────────────────────── */}
       <div>
@@ -159,7 +164,7 @@ export function HomeView({
           <span className="font-heading text-xs text-zinc-400">Active groups</span>
           <button
             onClick={() => onNavigateTab('groups')}
-            className="font-body text-xs font-bold text-silver-400 hover:text-silver-300 transition"
+            className="font-body text-xs font-bold text-brand-400 hover:text-brand-300 transition"
           >
             See all ({groups.length}) &rarr;
           </button>
@@ -181,7 +186,7 @@ export function HomeView({
                 aria-label={`Open ${group.name}`}
                 onClick={() => openGroup(group.id)}
                 onKeyDown={onActivateKey(() => openGroup(group.id))}
-                className="flex-none w-[220px] sm:w-[240px] bg-[#18181b] hover:bg-[#202024] border border-white/8 hover:border-silver-500/40 rounded-2xl p-4 snap-start cursor-pointer transition-all duration-200 active:scale-95 shadow-lg"
+                className="flex-none w-[220px] sm:w-[240px] bg-[#18181b] hover:bg-[#202024] border border-white/8 hover:border-brand-500/40 rounded-2xl p-4 snap-start cursor-pointer transition-all duration-200 active:scale-95 shadow-lg"
               >
                 <div className="flex items-center justify-between mb-2.5">
                   <span className="text-2xl">{getGroupEmoji(group.name)}</span>
@@ -194,7 +199,7 @@ export function HomeView({
                       -{formatMinorUnits(Math.abs(userBal), group.currency)}
                     </span>
                   ) : (
-                    <span className="px-2.5 py-0.5 rounded-full bg-silver-500/15 text-silver-400 text-[11px] font-bold">
+                    <span className="px-2.5 py-0.5 rounded-full bg-brand-500/15 text-brand-400 text-[11px] font-bold">
                       Settled
                     </span>
                   )}
@@ -271,7 +276,7 @@ export function HomeView({
           <span className="font-heading text-xs text-zinc-400">Recent activity</span>
           <button
             onClick={() => onNavigateTab('transactions')}
-            className="font-body text-xs font-bold text-silver-400 hover:text-silver-300 transition"
+            className="font-body text-xs font-bold text-brand-400 hover:text-brand-300 transition"
           >
             See all &rarr;
           </button>
@@ -282,7 +287,7 @@ export function HomeView({
             <div className="p-8 text-center bg-[#18181b] border border-white/8 rounded-2xl">
               <Receipt className="w-8 h-8 text-zinc-500 mx-auto mb-2 opacity-50" />
               <p className="font-heading text-sm text-white">No expenses recorded yet</p>
-              <p className="text-xs text-zinc-400 mt-1 font-body">Tap the center microphone or Add Expense to start.</p>
+              <p className="text-xs text-zinc-400 mt-1 font-body">Tap the center microphone or New split to start.</p>
             </div>
           ) : (
             recentTransactions.map((t) => {
@@ -323,10 +328,10 @@ export function HomeView({
                   tabIndex={0}
                   onClick={() => onSelectTransaction(t)}
                   onKeyDown={onActivateKey(() => onSelectTransaction(t))}
-                  className="flex items-center gap-3 p-3.5 bg-[#18181b] hover:bg-[#202024] border border-white/8 hover:border-silver-500/40 rounded-2xl cursor-pointer transition-all duration-150 active:scale-[0.99] shadow-sm"
+                  className="flex items-center gap-3 p-3.5 bg-[#18181b] hover:bg-[#202024] border border-white/8 hover:border-brand-500/40 rounded-2xl cursor-pointer transition-all duration-150 active:scale-[0.99] shadow-sm"
                 >
                   {/* Category icon box with soft tinted background */}
-                  <div className="w-11 h-11 rounded-xl bg-silver-500/10 flex items-center justify-center text-xl shrink-0">
+                  <div className="w-11 h-11 rounded-xl bg-brand-500/10 flex items-center justify-center text-xl shrink-0">
                     {getCategoryEmoji(cat?.name)}
                   </div>
 

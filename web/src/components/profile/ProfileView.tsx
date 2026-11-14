@@ -55,12 +55,12 @@ export function ProfileView() {
           <img
             src={currentUser.avatar_url || ''}
             alt={currentUser.name}
-            className="w-16 h-16 rounded-2xl object-cover ring-2 ring-silver-500"
+            className="w-16 h-16 rounded-2xl object-cover ring-2 ring-brand-500"
           />
           <div>
             <h3 className="font-heading text-base text-white">{currentUser.name}</h3>
             <p className="text-xs text-zinc-400 font-body">{currentUser.email}</p>
-            <span className="inline-block mt-1 text-[10px] font-heading px-2 py-0.5 rounded-full bg-silver-500/20 text-silver-300 border border-silver-500/30">
+            <span className="inline-block mt-1 text-[10px] font-heading px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30">
               Verified Ledger Account
             </span>
           </div>
@@ -83,7 +83,7 @@ export function ProfileView() {
               }}
               aria-invalid={!!errors.name}
               aria-describedby={errors.name ? 'profile-name-error' : undefined}
-              className={`w-full mt-1 px-3.5 py-2.5 text-sm bg-[#09090b] border rounded-xl focus:outline-none focus:border-silver-500 text-white font-body ${
+              className={`w-full mt-1 px-3.5 py-2.5 text-sm bg-[#09090b] border rounded-xl focus:outline-none focus:border-brand-500 text-white font-body ${
                 errors.name ? 'border-rose-500/70' : 'border-white/10'
               }`}
             />
@@ -118,7 +118,7 @@ export function ProfileView() {
                 Monthly budget limit
               </label>
               <div className="relative mt-1">
-                <span aria-hidden="true" className="absolute left-3 top-2.5 text-xs font-bold text-silver-400">
+                <span aria-hidden="true" className="absolute left-3 top-2.5 text-xs font-bold text-brand-400">
                   {LEDGER_CURRENCY}
                 </span>
                 <input
@@ -132,7 +132,7 @@ export function ProfileView() {
                   }}
                   aria-invalid={!!errors.budget}
                   aria-describedby={errors.budget ? 'profile-budget-error' : undefined}
-                  className={`w-full pl-14 pr-3 py-2.5 text-sm font-semibold bg-[#09090b] border rounded-xl focus:outline-none focus:border-silver-500 text-white font-body ${
+                  className={`w-full pl-14 pr-3 py-2.5 text-sm font-semibold bg-[#09090b] border rounded-xl focus:outline-none focus:border-brand-500 text-white font-body ${
                     errors.budget ? 'border-rose-500/70' : 'border-white/10'
                   }`}
                 />
@@ -147,7 +147,7 @@ export function ProfileView() {
 
           <button
             type="submit"
-            className="w-full py-3 rounded-xl bg-silver-100 hover:bg-white text-zinc-900 font-semibold text-sm transition active:scale-95"
+            className="w-full py-3 rounded-xl bg-brand-400 hover:bg-brand-300 text-zinc-950 font-semibold text-sm transition active:scale-95"
           >
             Save Profile Settings
           </button>
@@ -158,7 +158,7 @@ export function ProfileView() {
       <div className="p-5 bg-[#18181b] border border-white/8 rounded-2xl space-y-3 text-white font-body">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <span className="p-2 rounded-xl bg-silver-500/20 text-silver-300 shrink-0">
+            <span className="p-2 rounded-xl bg-brand-500/20 text-brand-300 shrink-0">
               <Bot className="w-4 h-4" />
             </span>
             <div>
@@ -177,8 +177,8 @@ export function ProfileView() {
             aria-labelledby="ai-toggle-label"
             aria-describedby="ai-toggle-desc"
             onClick={() => setAiEnabled(!aiEnabled)}
-            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-silver-300 ${
-              aiEnabled ? 'bg-silver-200 border-silver-200' : 'bg-zinc-800 border-white/10'
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 ${
+              aiEnabled ? 'bg-brand-400 border-brand-400' : 'bg-zinc-800 border-white/10'
             }`}
           >
             <span
@@ -193,7 +193,7 @@ export function ProfileView() {
       {/* Voice Privacy Disclosure Card */}
       <div className="p-5 bg-[#18181b] border border-white/8 rounded-2xl shadow-sm space-y-3 text-white font-body">
         <div className="flex items-center gap-2">
-          <span className="p-2 rounded-xl bg-silver-500/20 text-silver-400">
+          <span className="p-2 rounded-xl bg-brand-500/20 text-brand-400">
             <Lock className="w-4 h-4" />
           </span>
           <h4 className="font-heading text-xs text-white">Privacy & accuracy</h4>

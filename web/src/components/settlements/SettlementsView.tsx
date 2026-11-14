@@ -140,7 +140,7 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
           )}
           <button
             onClick={() => onOpenRecordSettlement(params)}
-            className={`flex-1 ${size} rounded-xl bg-silver-600 hover:bg-silver-500 text-white font-bold transition active:scale-95`}
+            className={`flex-1 ${size} rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold transition active:scale-95`}
           >
             Mark Received
           </button>
@@ -160,7 +160,7 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
         )}
         <button
           onClick={() => onOpenRecordSettlement(params)}
-          className={`${onOpenCareemPay ? '' : 'flex-1 '}px-3 ${size} rounded-xl bg-silver-600 hover:bg-silver-500 text-white font-bold transition active:scale-95`}
+          className={`${onOpenCareemPay ? '' : 'flex-1 '}px-3 ${size} rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold transition active:scale-95`}
         >
           Record Repayment
         </button>
@@ -216,7 +216,7 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
     <div className="space-y-6 pb-28">
       {/* Toast notification */}
       {notificationMsg && (
-        <div className="fixed top-20 right-4 z-50 bg-[#18181b] border border-silver-500/60 text-white px-4 py-2.5 rounded-2xl shadow-2xl text-xs font-body flex items-center gap-2 animate-in fade-in slide-in-from-top-4">
+        <div className="fixed top-20 right-4 z-50 bg-[#18181b] border border-brand-500/60 text-white px-4 py-2.5 rounded-2xl shadow-2xl text-xs font-body flex items-center gap-2 animate-in fade-in slide-in-from-top-4">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{notificationMsg}</span>
         </div>
@@ -226,19 +226,16 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="font-heading text-xl sm:text-2xl text-white tracking-wide">Settlements ledger</h2>
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-heading border border-emerald-500/30">
-              Algorithm Active
-            </span>
+            <h2 className="font-heading text-xl sm:text-2xl text-white tracking-wide">Settle up</h2>
           </div>
           <p className="text-xs text-zinc-400 mt-1 font-body">
-            Settle up in as few payments as possible, fee-free with Careem Pay
+            Payd works out the fewest payments that clear every balance. Pay or get paid in one tap, fee-free with Careem Pay.
           </p>
         </div>
 
         <button
           onClick={() => onOpenRecordSettlement()}
-          className="px-4 py-2.5 rounded-2xl bg-silver-100 hover:bg-white text-zinc-900 font-semibold text-sm flex items-center gap-2 transition active:scale-95 self-start sm:self-auto"
+          className="px-4 py-2.5 rounded-2xl bg-brand-400 hover:bg-brand-300 text-zinc-950 font-semibold text-sm flex items-center gap-2 transition active:scale-95 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4 stroke-[3]" />
           <span>Record Settlement</span>
@@ -246,8 +243,8 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
       </div>
 
       {/* ─── Debt Minimization Engine Hero Card (Matching iOS Prototype) ─── */}
-      <div className="relative overflow-hidden rounded-2xl bg-silver-hero p-6 text-white">
-        <div className="font-heading text-[11px] text-silver-100 tracking-wider mb-2">
+      <div className="relative overflow-hidden rounded-2xl bg-brand-hero p-6 text-white">
+        <div className="font-heading text-[11px] text-brand-100 tracking-wider mb-2">
           Smart settle-up
         </div>
 
@@ -256,14 +253,14 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
             {beforeTransfers === 0 ? (
               <>
                 <div className="text-3xl sm:text-4xl font-bold tracking-tight text-white">All square</div>
-                <div className="text-xs text-silver-100 mt-0.5">No open debts to settle</div>
+                <div className="text-xs text-brand-100 mt-0.5">No open debts to settle</div>
               </>
             ) : (
               <>
                 <div className="text-3xl sm:text-4xl font-bold tracking-tight text-white">
                   {beforeTransfers} &rarr; {afterTransfers}
                 </div>
-                <div className="text-xs text-silver-100 mt-0.5">
+                <div className="text-xs text-brand-100 mt-0.5">
                   {saved > 0
                     ? `${saved} transfer${saved === 1 ? '' : 's'} eliminated (${reductionPct}% fewer)`
                     : 'Already the fewest transfers possible'}
@@ -335,7 +332,7 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
                 : 'border-transparent text-zinc-400 hover:text-white'
             }`}
           >
-            OWED TO YOU ({peopleWhoOweMe.length})
+            Owed to you ({peopleWhoOweMe.length})
           </button>
           <button
             onClick={() => setActiveTab('i_owe')}
@@ -345,7 +342,7 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
                 : 'border-transparent text-zinc-400 hover:text-white'
             }`}
           >
-            YOU OWE ({peopleIOwe.length})
+            You owe ({peopleIOwe.length})
           </button>
         </div>
 
@@ -364,7 +361,7 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
                 return (
                 <div
                   key={user.id}
-                  className="p-5 bg-[#18181b] border border-white/8 hover:border-silver-500/40 rounded-2xl shadow-md transition"
+                  className="p-5 bg-[#18181b] border border-white/8 hover:border-brand-500/40 rounded-2xl shadow-md transition"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-11 h-11 rounded-full bg-sky-700 flex items-center justify-center font-bold text-sm text-white shrink-0">
@@ -409,7 +406,7 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
               return (
               <div
                 key={user.id}
-                className="p-5 bg-[#18181b] border border-white/8 hover:border-silver-500/40 rounded-2xl shadow-md transition"
+                className="p-5 bg-[#18181b] border border-white/8 hover:border-brand-500/40 rounded-2xl shadow-md transition"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-11 h-11 rounded-full bg-rose-700 flex items-center justify-center font-bold text-sm text-white shrink-0">
