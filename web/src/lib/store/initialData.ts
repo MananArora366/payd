@@ -1,9 +1,9 @@
 import { User, Group, GroupMember, Category, Transaction, TransactionSplit, Settlement, Budget, RecurringBill } from '@/types/database';
 
-/** Offline initials avatar (silver disc, dark text) so demo people don't wear stock-photo faces. */
+/** Offline initials avatar (mint disc, dark green text) so demo people don't wear stock-photo faces. */
 function initialsAvatar(name: string): string {
   const initials = name.split(' ').map((p) => p[0]).join('').slice(0, 2).toUpperCase();
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><rect width="120" height="120" fill="#cdd2d8"/><text x="50%" y="50%" dy=".35em" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="48" font-weight="600" fill="#2a2e33">${initials}</text></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><rect width="120" height="120" fill="#bbf7d0"/><text x="50%" y="50%" dy=".35em" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="48" font-weight="600" fill="#14532d">${initials}</text></svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 

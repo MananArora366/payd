@@ -478,7 +478,7 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
             <div>
               <div className="flex items-center gap-2">
                 <h2 id={titleId} className="font-heading text-lg text-white">Payd Lens</h2>
-                <span className="text-[10px] uppercase font-heading px-2 py-0.5 rounded-full bg-silver-500/20 text-silver-300 border border-silver-500/30">
+                <span className="text-[10px] uppercase font-heading px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30">
                   UAE OCR &bull; 5% VAT
                 </span>
               </div>
@@ -995,8 +995,8 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
             )}
 
             {/* Final Shares Ledger Summary */}
-            <div className="p-4 rounded-2xl bg-silver-950/30 border border-silver-500/20 space-y-2 font-body">
-              <div className="flex items-center justify-between text-xs font-heading text-silver-300">
+            <div className="p-4 rounded-2xl bg-brand-950/30 border border-brand-500/20 space-y-2 font-body">
+              <div className="flex items-center justify-between text-xs font-heading text-brand-300">
                 <span className="flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-emerald-400" /> EACH PERSON PAYS
                 </span>
@@ -1067,7 +1067,7 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
                 type="button"
                 onClick={handleSaveToLedger}
                 disabled={!canSave}
-                className="flex-[2] py-3 px-4 rounded-2xl bg-silver-100 hover:bg-white text-zinc-900 font-semibold text-sm transition flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+                className="flex-[2] py-3 px-4 rounded-2xl bg-brand-400 hover:bg-brand-300 text-zinc-950 font-semibold text-sm transition flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
               >
                 <Check className="w-4 h-4 stroke-[3]" />{' '}
                 {isSaved ? 'Saved' : isSaving ? 'Saving…' : 'Save Receipt to Ledger'}

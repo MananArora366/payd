@@ -23,7 +23,7 @@ export function BottomNav({ activeTab, onTabChange, onTriggerVoice }: BottomNavP
           aria-current={activeTab === 'home' ? 'page' : undefined}
           className={`flex flex-col items-center justify-center w-14 py-1 transition ${
             activeTab === 'home'
-              ? 'text-silver-400 font-bold'
+              ? 'text-brand-400 font-bold'
               : 'text-zinc-500 hover:text-zinc-300'
           }`}
           title="Home Dashboard"
@@ -38,7 +38,7 @@ export function BottomNav({ activeTab, onTabChange, onTriggerVoice }: BottomNavP
           aria-current={activeTab === 'groups' ? 'page' : undefined}
           className={`flex flex-col items-center justify-center w-14 py-1 transition ${
             activeTab === 'groups'
-              ? 'text-silver-400 font-bold'
+              ? 'text-brand-400 font-bold'
               : 'text-zinc-500 hover:text-zinc-300'
           }`}
           title="Active Groups"
@@ -47,44 +47,47 @@ export function BottomNav({ activeTab, onTabChange, onTriggerVoice }: BottomNavP
           <span className="text-[10px] mt-0.5 font-medium tracking-tight">Groups</span>
         </button>
 
-        {/* Center Floating FAB: Voice AI / Quick Action */}
+        {/* Center Floating FAB: voice input */}
         <div className="relative -top-4 flex items-center justify-center">
+          {/* Soft animated green halo behind the FAB */}
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 -m-1.5 rounded-full bg-brand-400/40 blur-md animate-pulse motion-reduce:animate-none"
+          />
           <button
             onClick={() => {
               if (onTriggerVoice) {
                 onTriggerVoice();
               } else {
-                // Dispatch event or fall back to voice
                 const micBtn = document.getElementById('payd-voice-mic-trigger');
                 if (micBtn) micBtn.click();
               }
             }}
-            className="group relative w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-silver-100 hover:bg-white text-zinc-900 flex items-center justify-center ring-4 ring-[#09090b] active:scale-95 transition-all duration-200"
+            className="relative w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-brand-400 hover:bg-brand-300 text-zinc-950 flex items-center justify-center ring-4 ring-[#09090b] shadow-[0_0_20px_4px_rgba(74,222,128,0.55)] hover:shadow-[0_0_26px_6px_rgba(74,222,128,0.65)] active:shadow-[0_0_14px_3px_rgba(74,222,128,0.5)] active:scale-95 transition-all duration-200"
             title="Speak an expense"
             aria-label="Speak an expense"
           >
-            <Mic className="w-6 h-6 relative z-10" />
+            <Mic className="w-6 h-6" />
           </button>
         </div>
 
-        {/* Tab 3: Settlements */}
+        {/* Tab 3: Settle up, the core feature: always tinted green, with a badge for open balances */}
         <button
           onClick={() => onTabChange('settlements')}
           aria-current={activeTab === 'settlements' ? 'page' : undefined}
+          aria-label={hasSettlementBadge ? 'Settle up (open balances)' : 'Settle up'}
           className={`relative flex flex-col items-center justify-center w-14 py-1 transition ${
-            activeTab === 'settlements'
-              ? 'text-silver-400 font-bold'
-              : 'text-zinc-500 hover:text-zinc-300'
+            activeTab === 'settlements' ? 'text-brand-300 font-bold' : 'text-brand-400 hover:text-brand-300 font-semibold'
           }`}
-          title="Smart Settlements"
+          title="Settle up"
         >
           <div className="relative">
             <HandCoins className={`w-5 h-5 transition-transform ${activeTab === 'settlements' ? 'scale-110' : ''}`} />
             {hasSettlementBadge && (
-              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400" />
+              <span className="absolute -top-1 -right-1.5 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-[#18181b]" />
             )}
           </div>
-          <span className="text-[10px] mt-0.5 font-medium tracking-tight">Settle</span>
+          <span className="text-[10px] mt-0.5 tracking-tight whitespace-nowrap">Settle up</span>
         </button>
 
         {/* Tab 4: Transactions / Activity */}
@@ -93,7 +96,7 @@ export function BottomNav({ activeTab, onTabChange, onTriggerVoice }: BottomNavP
           aria-current={activeTab === 'transactions' ? 'page' : undefined}
           className={`flex flex-col items-center justify-center w-14 py-1 transition ${
             activeTab === 'transactions'
-              ? 'text-silver-400 font-bold'
+              ? 'text-brand-400 font-bold'
               : 'text-zinc-500 hover:text-zinc-300'
           }`}
           title="Expense Activity"

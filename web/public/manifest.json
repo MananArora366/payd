@@ -1,7 +1,7 @@
 {
-  "name": "Payd - Voice & Group Expense Ledger",
+  "name": "Payd - Split bills, settle up in one tap",
   "short_name": "Payd",
-  "description": "Voice-first social expense ledger with UAE VAT OCR, min-cash-flow debt simplification, and Careem Pay integration.",
+  "description": "Settle up with friends in the fewest payments, fee-free with Careem Pay. Split bills by voice or by scanning the receipt, with UAE VAT handled.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#09090b",

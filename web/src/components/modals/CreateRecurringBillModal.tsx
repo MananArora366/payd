@@ -148,7 +148,7 @@ export function CreateRecurringBillModal({
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-white/8">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-silver-500/20 text-silver-400">
+            <div className="p-2 rounded-xl bg-brand-500/20 text-brand-400">
               <Repeat className="w-5 h-5" />
             </div>
             <div>
@@ -184,7 +184,7 @@ export function CreateRecurringBillModal({
               placeholder="e.g. Du 5G Wi-Fi, DEWA Bill, Netflix 4K"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full mt-1 px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-silver-500 font-medium"
+              className="w-full mt-1 px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
               required
             />
           </div>
@@ -200,7 +200,7 @@ export function CreateRecurringBillModal({
                 placeholder="0.00"
                 value={amountStr}
                 onChange={(e) => setAmountStr(e.target.value)}
-                className="w-full mt-1 px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-silver-500 font-bold"
+                className="w-full mt-1 px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold"
                 required
               />
             </div>
@@ -216,7 +216,7 @@ export function CreateRecurringBillModal({
                   setFrequency(next);
                   setDueDay((d) => clampDueDay(d, next));
                 }}
-                className="w-full mt-1 px-3 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-silver-500 font-medium"
+                className="w-full mt-1 px-3 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
               >
                 <option value="monthly">Monthly</option>
                 <option value="weekly">Weekly</option>
@@ -234,7 +234,7 @@ export function CreateRecurringBillModal({
                 <select
                   value={clampDueDay(dueDay, 'weekly')}
                   onChange={(e) => setDueDay(parseInt(e.target.value, 10) || 1)}
-                  className="w-full mt-1 px-3 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-silver-500"
+                  className="w-full mt-1 px-3 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
                   {WEEKDAY_NAMES.map((d, i) => (
                     <option key={d} value={i + 1}>
@@ -249,7 +249,7 @@ export function CreateRecurringBillModal({
                   max={dueRange.max}
                   value={dueDay}
                   onChange={(e) => setDueDay(clampDueDay(parseInt(e.target.value, 10) || 1, frequency))}
-                  className="w-full mt-1 px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-silver-500"
+                  className="w-full mt-1 px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
               )}
             </div>
@@ -261,7 +261,7 @@ export function CreateRecurringBillModal({
               <select
                 value={payerId}
                 onChange={(e) => setPayerId(e.target.value)}
-                className="w-full mt-1 px-3 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-silver-500 font-medium"
+                className="w-full mt-1 px-3 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
               >
                 {eligibleUsers.map((u) => (
                   <option key={u.id} value={u.id}>
@@ -280,7 +280,7 @@ export function CreateRecurringBillModal({
               <select
                 value={groupId || ''}
                 onChange={(e) => applyGroup(e.target.value ? e.target.value : null)}
-                className="w-full mt-1 px-3 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-silver-500"
+                className="w-full mt-1 px-3 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="">Personal (No group)</option>
                 {groups.map((g) => (
@@ -298,7 +298,7 @@ export function CreateRecurringBillModal({
               <select
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full mt-1 px-3 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-silver-500"
+                className="w-full mt-1 px-3 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -313,7 +313,7 @@ export function CreateRecurringBillModal({
           <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-zinc-400 flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-silver-500" />
+                <Users className="w-3.5 h-3.5 text-brand-500" />
                 Split Subscriptions Between ({participantIds.length})
               </span>
             </div>
@@ -329,7 +329,7 @@ export function CreateRecurringBillModal({
                     aria-pressed={isSelected}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition ${
                       isSelected
-                        ? 'bg-silver-600 text-white shadow-xs'
+                        ? 'bg-brand-600 text-white shadow-xs'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
                     }`}
                   >
@@ -366,7 +366,7 @@ export function CreateRecurringBillModal({
             </button>
             <button
               type="submit"
-              className="flex-1 py-2.5 rounded-xl bg-silver-100 hover:bg-white text-zinc-900 text-sm font-semibold transition"
+              className="flex-1 py-2.5 rounded-xl bg-brand-400 hover:bg-brand-300 text-zinc-950 text-sm font-semibold transition"
             >
               Create Subscription
             </button>

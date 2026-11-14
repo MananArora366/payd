@@ -72,7 +72,7 @@ export default function JoinGroupPage() {
             </div>
 
             <div>
-              <span className="text-[10px] font-heading uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-silver-500/20 text-silver-300">
+              <span className="text-[10px] font-heading uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-brand-500/20 text-brand-300">
                 Group Invitation
               </span>
               <h1 className="font-heading text-xl text-white mt-2">Join {group.name}</h1>
@@ -100,7 +100,7 @@ export default function JoinGroupPage() {
                 </div>
                 <Link
                   href="/"
-                  className="w-full py-3 rounded-2xl bg-silver-100 hover:bg-white text-zinc-900 font-semibold text-sm flex items-center justify-center gap-2 transition"
+                  className="w-full py-3 rounded-2xl bg-brand-400 hover:bg-brand-300 text-zinc-950 font-semibold text-sm flex items-center justify-center gap-2 transition"
                 >
                   <span>Open Payd</span>
                   <ArrowRight className="w-4 h-4" />
@@ -115,7 +115,7 @@ export default function JoinGroupPage() {
                 <button
                   type="button"
                   onClick={handleJoin}
-                  className="w-full py-3 rounded-2xl bg-silver-100 hover:bg-white text-zinc-900 font-semibold text-sm flex items-center justify-center gap-2 transition active:scale-95"
+                  className="w-full py-3 rounded-2xl bg-brand-400 hover:bg-brand-300 text-zinc-950 font-semibold text-sm flex items-center justify-center gap-2 transition active:scale-95"
                 >
                   <span>Accept & Join Group</span>
                   <ArrowRight className="w-4 h-4" />

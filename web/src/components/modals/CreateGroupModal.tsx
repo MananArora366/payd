@@ -91,7 +91,7 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
               placeholder="e.g. Dubai Villa, Supper Club"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full mt-1 px-3.5 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-silver-500 text-white placeholder:text-zinc-600 font-body"
+              className="w-full mt-1 px-3.5 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-brand-500 text-white placeholder:text-zinc-600 font-body"
             />
           </div>
 
@@ -102,7 +102,7 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
               placeholder="e.g. Shared expenses, rent, groceries"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full mt-1 px-3.5 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-silver-500 text-white placeholder:text-zinc-600 font-body"
+              className="w-full mt-1 px-3.5 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-brand-500 text-white placeholder:text-zinc-600 font-body"
             />
           </div>
 
@@ -135,7 +135,7 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
                     onClick={() => toggleUser(u.id)}
                     className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition ${
                       isSelected
-                        ? 'border-silver-500 bg-[#22222a]'
+                        ? 'border-brand-500 bg-[#22222a]'
                         : 'border-white/6 hover:bg-[#202025]'
                     }`}
                   >
@@ -147,7 +147,7 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
                         {u.name} {isCreator ? '(Creator)' : ''}
                       </span>
                     </div>
-                    {isSelected && <Check className="w-4 h-4 text-silver-400" />}
+                    {isSelected && <Check className="w-4 h-4 text-brand-400" />}
                   </div>
                 );
               })}
@@ -164,7 +164,7 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
             </button>
             <button
               type="submit"
-              className="flex-1 py-3 rounded-xl bg-silver-100 hover:bg-white text-zinc-900 text-sm font-semibold transition active:scale-95"
+              className="flex-1 py-3 rounded-xl bg-brand-400 hover:bg-brand-300 text-zinc-950 text-sm font-semibold transition active:scale-95"
             >
               Create Group
             </button>

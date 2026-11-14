@@ -141,7 +141,7 @@ export function RecordSettlementModal({
         <div className="flex items-center justify-between pb-3 border-b border-white/8">
           <div className="flex items-center gap-2">
             <h2 id={titleId} className="font-heading text-sm text-white">Record settlement</h2>
-            <span className="text-[10px] font-heading px-2 py-0.5 rounded-full bg-silver-500/20 text-silver-300 border border-silver-500/30">
+            <span className="text-[10px] font-heading px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30">
               Not an expense
             </span>
           </div>
@@ -162,7 +162,7 @@ export function RecordSettlementModal({
             {senderUser?.avatar_url ? (
               <img src={senderUser.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover" />
             ) : (
-              <span aria-hidden="true" className="w-7 h-7 rounded-full bg-silver-600/40 flex items-center justify-center text-[10px] font-bold">
+              <span aria-hidden="true" className="w-7 h-7 rounded-full bg-brand-600/40 flex items-center justify-center text-[10px] font-bold">
                 {(senderUser?.name || '?').slice(0, 1)}
               </span>
             )}
@@ -185,7 +185,7 @@ export function RecordSettlementModal({
             {recipientUser?.avatar_url ? (
               <img src={recipientUser.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover" />
             ) : (
-              <span aria-hidden="true" className="w-7 h-7 rounded-full bg-silver-600/40 flex items-center justify-center text-[10px] font-bold">
+              <span aria-hidden="true" className="w-7 h-7 rounded-full bg-brand-600/40 flex items-center justify-center text-[10px] font-bold">
                 {(recipientUser?.name || '?').slice(0, 1)}
               </span>
             )}
