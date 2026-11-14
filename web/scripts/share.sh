@@ -2,15 +2,32 @@
 # Builds Payd for production and serves it on a public HTTPS ngrok URL that
 # anyone can open on their phone. HTTPS also lets phone cameras work in Payd Lens.
 #
-# Usage:  npm run share                     (from the repo root or web/)
+# Usage:  SHARE_PASSWORD=<8+ chars> npm run share   (from the repo root or web/)
+#         npm run share -- --no-auth                 (from web/: explicitly open to anyone with the link)
+#         SHARE_NO_AUTH=1 npm run share              (same, works from the repo root too)
 # Env:    SHARE_PORT=3001                   local port for the production server
-#         SHARE_PASSWORD=<8+ chars>         required: login password (username: payd)
-#         SHARE_PUBLIC=1                    share WITHOUT a password (anyone with the link
-#                                           can call the AI routes on your API keys)
+#         SHARE_PASSWORD=<8+ chars>         required unless --no-auth (username: payd)
 #         SHARE_SKIP_BUILD=1                reuse the last share build
 #
 # Stop with Ctrl+C; the server and the tunnel both shut down.
 set -euo pipefail
+
+NO_AUTH="${SHARE_NO_AUTH:-0}"
+for arg in "$@"; do
+  case "$arg" in
+    --no-auth) NO_AUTH=1 ;;
+    *) echo "Unknown option: $arg (supported: --no-auth)"; exit 1 ;;
+  esac
+done
+if [ -n "${SHARE_PASSWORD:-}" ]; then
+  [ "${#SHARE_PASSWORD}" -ge 8 ] || { echo "SHARE_PASSWORD must be at least 8 characters."; exit 1; }
+elif [ "$NO_AUTH" != "1" ]; then
+  echo "Refusing to open a public tunnel without a password."
+  echo "Payd has no login: anyone with the URL could read and change the ledger and call AI/Careem APIs."
+  echo "  Set one:   SHARE_PASSWORD='at-least-8-chars' npm run share"
+  echo "  Or opt out explicitly:   SHARE_NO_AUTH=1 npm run share   (or, from web/: npm run share -- --no-auth)"
+  exit 1
+fi
 
 cd "$(dirname "$0")/.."            # web/
 PORT="${SHARE_PORT:-3001}"
@@ -18,14 +35,6 @@ export NEXT_DIST_DIR=".next-share" # separate from `next dev`'s .next folder
 LOG_DIR="$(mktemp -d -t payd-share)"
 
 command -v ngrok >/dev/null || { echo "ngrok not found. Install: brew install ngrok"; exit 1; }
-if [ -z "${SHARE_PASSWORD:-}" ] && [ "${SHARE_PUBLIC:-}" != "1" ]; then
-  echo "Refusing to share without a password: anyone with the link could use the AI routes"
-  echo "on your Bedrock/Gemini keys. Set SHARE_PASSWORD=<8+ chars> (or SHARE_PUBLIC=1 to accept that)."
-  exit 1
-fi
-if [ -n "${SHARE_PASSWORD:-}" ] && [ "${#SHARE_PASSWORD}" -lt 8 ]; then
-  echo "SHARE_PASSWORD must be at least 8 characters."; exit 1
-fi
 if lsof -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
   echo "Port $PORT is already in use. Set SHARE_PORT to another port."; exit 1
 fi
@@ -86,7 +95,11 @@ if command -v qrencode >/dev/null; then
 else
   echo "  (brew install qrencode to show a scannable QR code here)"
 fi
-echo "Anyone with this link can use the app. Ctrl+C to stop."
+if [ -n "${SHARE_PASSWORD:-}" ]; then
+  echo "The link is password-protected. Ctrl+C to stop."
+else
+  echo "WARNING: --no-auth: anyone with this link can use the app. Ctrl+C to stop."
+fi
 
 # Exit (and clean up) if either the server or ngrok dies.
 while kill -0 "${pids[0]}" 2>/dev/null && kill -0 "${pids[1]}" 2>/dev/null; do sleep 2; done

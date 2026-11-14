@@ -17,14 +17,16 @@ HTTPS matters: phone browsers only allow the Payd Lens camera on HTTPS, so the n
 ## Starting
 0. **Ask first.** Publishing is outward-facing: confirm with the user before every start, and say who will be able to open the link.
 1. If port 3001 is already listening, check whether it's an existing share (`curl -s localhost:4040/api/tunnels` lists live ngrok tunnels). If one is up, report its URL instead of starting another.
-2. Run `SHARE_PASSWORD=<password> npm run share` from the repo root **in the background** (it runs until stopped). The build takes about 1–2 minutes.
+2. Run `npm run share` from the repo root **in the background** (it runs until stopped). The build takes about 1–2 minutes.
 3. Wait for the `Payd is live:` line or a failure line (`Build failed`, `Server did not start`, `ngrok failed`) in its output, then fetch the URL with `curl -s -o /dev/null -w '%{http_code}' <url>` to confirm it responds.
 4. Report: the public URL, that free ngrok shows visitors a one-time "Visit Site" warning page first, and how to stop it.
 
-Options: `SHARE_PASSWORD=<8+ chars>` is required and sets the login (username `payd`); generate one if the user has none and tell them what it is. `SHARE_PUBLIC=1` shares without a password: only use it if the user explicitly asks for an open link after hearing the warning below. `SHARE_SKIP_BUILD=1` reuses the last build for a faster restart.
+Auth is now required: `npm run share` refuses to start unless you pass `SHARE_PASSWORD=<8+ chars>` (adds a login, username `payd`) or explicitly opt out with `SHARE_NO_AUTH=1` (or `npm run share -- --no-auth` from `web/`). Ask the user for a password; only use `SHARE_NO_AUTH=1` if they explicitly want an open link.
+
+Options: `SHARE_SKIP_BUILD=1` reuses the last build for a faster restart.
 
 ## Warn before starting
-The link is public: anyone who has it can use the app, including API routes that call AWS Bedrock / Gemini with the keys in `web/.env.local`, which can run up costs. Always use a password unless the user explicitly asked for an open link, and tell them to stop the share when the demo is over.
+The link is public: anyone who has it can use the app, including API routes that call AWS Bedrock / Gemini with the keys in `web/.env.local`, which can run up costs. Use `SHARE_PASSWORD` unless the user explicitly declined (then `SHARE_NO_AUTH=1`), and tell them to stop the share when the demo is over.
 
 ## Stopping
 Stop the background task that runs `npm run share`; its cleanup kills both the server and ngrok. If it was started outside this session: `pkill -f "next start -p 3001"; pkill -f "ngrok http 3001"`.

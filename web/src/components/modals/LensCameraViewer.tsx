@@ -12,6 +12,22 @@ interface LensCameraViewerProps {
 
 type CameraState = 'idle' | 'starting' | 'live' | 'error';
 
+const CAMERA_START_TIMEOUT_MS = 10_000;
+
+class CameraTimeoutError extends Error {}
+
+/**
+ * Whether the live preview should be mirrored, like FaceTime or Zoom. Front
+ * cameras and laptop webcams face the user, so an unmirrored preview feels
+ * backwards. Rear cameras are not mirrored. Laptop webcams usually report no
+ * facingMode, so anything not known to be rear-facing is mirrored.
+ */
+export function shouldMirrorPreview(facingMode: string | undefined, label: string | undefined): boolean {
+  if (facingMode === 'environment') return false;
+  if (facingMode === 'user') return true;
+  return !/\b(back|rear|environment)\b/i.test(label ?? '');
+}
+
 /**
  * Live camera viewfinder for Payd Lens. Works with phone cameras (prefers the
  * rear camera), a MacBook's built-in FaceTime webcam, Continuity Camera and
@@ -21,18 +37,21 @@ type CameraState = 'idle' | 'starting' | 'live' | 'error';
 export function LensCameraViewer({ onCapture, onUploadClick }: LensCameraViewerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  // Bumped by every stop; a getUserMedia call that resolves after a newer stop/start
-  // (or after unmount) sees a stale id and releases its stream instead of leaking it.
-  const requestRef = useRef(0);
   const [state, setState] = useState<CameraState>('idle');
   const [error, setError] = useState<string | null>(null);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [deviceId, setDeviceId] = useState<string | null>(null);
+  const [mirrored, setMirrored] = useState(false);
+  // Incremented on every start/stop/unmount; a getUserMedia call that resolves
+  // after its attempt was superseded must release its stream immediately.
+  const attemptRef = useRef(0);
+  const mountedRef = useRef(true);
 
   const stopCamera = useCallback(() => {
-    requestRef.current += 1;
+    attemptRef.current += 1;
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
   }, []);
 
   const startCamera = useCallback(async (requestedId?: string | null) => {
@@ -44,11 +63,12 @@ export function LensCameraViewer({ onCapture, onUploadClick }: LensCameraViewerP
     setState('starting');
     setError(null);
     stopCamera();
-    const request = requestRef.current;
-    const isStale = () => request !== requestRef.current;
+    const attempt = attemptRef.current;
+    const isStale = () => !mountedRef.current || attempt !== attemptRef.current;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       const size = { width: { ideal: 1920 }, height: { ideal: 1080 } };
-      const stream = await navigator.mediaDevices.getUserMedia({
+      const request = navigator.mediaDevices.getUserMedia({
         // A specific camera if chosen; otherwise prefer the rear camera on
         // phones. Laptops have no rear camera, so `ideal` falls back to the
         // built-in webcam.
@@ -57,27 +77,48 @@ export function LensCameraViewer({ onCapture, onUploadClick }: LensCameraViewerP
           : { facingMode: { ideal: 'environment' }, ...size },
         audio: false,
       });
+      // If the user closes the viewer or we time out, stop the stream whenever it arrives.
+      request
+        .then((late) => {
+          if (isStale()) late.getTracks().forEach((t) => t.stop());
+        })
+        .catch(() => {});
+      const timeout = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new CameraTimeoutError()), CAMERA_START_TIMEOUT_MS);
+      });
+      const stream = await Promise.race([request, timeout]);
+      clearTimeout(timer);
       if (isStale()) {
         stream.getTracks().forEach((t) => t.stop());
         return;
       }
       streamRef.current = stream;
-      setDeviceId(stream.getVideoTracks()[0]?.getSettings().deviceId ?? requestedId ?? null);
+      const track = stream.getVideoTracks()[0];
+      setDeviceId(track?.getSettings().deviceId ?? requestedId ?? null);
+      setMirrored(shouldMirrorPreview(track?.getSettings().facingMode, track?.label));
       // Camera names are only exposed after permission is granted.
-      const all = await navigator.mediaDevices.enumerateDevices();
-      if (isStale()) return; // a newer stop already released this stream
+      const all = await navigator.mediaDevices.enumerateDevices().catch(() => [] as MediaDeviceInfo[]);
+      if (isStale()) return;
       setDevices(all.filter((d) => d.kind === 'videoinput'));
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play().catch(() => {});
       }
+      if (isStale()) return;
       setState('live');
     } catch (err) {
-      if (isStale()) return; // a newer request owns the UI state now
+      clearTimeout(timer);
+      if (isStale()) return;
+      if (err instanceof CameraTimeoutError) {
+        // Invalidate this attempt so a late stream is stopped on arrival.
+        attemptRef.current += 1;
+      }
       setState('error');
       const name = err instanceof DOMException ? err.name : '';
       setError(
-        name === 'NotAllowedError'
+        err instanceof CameraTimeoutError
+          ? 'The camera is taking too long to start. Check the permission prompt, or upload a photo instead.'
+          : name === 'NotAllowedError'
           ? 'Camera permission denied. Allow access or upload a photo instead.'
           : name === 'NotFoundError' || name === 'OverconstrainedError'
             ? 'No camera found. Upload a photo instead.'
@@ -91,7 +132,13 @@ export function LensCameraViewer({ onCapture, onUploadClick }: LensCameraViewerP
   }, [stopCamera]);
 
   // Release the camera when the viewer unmounts (modal closed or image chosen).
-  useEffect(() => stopCamera, [stopCamera]);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      stopCamera();
+    };
+  }, [stopCamera]);
 
   const capture = () => {
     const video = videoRef.current;
@@ -101,6 +148,8 @@ export function LensCameraViewer({ onCapture, onUploadClick }: LensCameraViewerP
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    // Capture the raw frame, never the mirrored preview, so receipt text reads
+    // the right way round for OCR.
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
     stopCamera();
@@ -118,12 +167,12 @@ export function LensCameraViewer({ onCapture, onUploadClick }: LensCameraViewerP
 
   return (
     <div className="space-y-3">
-      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-900">
+      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-900">
         <video
           ref={videoRef}
           playsInline
           muted
-          className={`absolute inset-0 h-full w-full object-cover ${isLive ? '' : 'hidden'}`}
+          className={`absolute inset-0 h-full w-full object-cover ${mirrored ? '-scale-x-100' : ''} ${isLive ? '' : 'hidden'}`}
         />
 
         {isLive && devices.length > 1 && (
@@ -176,7 +225,7 @@ export function LensCameraViewer({ onCapture, onUploadClick }: LensCameraViewerP
                 disabled={state === 'starting'}
                 className="group flex flex-col items-center gap-3 disabled:opacity-60"
               >
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 transition group-hover:scale-105">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 transition">
                   <Camera className="h-8 w-8" />
                 </div>
                 <span className="text-sm font-bold">
