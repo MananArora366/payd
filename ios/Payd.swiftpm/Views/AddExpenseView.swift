@@ -1,20 +1,23 @@
 import SwiftUI
-import SwiftData
+import PaydCore
 
 struct AddExpenseView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
+    @Environment(LedgerStore.self) private var store
 
     @State private var title: String = ""
     @State private var amountText: String = ""
-    @State private var selectedCategory: ExpenseCategory = .food
+    @State private var selectedCategoryId: String = SeedIDs.food
     @State private var date: Date = Date()
     @State private var notes: String = ""
 
+    // Integer minor units (fils); 0 when the text is not a valid amount
+    private var amountMinor: Int {
+        Currency.parseMajorToMinor(amountText, currency: store.currentCurrency)
+    }
+
     private var isValid: Bool {
-        guard !title.trimmingCharacters(in: .whitespaces).isEmpty else { return false }
-        guard let amount = Decimal(string: amountText), amount > 0 else { return false }
-        return true
+        !title.trimmingCharacters(in: .whitespaces).isEmpty && amountMinor > 0
     }
 
     var body: some View {
@@ -25,7 +28,7 @@ struct AddExpenseView: View {
                         .autocorrectionDisabled()
 
                     HStack {
-                        Text("AED")
+                        Text(Currency.symbol(for: store.currentCurrency))
                             .foregroundStyle(.secondary)
                             .fontWeight(.semibold)
                         TextField("0.00", text: $amountText)
@@ -36,10 +39,10 @@ struct AddExpenseView: View {
                 }
 
                 Section("Category") {
-                    Picker("Category", selection: $selectedCategory) {
-                        ForEach(ExpenseCategory.allCases) { category in
-                            Label(category.rawValue, systemImage: category.icon)
-                                .tag(category)
+                    Picker("Category", selection: $selectedCategoryId) {
+                        ForEach(store.state.categories) { category in
+                            Label(category.name, systemImage: category.icon)
+                                .tag(category.id)
                         }
                     }
                     .pickerStyle(.menu)
@@ -75,17 +78,15 @@ struct AddExpenseView: View {
     }
 
     private func saveExpense() {
-        guard let amount = Decimal(string: amountText) else { return }
-        
-        let newExpense = Expense(
+        let trimmedNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
+        let saved = store.addPersonalExpense(
             title: title.trimmingCharacters(in: .whitespaces),
-            amount: amount,
-            category: selectedCategory,
-            date: date,
-            notes: notes
+            amountMinor: amountMinor,
+            categoryId: selectedCategoryId,
+            occurredAt: date,
+            notes: trimmedNotes.isEmpty ? nil : trimmedNotes
         )
-
-        modelContext.insert(newExpense)
-        dismiss()
+        // On failure the store sets errorMessage; keep the sheet open so input isn't lost
+        if saved { dismiss() }
     }
 }

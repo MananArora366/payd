@@ -18,9 +18,15 @@ let package = Package(
             supportedInterfaceOrientations: [.portrait]
         )
     ],
+    dependencies: [
+        .package(path: "../PaydCore")
+    ],
     targets: [
         .executableTarget(
             name: "AppModule",
+            dependencies: [
+                .product(name: "PaydCore", package: "PaydCore")
+            ],
             path: "."
         )
     ]

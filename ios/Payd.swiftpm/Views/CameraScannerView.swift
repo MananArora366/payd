@@ -1,20 +1,20 @@
 import SwiftUI
-import SwiftData
 import PhotosUI
+import PaydCore
 
-public struct UAEReceiptPreset: Identifiable {
-    public let id = UUID()
-    public let merchant: String
-    public let amount: Decimal
-    public let category: ExpenseCategory
-    public let trn: String
-    public let vatMinor: Decimal
-    public let items: [String]
+struct UAEReceiptPreset: Identifiable {
+    let id = UUID()
+    let merchant: String
+    let amountMinor: Int
+    let categoryId: String
+    let trn: String
+    let vatMinor: Int
+    let items: [String]
 }
 
-public struct CameraScannerView: View {
+struct CameraScannerView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
+    @Environment(LedgerStore.self) private var store
 
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
     @State private var selectedImageData: Data? = nil
@@ -24,33 +24,31 @@ public struct CameraScannerView: View {
     private let presets: [UAEReceiptPreset] = [
         UAEReceiptPreset(
             merchant: "Al Safadi Restaurant (Sheikh Zayed Rd)",
-            amount: 260.00,
-            category: .food,
+            amountMinor: 26_000,
+            categoryId: SeedIDs.food,
             trn: "100345678900003",
-            vatMinor: 12.38,
+            vatMinor: 1_238,
             items: ["Chicken Biryani", "Mixed Grill Platter", "Hummus Beiruti", "Fattoush Salad", "Mineral Water x2"]
         ),
         UAEReceiptPreset(
             merchant: "Carrefour Market (Marina Crown)",
-            amount: 100.00,
-            category: .shopping,
+            amountMinor: 10_000,
+            categoryId: SeedIDs.groceries,
             trn: "100012345600003",
-            vatMinor: 4.76,
+            vatMinor: 476,
             items: ["Organic Fresh Milk 2L", "Sourdough Country Bread", "Free Range Eggs 30pk", "Greek Yoghurt"]
         ),
         UAEReceiptPreset(
             merchant: "Careem DineOut • Zaatar w Zeit",
-            amount: 124.00,
-            category: .food,
+            amountMinor: 12_400,
+            categoryId: SeedIDs.food,
             trn: "100897654300003",
-            vatMinor: 5.90,
+            vatMinor: 590,
             items: ["Famous Chicken Wrap x2", "Manakeesh Zaatar & Cheese x2", "Spiced Potato Wedges"]
         )
     ]
 
-    public init() {}
-
-    public var body: some View {
+    var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
@@ -147,7 +145,7 @@ public struct CameraScannerView: View {
                                         .foregroundStyle(.secondary)
                                 }
                                 Spacer()
-                                Text(receipt.amount, format: .currency(code: "AED"))
+                                Text(Currency.format(receipt.amountMinor))
                                     .font(.title2)
                                     .fontWeight(.heavy)
                                     .foregroundStyle(.green)
@@ -156,18 +154,19 @@ public struct CameraScannerView: View {
                             Divider()
 
                             HStack {
-                                Label("5% VAT: AED \(receipt.vatMinor.formatted())", systemImage: "checkmark.seal.fill")
+                                Label("5% VAT: \(Currency.format(receipt.vatMinor))", systemImage: "checkmark.seal.fill")
                                     .font(.caption)
                                     .fontWeight(.medium)
                                     .foregroundStyle(.secondary)
                                 Spacer()
-                                Text(receipt.category.rawValue)
+                                let category = LedgerQueries.category(receipt.categoryId, in: store.state)
+                                Text(category?.name ?? "Other")
                                     .font(.caption)
                                     .fontWeight(.semibold)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 3)
-                                    .background(receipt.category.color.opacity(0.15))
-                                    .foregroundStyle(receipt.category.color)
+                                    .background((category?.color ?? .gray).opacity(0.15))
+                                    .foregroundStyle(category?.color ?? .gray)
                                     .clipShape(Capsule())
                             }
 
@@ -216,16 +215,17 @@ public struct CameraScannerView: View {
                             .padding(.horizontal)
 
                         ForEach(presets) { preset in
+                            let category = LedgerQueries.category(preset.categoryId, in: store.state)
                             Button {
                                 triggerScanSimulation(with: preset)
                             } label: {
                                 HStack(spacing: 12) {
                                     ZStack {
                                         Circle()
-                                            .fill(preset.category.color.opacity(0.15))
+                                            .fill((category?.color ?? .gray).opacity(0.15))
                                             .frame(width: 40, height: 40)
-                                        Image(systemName: preset.category.icon)
-                                            .foregroundStyle(preset.category.color)
+                                        Image(systemName: category?.icon ?? "ellipsis.circle")
+                                            .foregroundStyle(category?.color ?? .gray)
                                     }
 
                                     VStack(alignment: .leading, spacing: 2) {
@@ -241,7 +241,7 @@ public struct CameraScannerView: View {
 
                                     Spacer()
 
-                                    Text(preset.amount, format: .currency(code: "AED"))
+                                    Text(Currency.format(preset.amountMinor))
                                         .font(.callout)
                                         .fontWeight(.bold)
                                         .foregroundStyle(.primary)
@@ -287,15 +287,14 @@ public struct CameraScannerView: View {
     }
 
     private func saveScannedReceipt(_ receipt: UAEReceiptPreset) {
-        let noteText = "Payd Lens OCR • TRN: \(receipt.trn) • 5% VAT: AED \(receipt.vatMinor.formatted())"
-        let newExpense = Expense(
+        let noteText = "Payd Lens OCR • TRN: \(receipt.trn) • 5% VAT: \(Currency.format(receipt.vatMinor))"
+        let saved = store.addPersonalExpense(
             title: receipt.merchant,
-            amount: receipt.amount,
-            category: receipt.category,
-            date: Date(),
+            amountMinor: receipt.amountMinor,
+            categoryId: receipt.categoryId,
+            occurredAt: Date(),
             notes: noteText
         )
-        modelContext.insert(newExpense)
-        dismiss()
+        if saved { dismiss() }
     }
 }

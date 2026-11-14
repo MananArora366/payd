@@ -1,12 +1,13 @@
 import SwiftUI
-import SwiftData
 
 @main
 struct ExpenseTrackerApp: App {
+    @State private var store = LedgerStore()
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(store)
         }
-        .modelContainer(for: Expense.self)
     }
 }

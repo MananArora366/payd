@@ -1,29 +1,33 @@
 import SwiftUI
-import SwiftData
+import PaydCore
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query(sort: \Expense.date, order: .reverse) private var expenses: [Expense]
+    @Environment(LedgerStore.self) private var store
 
     @State private var showingAddSheet = false
     @State private var showingCameraSheet = false
-    @State private var selectedFilterCategory: ExpenseCategory? = nil
+    @State private var selectedFilterCategoryId: String? = nil
     @State private var searchText = ""
 
-    // Filtered expenses based on search and category filter
-    private var filteredExpenses: [Expense] {
-        expenses.filter { expense in
-            let matchesCategory = selectedFilterCategory == nil || expense.category == selectedFilterCategory
+    // Active transactions involving the current user, newest first
+    private var activity: [LedgerTransaction] {
+        LedgerQueries.activity(for: store.currentUserId, in: store.state)
+    }
+
+    // Filtered transactions based on search and category filter
+    private var filteredTransactions: [LedgerTransaction] {
+        activity.filter { txn in
+            let matchesCategory = selectedFilterCategoryId == nil || txn.categoryId == selectedFilterCategoryId
+            let categoryName = LedgerQueries.category(txn.categoryId, in: store.state)?.name ?? ""
             let matchesSearch = searchText.isEmpty ||
-                expense.title.localizedCaseInsensitiveContains(searchText) ||
-                expense.categoryRaw.localizedCaseInsensitiveContains(searchText)
+                txn.title.localizedCaseInsensitiveContains(searchText) ||
+                categoryName.localizedCaseInsensitiveContains(searchText)
             return matchesCategory && matchesSearch
         }
     }
 
-    // Total spending calculation
-    private var totalSpending: Decimal {
-        expenses.reduce(Decimal.zero) { $0 + $1.amount }
+    private var errorAlertBinding: Binding<Bool> {
+        Binding(get: { store.errorMessage != nil }, set: { if !$0 { store.errorMessage = nil } })
     }
 
     var body: some View {
@@ -32,8 +36,10 @@ struct ContentView: View {
                 // Section 1: Dashboard Summary Card
                 Section {
                     SummaryCardView(
-                        totalAmount: totalSpending,
-                        expenseCount: expenses.count
+                        totalSpentMinor: LedgerQueries.personalSpend(for: store.currentUserId, in: store.state).totalSpentMinor,
+                        expenseCount: activity.count,
+                        owed: LedgerQueries.owedSummary(for: store.currentUserId, in: store.state),
+                        currency: store.currentCurrency
                     )
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                     .listRowBackground(Color.clear)
@@ -45,21 +51,21 @@ struct ContentView: View {
                         HStack(spacing: 8) {
                             FilterChip(
                                 title: "All",
-                                isSelected: selectedFilterCategory == nil
+                                isSelected: selectedFilterCategoryId == nil
                             ) {
-                                selectedFilterCategory = nil
+                                selectedFilterCategoryId = nil
                             }
 
-                            ForEach(ExpenseCategory.allCases) { category in
+                            ForEach(store.state.categories) { category in
                                 FilterChip(
-                                    title: category.rawValue,
+                                    title: category.name,
                                     icon: category.icon,
-                                    isSelected: selectedFilterCategory == category
+                                    isSelected: selectedFilterCategoryId == category.id
                                 ) {
-                                    if selectedFilterCategory == category {
-                                        selectedFilterCategory = nil
+                                    if selectedFilterCategoryId == category.id {
+                                        selectedFilterCategoryId = nil
                                     } else {
-                                        selectedFilterCategory = category
+                                        selectedFilterCategoryId = category.id
                                     }
                                 }
                             }
@@ -73,7 +79,7 @@ struct ContentView: View {
 
                 // Section 3: Expense List
                 Section("Recent Transactions") {
-                    if filteredExpenses.isEmpty {
+                    if filteredTransactions.isEmpty {
                         ContentUnavailableView(
                             searchText.isEmpty ? "No Expenses Yet" : "No Matching Expenses",
                             systemImage: searchText.isEmpty ? "tray.fill" : "magnifyingglass",
@@ -82,8 +88,11 @@ struct ContentView: View {
                         .listRowBackground(Color.clear)
                         .padding(.vertical, 30)
                     } else {
-                        ForEach(filteredExpenses) { expense in
-                            ExpenseRowView(expense: expense)
+                        ForEach(filteredTransactions) { txn in
+                            ExpenseRowView(
+                                transaction: txn,
+                                category: LedgerQueries.category(txn.categoryId, in: store.state)
+                            )
                         }
                         .onDelete(perform: deleteExpenses)
                     }
@@ -116,14 +125,19 @@ struct ContentView: View {
             .sheet(isPresented: $showingCameraSheet) {
                 CameraScannerView()
             }
+            .alert("Something went wrong", isPresented: errorAlertBinding) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(store.errorMessage ?? "")
+            }
         }
     }
 
     private func deleteExpenses(at offsets: IndexSet) {
+        let ids = offsets.map { filteredTransactions[$0].id }
         withAnimation {
-            for index in offsets {
-                let expense = filteredExpenses[index]
-                modelContext.delete(expense)
+            for id in ids {
+                store.softDelete(transactionId: id)
             }
         }
     }
