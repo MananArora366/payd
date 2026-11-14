@@ -50,3 +50,4 @@ DerivedData/
 *.dSYM
 run-claude.sh
 run-codex.sh
+.serena/
