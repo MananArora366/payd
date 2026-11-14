@@ -154,6 +154,12 @@ struct ReceiptScannerView: View {
     /// handleSaveToLedger.
     private func save() {
         guard let session, let input = session.saveInput(categories: store.state.categories) else { return }
+        // Web (450-453): an impossible YYYY-MM-DD date makes toISOString() throw, so nothing is saved.
+        if let day = session.receipt?.date, day.range(of: #"^[0-9]{4}-[0-9]{2}-[0-9]{2}$"#, options: .regularExpression) != nil,
+           LensSession.localNoon(day) == nil {
+            self.session = session.savingFailed(LensSession.friendlySaveError(CocoaError(.formatting)))
+            return
+        }
         do {
             try store.addTransaction(input)
             self.session = session.saved()
