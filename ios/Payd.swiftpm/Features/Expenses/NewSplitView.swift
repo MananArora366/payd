@@ -324,7 +324,7 @@ private struct NewSplitForm: View {
                     withAnimation { proxy.scrollTo(Self.topAnchor, anchor: .top) }
                 }
             }
-            .buttonStyle(PaydPrimaryButtonStyle(height: 46))
+            .buttonStyle(PaydPrimaryButtonStyle(height: 46, disabledOpacity: 0.4))
             .disabled(!canSave)
         }
     }

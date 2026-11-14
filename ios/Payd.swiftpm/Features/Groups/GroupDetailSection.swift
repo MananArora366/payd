@@ -227,63 +227,82 @@ struct GroupDetailSection: View {
         .paydCard(padding: 20, stroke: PaydTheme.brand500.opacity(0.3))
     }
 
+    /// Web row is `flex justify-between`; flexbox wraps its labels on narrow screens, so when the
+    /// single row does not fit the names stack above the actions instead of widening the page.
     private func debtRow(_ debt: SimplifiedDebt, currentId: String) -> some View {
-        HStack(spacing: 8) {
+        ViewThatFits(in: .horizontal) {
             HStack(spacing: 8) {
-                Text(groupsNameWithYou(store.user(debt.fromUserId), currentUserId: currentId))
-                    .font(.payd(size: 12, bold: true))
-                    .foregroundStyle(.white)
-                Text("→ pays →")
-                    .font(.system(size: 12, design: .serif).italic())
-                    .foregroundStyle(PaydTheme.zinc400)
-                    .fixedSize()
-                Text(groupsNameWithYou(store.user(debt.toUserId), currentUserId: currentId))
-                    .font(.payd(size: 12, bold: true))
-                    .foregroundStyle(.white)
+                debtNames(debt, currentId: currentId)
+                Spacer(minLength: 4)
+                debtActions(debt)
             }
-            Spacer(minLength: 4)
-            HStack(spacing: 8) {
-                Text(Currency.format(debt.amountMinor, currency: "AED"))
-                    .font(.payd(size: 14, bold: true))
-                    .foregroundStyle(PaydTheme.emerald500)
-                    .monospacedDigit()
-                    .fixedSize()
-                    .padding(.trailing, 4)
-                Button {
-                    router.present(.careemPay(CareemPayRequest(senderId: debt.fromUserId, recipientId: debt.toUserId,
-                                                               amountMinor: debt.amountMinor, groupId: group.id,
-                                                               reference: "\(group.name) settlement")))
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "bolt.fill").font(.system(size: 10, weight: .bold))
-                        Text("Careem Pay").font(.payd(size: 11, bold: true))
-                    }
-                    .foregroundStyle(.white)
-                    .fixedSize()
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(PaydTheme.emerald600, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            VStack(alignment: .leading, spacing: 10) {
+                debtNames(debt, currentId: currentId)
+                HStack(spacing: 8) {
+                    Spacer(minLength: 0)
+                    debtActions(debt)
                 }
-                .buttonStyle(PressScaleButtonStyle())
-                .accessibilityHint("Instant Careem Pay Transfer")
-                Button {
-                    router.present(.recordSettlement(SettlementRequest(senderId: debt.fromUserId,
-                                                                       recipientId: debt.toUserId,
-                                                                       amountMinor: debt.amountMinor,
-                                                                       groupId: group.id)))
-                } label: {
-                    Text("Manual")
-                        .font(.payd(size: 11, bold: true))
-                        .foregroundStyle(PaydTheme.zinc300)
-                        .fixedSize()
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(PaydTheme.cardSubtle, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }
-                .buttonStyle(.plain)
             }
         }
         .paydCard(padding: 14, fill: PaydTheme.surface202025)
+    }
+
+    private func debtNames(_ debt: SimplifiedDebt, currentId: String) -> some View {
+        HStack(spacing: 8) {
+            Text(groupsNameWithYou(store.user(debt.fromUserId), currentUserId: currentId))
+                .font(.payd(size: 12, bold: true))
+                .foregroundStyle(.white)
+            Text("→ pays →")
+                .font(.system(size: 12, design: .serif).italic())
+                .foregroundStyle(PaydTheme.zinc400)
+                .fixedSize()
+            Text(groupsNameWithYou(store.user(debt.toUserId), currentUserId: currentId))
+                .font(.payd(size: 12, bold: true))
+                .foregroundStyle(.white)
+        }
+    }
+
+    private func debtActions(_ debt: SimplifiedDebt) -> some View {
+        HStack(spacing: 8) {
+            Text(Currency.format(debt.amountMinor, currency: "AED"))
+                .font(.payd(size: 14, bold: true))
+                .foregroundStyle(PaydTheme.emerald500)
+                .monospacedDigit()
+                .fixedSize()
+                .padding(.trailing, 4)
+            Button {
+                router.present(.careemPay(CareemPayRequest(senderId: debt.fromUserId, recipientId: debt.toUserId,
+                                                           amountMinor: debt.amountMinor, groupId: group.id,
+                                                           reference: "\(group.name) settlement")))
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "bolt.fill").font(.system(size: 10, weight: .bold))
+                    Text("Careem Pay").font(.payd(size: 11, bold: true))
+                }
+                .foregroundStyle(.white)
+                .fixedSize()
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(PaydTheme.emerald600, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .buttonStyle(PressScaleButtonStyle())
+            .accessibilityHint("Instant Careem Pay Transfer")
+            Button {
+                router.present(.recordSettlement(SettlementRequest(senderId: debt.fromUserId,
+                                                                   recipientId: debt.toUserId,
+                                                                   amountMinor: debt.amountMinor,
+                                                                   groupId: group.id)))
+            } label: {
+                Text("Manual")
+                    .font(.payd(size: 11, bold: true))
+                    .foregroundStyle(PaydTheme.zinc300)
+                    .fixedSize()
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(PaydTheme.cardSubtle, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .buttonStyle(.plain)
+        }
     }
 
     // MARK: - Group expense log (511-557)

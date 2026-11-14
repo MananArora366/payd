@@ -220,7 +220,8 @@ struct RecordSettlementView: View {
                 Button("Cancel", action: close)
                     .buttonStyle(PaydSecondaryButtonStyle(height: 40))
                 Button("Record Settlement", action: submit)
-                    .buttonStyle(PaydFilledButtonStyle(fill: PaydTheme.emerald600, text: .white, height: 40))
+                    .buttonStyle(PaydFilledButtonStyle(fill: PaydTheme.emerald600, text: .white, height: 40,
+                                                       disabledOpacity: 0.4))
                     .disabled((isOverpaying && !allowOverpayment) || recipientId.isEmpty)
             }
             .padding(.top, 8)

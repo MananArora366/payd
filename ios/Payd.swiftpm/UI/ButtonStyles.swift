@@ -18,6 +18,8 @@ private struct PaydButtonBody: View {
     let fill: Color
     let text: Color
     let stroke: Color?
+    /// `disabled:opacity-50` unless the web button says otherwise (e.g. `disabled:opacity-40`).
+    var disabledOpacity: Double = 0.5
     @Environment(\.isEnabled) private var isEnabled
 
     var body: some View {
@@ -33,7 +35,7 @@ private struct PaydButtonBody: View {
                 }
             }
             .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .opacity(isEnabled ? 1 : 0.5)
+            .opacity(isEnabled ? 1 : disabledOpacity)
             .scaleEffect(configuration.isPressed && isEnabled ? 0.95 : 1)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
@@ -42,10 +44,11 @@ private struct PaydButtonBody: View {
 /// `bg-brand-400 text-zinc-950`.
 struct PaydPrimaryButtonStyle: ButtonStyle {
     var height: CGFloat = 48
+    var disabledOpacity: Double = 0.5
 
     func makeBody(configuration: Configuration) -> some View {
         PaydButtonBody(configuration: configuration, height: height, fill: PaydTheme.brand400,
-                       text: PaydTheme.zinc950, stroke: nil)
+                       text: PaydTheme.zinc950, stroke: nil, disabledOpacity: disabledOpacity)
     }
 }
 
@@ -85,8 +88,10 @@ struct PaydFilledButtonStyle: ButtonStyle {
     let fill: Color
     let text: Color
     var height: CGFloat = 48
+    var disabledOpacity: Double = 0.5
 
     func makeBody(configuration: Configuration) -> some View {
-        PaydButtonBody(configuration: configuration, height: height, fill: fill, text: text, stroke: nil)
+        PaydButtonBody(configuration: configuration, height: height, fill: fill, text: text, stroke: nil,
+                       disabledOpacity: disabledOpacity)
     }
 }
