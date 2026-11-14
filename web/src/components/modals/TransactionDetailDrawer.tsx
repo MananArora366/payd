@@ -5,7 +5,7 @@ import { Transaction } from '@/types/database';
 import { usePayd } from '@/lib/store/PaydContext';
 import { formatMinorUnits } from '@/lib/ledger';
 import { getCategoryIcon, getPaymentMethodIcon } from '@/lib/icons';
-import { X, Trash2, RotateCcw, Calendar, User, Users, ShieldAlert, Tag, Wallet } from 'lucide-react';
+import { X, Trash2, RotateCcw, Calendar, User, Users, ShieldAlert, Tag, Wallet, Share2, Copy, Check } from 'lucide-react';
 
 interface TransactionDetailDrawerProps {
   transaction: Transaction | null;
@@ -23,6 +23,37 @@ export function TransactionDetailDrawer({ transaction, onClose }: TransactionDet
     restoreTransaction,
   } = usePayd();
 
+  const [copied, setCopied] = React.useState(false);
+  const [confirmingDelete, setConfirmingDelete] = React.useState(false);
+  const dialogRef = React.useRef<HTMLDivElement>(null);
+  const transactionId = transaction?.id;
+  // Keep the latest onClose in a ref so an inline callback from the parent doesn't re-run the focus effect.
+  const onCloseRef = React.useRef(onClose);
+  onCloseRef.current = onClose;
+
+  // Reset the delete confirmation whenever a different transaction is shown.
+  React.useEffect(() => {
+    setConfirmingDelete(false);
+  }, [transactionId]);
+
+  // Esc closes the drawer; move focus into the dialog when it opens and restore it on close.
+  React.useEffect(() => {
+    if (!transactionId) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    dialogRef.current?.focus();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onCloseRef.current();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      previouslyFocused?.focus?.();
+    };
+  }, [transactionId]);
+
   if (!transaction) return null;
 
   const category = categories.find((c) => c.id === transaction.category_id);
@@ -30,9 +61,45 @@ export function TransactionDetailDrawer({ transaction, onClose }: TransactionDet
   const group = groups.find((g) => g.id === transaction.group_id);
   const txnSplits = splits.filter((s) => s.transaction_id === transaction.id);
   const isDeleted = !!transaction.deleted_at;
+  const paidBySomeoneElse = transaction.payer_id !== currentUser.id;
+  const memberCountLabel = `${txnSplits.length} ${txnSplits.length === 1 ? 'member' : 'members'}`;
+
+  const getBreakdownSummary = () => {
+    const payerName = payer?.id === currentUser.id ? 'You' : payer?.name || 'Someone';
+    const totalStr = formatMinorUnits(transaction.amount_minor, transaction.currency);
+    let text = `🧾 *${transaction.title}* (${totalStr})\n`;
+    text += `Paid by: ${payerName}\n`;
+    if (group) text += `Group: ${group.name}\n`;
+    if (txnSplits.length > 0) {
+      text += `\n*Split Breakdown:*\n`;
+      txnSplits.forEach((sp) => {
+        const u = users.find((user) => user.id === sp.user_id);
+        const shareStr = formatMinorUnits(sp.share_minor, transaction.currency);
+        text += `• ${u?.name || 'User'}: ${shareStr}\n`;
+      });
+    }
+    text += `\nTracked on Payd • Settle easily via Careem Pay! 💚`;
+    return text;
+  };
+
+  const handleCopyBreakdown = () => {
+    navigator.clipboard.writeText(getBreakdownSummary());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShareWhatsApp = () => {
+    const text = encodeURIComponent(getBreakdownSummary());
+    window.open(`https://wa.me/?text=${text}`, '_blank');
+  };
 
   const handleDelete = () => {
+    if (!confirmingDelete) {
+      setConfirmingDelete(true);
+      return;
+    }
     softDeleteTransaction(transaction.id);
+    setConfirmingDelete(false);
     onClose();
   };
 
@@ -42,8 +109,20 @@ export function TransactionDetailDrawer({ transaction, onClose }: TransactionDet
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="txn-drawer-title"
+        tabIndex={-1}
+        className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-[#18181b] border border-white/10 rounded-2xl p-6 shadow-2xl space-y-4 text-white font-body focus:outline-none"
+      >
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2">
@@ -62,7 +141,12 @@ export function TransactionDetailDrawer({ transaction, onClose }: TransactionDet
               </span>
             )}
           </div>
-          <button onClick={onClose} className="p-1 rounded-full text-slate-400 hover:text-slate-600 transition">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close transaction details"
+            className="p-1 rounded-full text-slate-400 hover:text-slate-200 transition"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -70,7 +154,7 @@ export function TransactionDetailDrawer({ transaction, onClose }: TransactionDet
         {/* Title & Amount Banner */}
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white">{transaction.title}</h3>
+            <h3 id="txn-drawer-title" className="text-xl font-bold text-slate-900 dark:text-white">{transaction.title}</h3>
             <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
               <Calendar className="w-3.5 h-3.5" />
               {new Date(transaction.occurred_at).toLocaleDateString('en-US', {
@@ -85,7 +169,7 @@ export function TransactionDetailDrawer({ transaction, onClose }: TransactionDet
 
           <div className="text-right">
             <div
-              className={`text-2xl font-black ${
+              className={`text-2xl font-semibold ${
                 transaction.type === 'income'
                   ? 'text-teal-600 dark:text-teal-400'
                   : 'text-slate-900 dark:text-white'
@@ -93,9 +177,6 @@ export function TransactionDetailDrawer({ transaction, onClose }: TransactionDet
             >
               {transaction.type === 'income' ? '+' : ''}
               {formatMinorUnits(transaction.amount_minor, transaction.currency)}
-            </div>
-            <div className="text-[11px] text-slate-400 font-mono">
-              {transaction.amount_minor} minor units
             </div>
           </div>
         </div>
@@ -148,7 +229,7 @@ export function TransactionDetailDrawer({ transaction, onClose }: TransactionDet
               <span className="flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5" /> Split Allocation
               </span>
-              <span>{txnSplits.length} members</span>
+              <span>{memberCountLabel}</span>
             </div>
 
             <div className="space-y-1.5">
@@ -175,18 +256,60 @@ export function TransactionDetailDrawer({ transaction, onClose }: TransactionDet
           </div>
         )}
 
-        {/* Audit & Reversal Notice */}
-        <div className="flex items-start gap-2 p-3 rounded-2xl bg-slate-100 dark:bg-slate-800/80 text-[11px] text-slate-500">
-          <ShieldAlert className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-          <span>
-            Invariant 5: Deleting an expense creates reversing audit entries and recalculates all ledger balances dynamically.
-          </span>
-        </div>
+        {/* Share & Copy Row */}
+        {txnSplits.length > 0 && !isDeleted && (
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <button
+              type="button"
+              onClick={handleShareWhatsApp}
+              className="py-2.5 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span>Share to WhatsApp</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleCopyBreakdown}
+              className="py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copied ? 'Copied!' : 'Copy Breakdown'}</span>
+            </button>
+          </div>
+        )}
+
+        {/* Deletion notice (only relevant while the entry is still active) */}
+        {!isDeleted && !confirmingDelete && (
+          <div className="flex items-start gap-2 p-3 rounded-2xl bg-slate-100 dark:bg-slate-800/80 text-[11px] text-slate-500">
+            <ShieldAlert className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+            <span>
+              Deleting an entry keeps a record of the change and updates everyone's balances straight away.
+            </span>
+          </div>
+        )}
+
+        {/* Delete confirmation */}
+        {!isDeleted && confirmingDelete && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-[11px] text-rose-200"
+          >
+            <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            <span>
+              {paidBySomeoneElse
+                ? `${payer?.name || 'Someone else'} paid for this. Deleting it changes their balance too, so check with them first. `
+                : ''}
+              This reverses the entry for everyone{group ? ` in ${group.name}` : ''}. You can restore it later from
+              Activity with &ldquo;Include Deleted&rdquo;. Tap delete again to confirm.
+            </span>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex gap-3 pt-2">
           {isDeleted ? (
             <button
+              type="button"
               onClick={handleRestore}
               className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold flex items-center justify-center gap-2 shadow-md transition"
             >
@@ -195,18 +318,24 @@ export function TransactionDetailDrawer({ transaction, onClose }: TransactionDet
             </button>
           ) : (
             <button
+              type="button"
               onClick={handleDelete}
-              className="flex-1 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-sm font-semibold flex items-center justify-center gap-2 transition"
+              className={`flex-1 py-2.5 rounded-xl border text-sm font-semibold flex items-center justify-center gap-2 transition ${
+                confirmingDelete
+                  ? 'bg-rose-600 hover:bg-rose-500 text-white border-rose-500'
+                  : 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/30'
+              }`}
             >
               <Trash2 className="w-4 h-4" />
-              <span>Soft-Delete & Reverse</span>
+              <span>{confirmingDelete ? 'Yes, delete & reverse' : 'Soft-Delete & Reverse'}</span>
             </button>
           )}
           <button
-            onClick={onClose}
+            type="button"
+            onClick={() => (confirmingDelete ? setConfirmingDelete(false) : onClose())}
             className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-750 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-medium transition"
           >
-            Close
+            {confirmingDelete ? 'Keep it' : 'Close'}
           </button>
         </div>
       </div>

@@ -4,8 +4,8 @@ A lightweight, native iOS expense tracking app built with modern Swift and Swift
 
 ## Architecture & Features
 
-- **SwiftData Storage**: Automatic offline persistence using `@Model` and `@Query` with zero manual Core Data setup.
-- **Financial Precision**: Uses Swift `Decimal` for financial accuracy without floating-point math rounding issues.
+- **PaydCore Ledger**: All state lives in a `LedgerState` from the local `../PaydCore` package and changes only through its pure `LedgerActions`. `LedgerStore` (`@Observable`) persists it as JSON (`payd_state_v1.json` in Application Support, same shape as the web app). First launch loads the demo seed.
+- **Financial Precision**: Money is integer minor units (fils), parsed and formatted by `PaydCore.Currency`, so there are no floats.
 - **Apple Human Interface Guidelines (HIG)**:
   - SF Symbols and category-specific tinting.
   - Ultra-thin material glass cards.
@@ -22,9 +22,11 @@ A lightweight, native iOS expense tracking app built with modern Swift and Swift
 
 ```
 SwiftExpenseTracker/
-├── ExpenseTrackerApp.swift   # Main app entry point with SwiftData model container
+├── ExpenseTrackerApp.swift   # Main app entry point; injects LedgerStore
+├── Store/
+│   └── LedgerStore.swift      # Observable wrapper over PaydCore + JSON persistence
 ├── Models/
-│   └── Expense.swift          # @Model definition and ExpenseCategory enum
+│   └── CategoryStyle.swift    # Tint colours for PaydCore categories
 └── Views/
     ├── ContentView.swift      # Primary view with search, filter chips, and list
     ├── SummaryCardView.swift  # Dashboard KPI card
@@ -34,11 +36,5 @@ SwiftExpenseTracker/
 
 ## How to Run in Xcode
 
-1. Open **Xcode** (15+ / 16+).
-2. Choose **File > New > Project...**
-3. Select **iOS > App** and click **Next**.
-4. Set:
-   - **Interface**: SwiftUI
-   - **Storage**: SwiftData
-5. Drag and drop these `.swift` files into your Xcode project.
-6. Select any iOS Simulator (iPhone 15 / 16 / Pro) and hit **Cmd + R** to run!
+1. Open `ios/Payd.swiftpm` in **Xcode 16+** (it depends on `../PaydCore` by path, which Swift Playgrounds does not support).
+2. Select any iOS Simulator and hit **Cmd + R**.

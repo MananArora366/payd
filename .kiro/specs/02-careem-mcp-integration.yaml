@@ -1,0 +1,48 @@
+spec_version: "2.0"
+component: "careem-superapp-mcp"
+framework: "Careem Builders '26 Official MCP Protocol"
+endpoint: "https://mcp.careemapis.com/mcp"
+transport: "Streamable JSON-RPC 2.0"
+auth: "OAuth 2.0 PKCE (S256)"
+tools:
+  - name: "careem_rides_split_fare"
+    domain: "Careem Rides"
+    description: "Fetch Careem ride trip fare and calculate zero-loss passenger splits into Payd ledger."
+    parameters:
+      pickup: "string (e.g. Dubai Marina)"
+      dropoff: "string (e.g. Gate Village DIFC)"
+      totalFareAed: "number (default: 68.50)"
+      riderNames: "string[]"
+    returns:
+      fare_minor: "integer (fils)"
+      splits: "array of member shares with zero-loss allocation"
+      deeplink: "careem://pay/split"
+
+  - name: "careem_food_import_order"
+    domain: "Careem Food"
+    description: "Import Careem Food order line items, UAE 5% VAT, and delivery fee into Tap-to-Claim splitting."
+    parameters:
+      restaurantName: "string (e.g. Al Safadi DIFC)"
+      orderId: "string (e.g. CR-FOOD-92841-DXB)"
+    returns:
+      line_items: "array of dishes with quantity and price"
+      uae_vat_5_pct: "number"
+      claimable_schema: "boolean"
+
+  - name: "careem_quik_basket_split"
+    domain: "Careem Groceries"
+    description: "Import Careem Quik grocery cart items for instant distribution among shared flatmates."
+    parameters:
+      storeName: "string (e.g. Careem Quik Marina Central)"
+      groupName: "string (e.g. Dubai Marina Flatmates)"
+
+  - name: "careem_pay_settle_debt"
+    domain: "Careem Pay & Aani"
+    description: "Execute immediate peer-to-peer settlement via Careem Pay / Aani instant payment rail."
+    parameters:
+      recipientPhone: "string (+971...)"
+      amountAed: "number"
+    returns:
+      transaction_ref: "string"
+      aani_qr_payload: "string"
+      clearing_speed: "< 2 seconds"

@@ -113,3 +113,43 @@ export interface AuditLog {
   after?: Record<string, any> | null;
   created_at: string;
 }
+
+export type RecurringFrequency = 'weekly' | 'monthly' | 'yearly';
+
+export interface RecurringBill {
+  id: string;
+  title: string;
+  amount_minor: number;
+  currency: string;
+  category_id?: string | null;
+  payer_id: string;
+  group_id?: string | null;
+  frequency: RecurringFrequency;
+  due_day: number; // 1 to 31 (day of month) or 1 to 7 (day of week)
+  notes?: string | null;
+  auto_post: boolean;
+  last_posted_at?: string | null;
+  splits: { user_id: string; share_minor: number }[];
+  created_at: string;
+}
+
+export interface UserReimbursementVelocity {
+  user_id: string;
+  name: string;
+  avatar_url?: string | null;
+  /** Average repayment lag in days; null when there is no history to measure. */
+  avg_lag_days: number | null;
+  /** Display text: "3.5 days" or "n/a" when there is no history. */
+  avg_lag_label: string;
+  total_settlements_count: number;
+  tier: 'speedy' | 'average' | 'lagging' | 'unknown'; // <= 2.5 days, <= 7 days, > 7 days, no history
+  current_owed_minor: number;
+}
+
+export interface CashFlowExposureMetrics {
+  total_fronted_minor: number; // Total user has paid for group expenses
+  total_recovered_minor: number; // Total user has received back via settlements
+  outstanding_exposure_minor: number; // Still waiting to be paid back
+  personal_consumption_minor: number; // User's own fair share of expenses
+  top_lagging_user?: UserReimbursementVelocity | null;
+}

@@ -1,118 +1,86 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { usePayd } from '@/lib/store/PaydContext';
-import { Moon, Sun, ChevronDown, Check, Sparkles, ShieldCheck, Camera } from 'lucide-react';
+import { Camera, Plus } from 'lucide-react';
 
 interface NavbarProps {
   onOpenReceiptScanner?: () => void;
+  onOpenAddExpense?: () => void;
+  onNavigateTab?: (tab: string) => void;
+  /** Highlights the avatar while the Profile screen (not part of the bottom tabs) is shown. */
+  activeTab?: string;
 }
 
-export function Navbar({ onOpenReceiptScanner }: NavbarProps = {}) {
-  const { currentUser, users, switchUser, theme, toggleTheme } = usePayd();
-  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+export function Navbar({ onOpenReceiptScanner, onOpenAddExpense, onNavigateTab, activeTab }: NavbarProps = {}) {
+  const onProfile = activeTab === 'profile';
+  const { currentUser } = usePayd();
 
   return (
-    <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/80 dark:bg-slate-925/80 border-b border-slate-200 dark:border-slate-800 transition-colors">
+    <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-[#09090b]/85 border-b border-white/8 transition-colors">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-        {/* Brand */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-white font-bold text-xl tracking-tight">
-            P
+        {/* Brand with authentic Zen Dots typography and gradient dot */}
+        <button
+          type="button"
+          onClick={() => onNavigateTab?.('home')}
+          aria-label="Payd home"
+          className="flex items-center gap-2 cursor-pointer group text-left"
+        >
+          <img
+            src="/brand/payd-logo-96.png"
+            alt=""
+            aria-hidden="true"
+            width={32}
+            height={32}
+            className="w-8 h-8 sm:w-9 sm:h-9 transition-opacity group-hover:opacity-90"
+          />
+          <div className="flex items-baseline gap-1">
+            <span className="font-logo text-2xl sm:text-3xl text-white tracking-wide transition-opacity group-hover:opacity-90">
+              payd
+            </span>
+            <span className="w-2 h-2 rounded-full bg-silver-gradient inline-block mb-0.5" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-xl tracking-tight text-slate-900 dark:text-white">Payd</span>
-              <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
-                Voice Ledger
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
-              Deterministic financial engine • Gemini intelligence
-            </p>
-          </div>
-        </div>
+        </button>
 
-        {/* Right side controls */}
-        <div className="flex items-center gap-3">
-          {onOpenReceiptScanner && (
+        {/* Right side controls matching iOS Prototype */}
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          {onOpenAddExpense && (
             <button
-              onClick={onOpenReceiptScanner}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 transition text-xs font-bold shadow-sm"
-              title="Scan receipt with Payd Lens"
+              onClick={onOpenAddExpense}
+              aria-label="Add expense"
+              className="w-9 h-9 rounded-full bg-silver-100 hover:bg-white text-zinc-900 flex items-center justify-center transition active:scale-95"
+              title="Add Expense"
             >
-              <Camera className="w-3.5 h-3.5" />
-              <span>Scan Receipt</span>
+              <Plus className="w-4 h-4 stroke-[2.5]" />
             </button>
           )}
 
-          {/* User Switcher Dropdown */}
-          <div className="relative">
+          {onOpenReceiptScanner && (
             <button
-              onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-              className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-850 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-750 transition text-sm text-slate-800 dark:text-slate-200"
-              title="Switch demo user"
+              onClick={onOpenReceiptScanner}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#18181b] hover:bg-[#27272a] text-slate-200 border border-white/10 hover:border-silver-500/40 transition text-xs font-bold shadow-xs active:scale-95"
+              title="Scan receipt with Payd Lens"
             >
-              <img
-                src={currentUser.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80'}
-                alt={currentUser.name}
-                className="w-6 h-6 rounded-full object-cover ring-1 ring-emerald-500"
-              />
-              <span className="font-medium text-xs sm:text-sm">{currentUser.name}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              <Camera className="w-3.5 h-3.5 text-silver-400" />
+              <span className="hidden sm:inline">Payd Lens</span>
             </button>
+          )}
 
-            {userDropdownOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setUserDropdownOpen(false)}
-                />
-                <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl py-2 z-50">
-                  <div className="px-3 py-1.5 border-b border-slate-100 dark:border-slate-800">
-                    <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
-                      Switch Active Persona
-                    </span>
-                  </div>
-                  {users.map((user) => (
-                    <button
-                      key={user.id}
-                      onClick={() => {
-                        switchUser(user.id);
-                        setUserDropdownOpen(false);
-                      }}
-                      className={`w-full flex items-center justify-between px-3 py-2 text-left text-sm transition ${
-                        user.id === currentUser.id
-                          ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 font-medium'
-                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <img
-                          src={user.avatar_url || ''}
-                          alt={user.name}
-                          className="w-7 h-7 rounded-full object-cover"
-                        />
-                        <div>
-                          <div className="font-medium leading-none">{user.name}</div>
-                          <div className="text-[11px] text-slate-400 mt-0.5">{user.email}</div>
-                        </div>
-                      </div>
-                      {user.id === currentUser.id && <Check className="w-4 h-4 text-emerald-500" />}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Theme Toggle */}
+          {/* Profile */}
           <button
-            onClick={toggleTheme}
-            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-850 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-750 transition text-slate-600 dark:text-slate-300"
-            aria-label="Toggle theme"
+            type="button"
+            onClick={() => onNavigateTab?.(onProfile ? 'home' : 'profile')}
+            aria-current={onProfile ? 'page' : undefined}
+            aria-label={onProfile ? 'Close profile and go home' : 'Your profile'}
+            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-full bg-[#18181b] hover:bg-[#27272a] border transition text-xs text-white ${
+              onProfile ? 'border-silver-500 ring-2 ring-silver-500/40' : 'border-white/10 hover:border-silver-500/40'
+            }`}
+            title={onProfile ? 'Back to home' : 'Your profile'}
           >
-            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
+            <div className="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center text-[11px] font-bold text-white shadow-xs">
+              {currentUser.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
+            </div>
+            <span className="font-medium hidden sm:inline">{currentUser.name}</span>
           </button>
         </div>
       </div>

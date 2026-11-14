@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePayd } from '@/lib/store/PaydContext';
-import { formatMinorUnits, parseMajorToMinor, calculateBilateralDebts } from '@/lib/ledger';
+import { formatMinorUnits, parseMajorToMinor } from '@/lib/ledger';
 import { X, Check, ShieldCheck, ArrowRight, AlertTriangle } from 'lucide-react';
+import { useDialog } from '@/lib/hooks/useDialog';
 
 interface RecordSettlementModalProps {
   isOpen: boolean;
@@ -14,6 +15,8 @@ interface RecordSettlementModalProps {
   defaultGroupId?: string | null;
 }
 
+const CURRENCY = 'AED'; // AED-only ledger
+
 export function RecordSettlementModal({
   isOpen,
   onClose,
@@ -22,64 +25,109 @@ export function RecordSettlementModal({
   defaultAmountMinor,
   defaultGroupId = null,
 }: RecordSettlementModalProps) {
-  const { currentUser, users, groups, transactions, splits, settlements, recordSettlement } = usePayd();
+  const { currentUser, users, groups, groupMembers, recordSettlement, validateSettlement, getPairwiseDebt } = usePayd();
 
   const [senderId, setSenderId] = useState(defaultSenderId || currentUser.id);
-  const [recipientId, setRecipientId] = useState(
-    defaultRecipientId || users.find((u) => u.id !== currentUser.id)?.id || ''
-  );
-  const [amountStr, setAmountStr] = useState(
-    defaultAmountMinor ? (defaultAmountMinor / 100).toFixed(2) : ''
-  );
+  const [recipientId, setRecipientId] = useState(defaultRecipientId || '');
+  const [amountStr, setAmountStr] = useState('');
   const [groupId, setGroupId] = useState<string | null>(defaultGroupId);
-  const [method, setMethod] = useState('Cash');
+  const [method, setMethod] = useState('Careem Pay');
   const [reference, setReference] = useState('');
   const [allowOverpayment, setAllowOverpayment] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Reset everything each time the modal opens, using the latest defaults.
   useEffect(() => {
-    if (defaultSenderId) setSenderId(defaultSenderId);
-    if (defaultRecipientId) setRecipientId(defaultRecipientId);
-    if (defaultAmountMinor) setAmountStr((defaultAmountMinor / 100).toFixed(2));
-    if (defaultGroupId) setGroupId(defaultGroupId);
-  }, [defaultSenderId, defaultRecipientId, defaultAmountMinor, defaultGroupId]);
+    if (!isOpen) return;
+    const sender = defaultSenderId || currentUser.id;
+    const recipient =
+      defaultRecipientId && defaultRecipientId !== sender
+        ? defaultRecipientId
+        : users.find((u) => u.id !== sender)?.id || '';
+    setSenderId(sender);
+    setRecipientId(recipient);
+    setAmountStr(defaultAmountMinor ? (defaultAmountMinor / 100).toFixed(2) : '');
+    setGroupId(defaultGroupId || null);
+    setMethod('Careem Pay');
+    setReference('');
+    setAllowOverpayment(false);
+    setError(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, defaultSenderId, defaultRecipientId, defaultAmountMinor, defaultGroupId]);
+
+  const { dialogProps, titleId } = useDialog(isOpen, onClose);
 
   if (!isOpen) return null;
 
-  // Calculate current outstanding liability between sender and recipient
-  const bilateral = calculateBilateralDebts(transactions, splits, settlements);
-  const senderDebts = bilateral.get(senderId);
-  const currentDebtMinor = senderDebts?.get(recipientId) || 0;
+  // People offered: the group's members when a group is chosen, everyone otherwise.
+  const memberIds = groupId
+    ? new Set(groupMembers.filter((m) => m.group_id === groupId).map((m) => m.user_id))
+    : null;
+  const pickable = memberIds ? users.filter((u) => memberIds.has(u.id)) : users;
+  const recipientOptions = pickable.filter((u) => u.id !== senderId);
 
-  const totalMinor = parseMajorToMinor(amountStr, currentUser.default_currency);
-  const isOverpaying = currentDebtMinor > 0 && totalMinor > currentDebtMinor;
+  const changeSender = (id: string) => {
+    setSenderId(id);
+    if (recipientId === id || !recipientId) {
+      setRecipientId(pickable.find((u) => u.id !== id)?.id || '');
+    }
+    setError(null);
+  };
+
+  const changeGroup = (gid: string | null) => {
+    setGroupId(gid);
+    setError(null);
+    if (!gid) return;
+    const ids = new Set(groupMembers.filter((m) => m.group_id === gid).map((m) => m.user_id));
+    const sender = ids.has(senderId) ? senderId : ids.has(currentUser.id) ? currentUser.id : users.find((u) => ids.has(u.id))?.id || senderId;
+    setSenderId(sender);
+    if (!ids.has(recipientId) || recipientId === sender) {
+      setRecipientId(users.find((u) => ids.has(u.id) && u.id !== sender)?.id || '');
+    }
+  };
+
+  // Same unified debt the Groups / Settlements tabs show and the ledger validates against.
+  const currentDebtMinor = recipientId ? getPairwiseDebt(senderId, recipientId, groupId) : 0;
+  const reverseDebtMinor = recipientId ? getPairwiseDebt(recipientId, senderId, groupId) : 0;
+
+  const totalMinor = parseMajorToMinor(amountStr, CURRENCY);
+  const isOverpaying = totalMinor > 0 && totalMinor > currentDebtMinor;
+
+  // Groups you belong to (plus the currently selected one).
+  const sharedGroups = groups.filter((g) => {
+    if (g.id === groupId) return true;
+    const ids = groupMembers.filter((m) => m.group_id === g.id).map((m) => m.user_id);
+    return ids.includes(currentUser.id);
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
+    const input = {
+      group_id: groupId || null,
+      sender_id: senderId,
+      recipient_id: recipientId,
+      amount_minor: totalMinor,
+      allowOverpayment: isOverpaying && allowOverpayment,
+    };
+    const check = validateSettlement(input);
+    if (!check.ok) {
+      setError(check.reason);
+      return;
+    }
     try {
-      if (senderId === recipientId) {
-        throw new Error('Sender and recipient must be different individuals.');
-      }
-      if (totalMinor <= 0) {
-        throw new Error('Please enter a valid amount.');
-      }
-
       recordSettlement({
-        group_id: groupId || null,
-        sender_id: senderId,
-        recipient_id: recipientId,
-        amount_minor: totalMinor,
-        currency: currentUser.default_currency,
+        ...input,
+        currency: CURRENCY,
         method,
-        reference: reference.trim() || 'Settlement',
-        allowOverpayment,
+        reference: reference.trim() || (isOverpaying ? 'Advance payment' : 'Settlement'),
       });
-
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Failed to record settlement');
+    } catch (err: unknown) {
+      // recordSettlement throws plain-language reasons; never show internal codes.
+      const msg = err instanceof Error ? err.message.replace(/^Ledger Invariant Violation:?\s*/i, '') : '';
+      setError(msg || "Couldn't record this settlement. Please check the details and try again.");
     }
   };
 
@@ -87,23 +135,23 @@ export function RecordSettlementModal({
   const recipientUser = users.find((u) => u.id === recipientId);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
+      <div {...dialogProps} className="focus:outline-none w-full max-w-lg bg-[#18181b] border border-white/10 rounded-2xl p-6 shadow-2xl space-y-4 text-white font-body">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-between pb-3 border-b border-white/8">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-lg text-slate-900 dark:text-white">Record Settlement</span>
-            <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-400">
+            <h2 id={titleId} className="font-heading text-sm text-white">Record settlement</h2>
+            <span className="text-[10px] font-heading px-2 py-0.5 rounded-full bg-silver-500/20 text-silver-300 border border-silver-500/30">
               Not an expense
             </span>
           </div>
-          <button onClick={onClose} className="p-1 rounded-full text-slate-400 hover:text-slate-600 transition">
+          <button type="button" onClick={onClose} aria-label="Close" className="p-1 rounded-full text-slate-400 hover:text-slate-600 transition">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {error && (
-          <div className="p-3 text-xs bg-rose-500/10 border border-rose-500/30 text-rose-500 rounded-xl">
+          <div role="alert" className="p-3 text-xs bg-rose-500/10 border border-rose-500/30 text-rose-500 rounded-xl">
             {error}
           </div>
         )}
@@ -111,7 +159,13 @@ export function RecordSettlementModal({
         {/* Sender -> Recipient Flow Header */}
         <div className="p-3.5 bg-slate-50 dark:bg-slate-850 rounded-2xl flex items-center justify-between text-xs">
           <div className="flex items-center gap-2">
-            <img src={senderUser?.avatar_url || ''} alt="" className="w-7 h-7 rounded-full object-cover" />
+            {senderUser?.avatar_url ? (
+              <img src={senderUser.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover" />
+            ) : (
+              <span aria-hidden="true" className="w-7 h-7 rounded-full bg-silver-600/40 flex items-center justify-center text-[10px] font-bold">
+                {(senderUser?.name || '?').slice(0, 1)}
+              </span>
+            )}
             <div>
               <span className="text-[10px] text-slate-400 block uppercase">Payer</span>
               <span className="font-semibold">{senderUser?.name}</span>
@@ -128,7 +182,13 @@ export function RecordSettlementModal({
               <span className="text-[10px] text-slate-400 block uppercase">Recipient</span>
               <span className="font-semibold">{recipientUser?.name}</span>
             </div>
-            <img src={recipientUser?.avatar_url || ''} alt="" className="w-7 h-7 rounded-full object-cover" />
+            {recipientUser?.avatar_url ? (
+              <img src={recipientUser.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover" />
+            ) : (
+              <span aria-hidden="true" className="w-7 h-7 rounded-full bg-silver-600/40 flex items-center justify-center text-[10px] font-bold">
+                {(recipientUser?.name || '?').slice(0, 1)}
+              </span>
+            )}
           </div>
         </div>
 
@@ -136,13 +196,14 @@ export function RecordSettlementModal({
           {/* Sender & Recipient Selectors */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Sender</label>
+              <label htmlFor="settle-sender" className="text-xs font-medium text-zinc-400">Sender</label>
               <select
+                id="settle-sender"
                 value={senderId}
-                onChange={(e) => setSenderId(e.target.value)}
+                onChange={(e) => changeSender(e.target.value)}
                 className="w-full mt-1 px-3 py-2 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
-                {users.map((u) => (
+                {pickable.map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.name} {u.id === currentUser.id ? '(You)' : ''}
                   </option>
@@ -151,14 +212,18 @@ export function RecordSettlementModal({
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Recipient</label>
+              <label htmlFor="settle-recipient" className="text-xs font-medium text-zinc-400">Recipient</label>
               <select
+                id="settle-recipient"
                 value={recipientId}
-                onChange={(e) => setRecipientId(e.target.value)}
+                onChange={(e) => {
+                  setRecipientId(e.target.value);
+                  setError(null);
+                }}
                 className="w-full mt-1 px-3 py-2 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
-                {users
-                  .filter((u) => u.id !== senderId)
+                {recipientOptions.length === 0 && <option value="">No one else in this group</option>}
+                {recipientOptions
                   .map((u) => (
                     <option key={u.id} value={u.id}>
                       {u.name} {u.id === currentUser.id ? '(You)' : ''}
@@ -168,58 +233,91 @@ export function RecordSettlementModal({
             </div>
           </div>
 
+          {/* Group the payment belongs to */}
+          <div>
+            <label htmlFor="settle-group" className="text-xs font-medium text-zinc-400">Group</label>
+            <select
+              id="settle-group"
+              value={groupId || ''}
+              onChange={(e) => changeGroup(e.target.value || null)}
+              className="w-full mt-1 px-3 py-2 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="">No group (overall balance)</option>
+              {sharedGroups.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Current Outstanding Debt Info */}
           <div className="text-xs flex items-center justify-between px-3 py-2 bg-slate-100 dark:bg-slate-800/80 rounded-xl">
-            <span className="text-slate-500">Current Outstanding Debt:</span>
+            <span className="text-slate-500">
+              {senderUser?.name || 'Sender'} owes {recipientUser?.name || 'recipient'}
+              {groupId ? ' in this group' : ' overall'}:
+            </span>
             <span className="font-semibold text-slate-900 dark:text-white">
-              {formatMinorUnits(currentDebtMinor, currentUser.default_currency)}
+              {formatMinorUnits(currentDebtMinor, CURRENCY)}
             </span>
           </div>
+          {currentDebtMinor === 0 && reverseDebtMinor > 0 && (
+            <p className="text-[11px] text-slate-400 px-1">
+              It&apos;s the other way round: {recipientUser?.name} owes {senderUser?.name}{' '}
+              {formatMinorUnits(reverseDebtMinor, CURRENCY)}.
+            </p>
+          )}
 
           {/* Amount & Method */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Amount</label>
+              <label htmlFor="settle-amount" className="text-xs font-medium text-zinc-400">Amount</label>
               <div className="relative mt-1">
                 <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">
-                  {currentUser.default_currency}
+                  {CURRENCY}
                 </span>
                 <input
-                  type="number"
-                  step="0.01"
+                  id="settle-amount"
+                  type="text"
+                  inputMode="decimal"
                   required
                   placeholder="0.00"
                   value={amountStr}
-                  onChange={(e) => setAmountStr(e.target.value)}
+                  onChange={(e) => {
+                    setAmountStr(e.target.value);
+                    setError(null);
+                  }}
                   className="w-full pl-14 pr-3 py-2 text-sm font-semibold bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Payment Method</label>
+              <label htmlFor="settle-method" className="text-xs font-medium text-zinc-400">Payment Method</label>
               <select
+                id="settle-method"
                 value={method}
                 onChange={(e) => setMethod(e.target.value)}
-                className="w-full mt-1 px-3 py-2 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full mt-1 px-3 py-2 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
               >
-                <option value="Cash">Cash</option>
-                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Careem Pay">Careem Pay (Instant)</option>
                 <option value="Apple Pay">Apple Pay</option>
+                <option value="Bank Transfer">Bank Transfer / Wio</option>
                 <option value="Credit Card">Card</option>
-                <option value="Wio">Wio / UPI</option>
+                <option value="Cash">Cash</option>
               </select>
             </div>
           </div>
 
-          {/* Invariant 4 Warning & Checkbox */}
+          {/* Overpayment warning */}
           {isOverpaying && (
             <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-2">
               <div className="flex items-start gap-2 text-xs text-amber-600 dark:text-amber-400">
                 <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>
-                  Invariant 4 Warning: Amount ({formatMinorUnits(totalMinor, currentUser.default_currency)}) exceeds
-                  outstanding liability ({formatMinorUnits(currentDebtMinor, currentUser.default_currency)}).
+                  {currentDebtMinor === 0
+                    ? `${senderUser?.name || 'The sender'} doesn't owe ${recipientUser?.name || 'the recipient'} anything${groupId ? ' in this group' : ''} right now.`
+                    : `Heads up: this amount (${formatMinorUnits(totalMinor, CURRENCY)}) is more than what's owed (${formatMinorUnits(currentDebtMinor, CURRENCY)}).`}
                 </span>
               </div>
               <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 font-medium cursor-pointer">
@@ -229,15 +327,19 @@ export function RecordSettlementModal({
                   onChange={(e) => setAllowOverpayment(e.target.checked)}
                   className="rounded text-emerald-600 focus:ring-emerald-500"
                 />
-                <span>Explicitly flag as allowed advance/overpayment</span>
+                <span>
+                  Record {currentDebtMinor === 0 ? 'it' : 'the extra'} as an advance payment (
+                  {recipientUser?.name || 'the recipient'} will owe it back)
+                </span>
               </label>
             </div>
           )}
 
           {/* Reference Notes */}
           <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Notes / Reference</label>
+            <label htmlFor="settle-reference" className="text-xs font-medium text-zinc-400">Notes / Reference</label>
             <input
+              id="settle-reference"
               type="text"
               placeholder="e.g. Settle dinner & grocery debts"
               value={reference}
@@ -262,8 +364,8 @@ export function RecordSettlementModal({
             </button>
             <button
               type="submit"
-              disabled={isOverpaying && !allowOverpayment}
-              className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-sm font-semibold shadow-lg shadow-emerald-600/25 transition disabled:opacity-40"
+              disabled={(isOverpaying && !allowOverpayment) || !recipientId}
+              className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition disabled:opacity-40"
             >
               Record Settlement
             </button>

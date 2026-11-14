@@ -8,6 +8,8 @@
     "build": "npm --prefix web run build",
     "start": "npm --prefix web start",
     "test": "npm --prefix web test",
-    "ios": "open ios/Payd.swiftpm"
+    "mcp": "node web/scripts/mcp-server.mjs",
+    "ios": "open ios/Payd.swiftpm",
+    "share": "npm --prefix web run share"
   }
 }

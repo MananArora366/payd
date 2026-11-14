@@ -1,345 +1,359 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { usePayd } from '@/lib/store/PaydContext';
 import { formatMinorUnits } from '@/lib/ledger';
-import { getCategoryIcon } from '@/lib/icons';
+import { getGroupEmoji } from '@/lib/icons';
 import { Transaction } from '@/types/database';
+import { Plus, Receipt, Coffee, Zap, Camera } from 'lucide-react';
+import { CashFlowAnalyticsCard } from '@/components/analytics/CashFlowAnalyticsCard';
+import { CategoryBreakdownCard } from '@/components/analytics/CategoryBreakdownCard';
+import { RecurringBillsSection } from '@/components/recurring/RecurringBillsSection';
 import {
-  TrendingUp,
-  TrendingDown,
-  ArrowUpRight,
-  ArrowDownLeft,
-  Users,
-  PlusCircle,
-  Receipt,
-  Sparkles,
-  ChevronRight,
-  ShieldCheck,
-  CreditCard,
-  HandCoins,
-  CheckCircle2,
-  Calendar,
-  Camera,
-} from 'lucide-react';
+  getMyExpenseShareMinor,
+  groupSpendMinor,
+  isParticipant,
+  sortByDateDesc,
+} from '@/components/analytics/spendMath';
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+/** Activate on Enter/Space so clickable cards work from the keyboard. */
+const onActivateKey = (fn: () => void) => (e: React.KeyboardEvent) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    fn();
+  }
+};
 
 interface HomeViewProps {
   onOpenAddExpense: (type?: 'expense' | 'income') => void;
-  onOpenRecordSettlement: () => void;
-  onOpenCreateGroup: () => void;
   onOpenReceiptScanner: () => void;
+  onOpenRoulette?: () => void;
+  onOpenCareemPay?: () => void;
   onSelectTransaction: (txn: Transaction) => void;
   onNavigateTab: (tab: string) => void;
+  /** Open the Groups tab with this group selected. Falls back to plain tab navigation. */
+  onOpenGroup?: (groupId: string) => void;
 }
 
 export function HomeView({
   onOpenAddExpense,
-  onOpenRecordSettlement,
-  onOpenCreateGroup,
   onOpenReceiptScanner,
+  onOpenRoulette,
+  onOpenCareemPay,
   onSelectTransaction,
   onNavigateTab,
+  onOpenGroup,
 }: HomeViewProps) {
   const {
     currentUser,
     users,
+    groups,
     categories,
     transactions,
     splits,
-    budgets,
     userNetBalance,
     userOwedToMe,
     userIOwe,
-    userSpending,
+    getGroupBalances,
+    getGroupMembers,
   } = usePayd();
 
-  const monthlyBudget = budgets.find((b) => b.user_id === currentUser.id && b.category_id === null);
-  const budgetLimit = monthlyBudget ? monthlyBudget.limit_minor : 500000;
-  const budgetPercent = Math.min(100, Math.round((userSpending.totalSpentMinor / (budgetLimit || 1)) * 100));
+  const recentTransactions = sortByDateDesc(transactions.filter((t) => !t.deleted_at)).slice(0, 6);
 
-  const recentTransactions = transactions
-    .filter((t) => !t.deleted_at)
-    .slice(0, 5);
+  const openGroup = (groupId: string) => (onOpenGroup ? onOpenGroup(groupId) : onNavigateTab('groups'));
 
-  // Deterministic AI Insights engine
-  const insights: string[] = [];
-  if (budgetPercent > 80) {
-    insights.push(`High budget utilization: You have spent ${budgetPercent}% of your monthly limit.`);
-  } else {
-    insights.push(`Healthy spending: You have utilized ${budgetPercent}% of your monthly ${formatMinorUnits(budgetLimit, currentUser.default_currency)} budget.`);
-  }
+  const groupsLabel = plural(groups.length, 'active group', 'active groups');
+  const heroSubtitle =
+    userOwedToMe === 0 && userIOwe === 0 && userNetBalance === 0
+      ? 'You are all settled up'
+      : userNetBalance > 0
+      ? `You are owed net across ${groupsLabel}`
+      : userNetBalance < 0
+      ? `You have pending liabilities across ${groupsLabel}`
+      : `Your balances net out to zero across ${groupsLabel}`;
 
-  if (userOwedToMe > 0) {
-    insights.push(`Pending receivables: Friends owe you ${formatMinorUnits(userOwedToMe, currentUser.default_currency)}. Check the Settlements tab to request or record settlements.`);
-  } else if (userIOwe > 0) {
-    insights.push(`Outstanding debt: You owe ${formatMinorUnits(userIOwe, currentUser.default_currency)} to group members.`);
-  } else {
-    insights.push(`All shared debts are completely balanced and settled.`);
-  }
-
-  // Top spending category
-  const categorySpend: Record<string, number> = {};
-  for (const t of transactions) {
-    if (!t.deleted_at && t.type === 'expense') {
-      const cat = categories.find((c) => c.id === t.category_id)?.name || 'Other';
-      categorySpend[cat] = (categorySpend[cat] || 0) + t.amount_minor;
-    }
-  }
-  const topCat = Object.entries(categorySpend).sort((a, b) => b[1] - a[1])[0];
-  if (topCat) {
-    insights.push(`Top spending sector: ${topCat[0]} accounts for ${formatMinorUnits(topCat[1], currentUser.default_currency)}.`);
-  }
+  // Category emoji map helper
+  const getCategoryEmoji = (catName?: string) => {
+    const lower = (catName || '').toLowerCase();
+    if (lower.includes('food') || lower.includes('dining') || lower.includes('restaurant')) return '🍣';
+    if (lower.includes('grocer')) return '🛒';
+    if (lower.includes('utility') || lower.includes('bill') || lower.includes('electricity') || lower.includes('wifi')) return '⚡';
+    if (lower.includes('transport') || lower.includes('careem') || lower.includes('taxi')) return '🚗';
+    if (lower.includes('coffee')) return '☕';
+    if (lower.includes('travel') || lower.includes('flight')) return '✈️';
+    if (lower.includes('entertainment') || lower.includes('movie')) return '🎬';
+    return '💳';
+  };
 
   return (
-    <div className="space-y-6 pb-24">
-      {/* Top Welcome & Net Balance Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-850 to-slate-900 border border-slate-800 p-6 text-white shadow-2xl">
-        <div className="absolute top-0 right-0 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <div className="flex items-center gap-2 text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">
-              <span>Personal Financial Pulse</span>
-              <span>•</span>
-              <span>{currentUser.name}&apos;s Workspace</span>
-            </div>
-            <div className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-              {formatMinorUnits(userSpending.netSavingsMinor, currentUser.default_currency)}
-            </div>
-            <p className="text-xs text-slate-400 mt-1">
-              Net Savings this period ({formatMinorUnits(userSpending.totalIncomeMinor, currentUser.default_currency)} income - {formatMinorUnits(userSpending.totalSpentMinor, currentUser.default_currency)} personal spend)
-            </p>
-          </div>
-
-          {/* Owed vs Owe pills & Scan button */}
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={onOpenReceiptScanner}
-              className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-emerald-500/20 transition hover:scale-105 active:scale-95"
-              title="Scan UAE receipt with Payd Lens"
-            >
-              <Camera className="w-4 h-4" />
-              <span>Scan Receipt</span>
-            </button>
-
-            <div
-              onClick={() => onNavigateTab('settlements')}
-              className="cursor-pointer p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition backdrop-blur-md"
-            >
-              <div className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
-                <ArrowDownLeft className="w-3.5 h-3.5" /> Owed to you
-              </div>
-              <div className="text-lg font-bold text-white mt-0.5">
-                {formatMinorUnits(userOwedToMe, currentUser.default_currency)}
-              </div>
-            </div>
-
-            <div
-              onClick={() => onNavigateTab('settlements')}
-              className="cursor-pointer p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition backdrop-blur-md"
-            >
-              <div className="text-[10px] font-semibold text-rose-400 uppercase tracking-wider flex items-center gap-1">
-                <ArrowUpRight className="w-3.5 h-3.5" /> You owe
-              </div>
-              <div className="text-lg font-bold text-white mt-0.5">
-                {formatMinorUnits(userIOwe, currentUser.default_currency)}
-              </div>
-            </div>
-          </div>
+    <div className="space-y-6 pb-28">
+      {/* ─── Hero Balance Card (Matching iOS Prototype) ──────────────────── */}
+      <div className="relative overflow-hidden rounded-2xl bg-silver-hero p-6 text-white">
+        <div className="balance-label font-heading text-[11px] text-silver-100 tracking-wider mb-2">
+          Total net balance
         </div>
 
-        {/* Monthly Budget Progress Bar */}
-        <div className="mt-6 pt-5 border-t border-slate-800 space-y-2">
-          <div className="flex justify-between items-center text-xs">
-            <span className="text-slate-400 font-medium">
-              Monthly Budget Progress ({budgetPercent}%)
-            </span>
-            <span className="font-semibold text-slate-200">
-              {formatMinorUnits(userSpending.totalSpentMinor, currentUser.default_currency)} / {formatMinorUnits(budgetLimit, currentUser.default_currency)}
-            </span>
-          </div>
-
-          <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                budgetPercent > 90
-                  ? 'bg-rose-500'
-                  : budgetPercent > 75
-                  ? 'bg-amber-500'
-                  : 'bg-gradient-to-r from-emerald-500 to-teal-400'
-              }`}
-              style={{ width: `${budgetPercent}%` }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Deterministic AI Insights Card */}
-      <div className="rounded-3xl bg-emerald-500/5 dark:bg-emerald-950/20 border border-emerald-500/20 p-5 space-y-3">
-        <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-          <Sparkles className="w-4 h-4" />
-          <span>Payd Financial Intelligence</span>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 font-normal">
-            Deterministic Insights
+        <div className="flex items-baseline gap-2 font-body">
+          <span className="text-3xl sm:text-4xl font-bold tracking-tight">
+            {userNetBalance > 0 ? '+' : userNetBalance < 0 ? '-' : ''}
+            {formatMinorUnits(Math.abs(userNetBalance), currentUser.default_currency).replace(/^[A-Z]{3}\s*/, '')}
           </span>
+          <span className="text-sm font-bold text-silver-100">{currentUser.default_currency}</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {insights.map((insight, idx) => (
-            <div
-              key={idx}
-              className="p-3 bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200/60 dark:border-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 flex items-start gap-2.5"
-            >
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-              <span>{insight}</span>
+        <div className="text-xs text-white/80 mt-1 font-body">
+          {heroSubtitle}
+        </div>
+
+        {/* Divider */}
+        <div className="h-px bg-white/20 my-4" />
+
+        {/* Metrics Row */}
+        <div className="flex flex-wrap items-center justify-between gap-3 font-body">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] inline-block" />
+            <div>
+              <div className="text-[10px] text-white/70 uppercase tracking-wider font-semibold">Owed to you</div>
+              <div className="text-sm font-bold text-white">
+                +{formatMinorUnits(userOwedToMe, currentUser.default_currency)}
+              </div>
             </div>
-          ))}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#F43F5E] inline-block" />
+            <div>
+              <div className="text-[10px] text-white/70 uppercase tracking-wider font-semibold">You owe</div>
+              <div className="text-sm font-bold text-white">
+                -{formatMinorUnits(userIOwe, currentUser.default_currency)}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Action CTA Buttons */}
+        <div className="flex gap-2.5 mt-5 font-body">
+          <button
+            onClick={() => onOpenAddExpense('expense')}
+            className="flex-1 h-11 rounded-xl bg-white hover:bg-zinc-100 text-silver-800 font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition active:scale-95"
+          >
+            <Plus className="w-4 h-4 stroke-[3]" />
+            <span>Add Expense</span>
+          </button>
+
+          <button
+            onClick={() => (onOpenCareemPay ? onOpenCareemPay() : onNavigateTab('settlements'))}
+            className="flex-1 h-11 rounded-xl bg-white/15 hover:bg-white/20 text-white font-bold text-xs flex items-center justify-center gap-2 border border-white/20 transition active:scale-95"
+          >
+            <Zap className="w-4 h-4 fill-current text-[#00ea80]" />
+            <span>Careem Settle</span>
+          </button>
         </div>
       </div>
 
-      {/* Quick Action Grid */}
+      {/* ─── Active Groups Horizontal Carousel ──────────────────────────── */}
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Quick Actions</h3>
+        <div className="flex items-baseline justify-between mb-3 px-1">
+          <span className="font-heading text-xs text-zinc-400">Active groups</span>
+          <button
+            onClick={() => onNavigateTab('groups')}
+            className="font-body text-xs font-bold text-silver-400 hover:text-silver-300 transition"
+          >
+            See all ({groups.length}) &rarr;
+          </button>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+        <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-none">
+          {groups.map((group) => {
+            const balances = getGroupBalances(group.id);
+            const userBal = balances[currentUser.id] || 0;
+            const members = getGroupMembers(group.id);
+            const groupSpend = groupSpendMinor(group.id, transactions);
+            const membersLabel = plural(members.length, 'member', 'members');
+
+            return (
+              <div
+                key={group.id}
+                role="button"
+                tabIndex={0}
+                aria-label={`Open ${group.name}`}
+                onClick={() => openGroup(group.id)}
+                onKeyDown={onActivateKey(() => openGroup(group.id))}
+                className="flex-none w-[220px] sm:w-[240px] bg-[#18181b] hover:bg-[#202024] border border-white/8 hover:border-silver-500/40 rounded-2xl p-4 snap-start cursor-pointer transition-all duration-200 active:scale-95 shadow-lg"
+              >
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="text-2xl">{getGroupEmoji(group.name)}</span>
+                  {userBal > 0 ? (
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-[11px] font-bold">
+                      +{formatMinorUnits(userBal, group.currency)}
+                    </span>
+                  ) : userBal < 0 ? (
+                    <span className="px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-400 text-[11px] font-bold">
+                      -{formatMinorUnits(Math.abs(userBal), group.currency)}
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full bg-silver-500/15 text-silver-400 text-[11px] font-bold">
+                      Settled
+                    </span>
+                  )}
+                </div>
+
+                <div className="font-heading text-sm text-white mb-1 truncate">
+                  {group.name}
+                </div>
+                <div className="font-body text-xs text-zinc-400 line-clamp-1">
+                  {group.description || `${membersLabel} • ${group.currency} ledger`}
+                </div>
+
+                <div className="flex items-baseline justify-between mt-3 pt-2.5 border-t border-white/6 font-body">
+                  <span className="text-[11px] text-zinc-400">{membersLabel}</span>
+                  <span className="text-xs font-bold text-white">
+                    {formatMinorUnits(groupSpend, group.currency)}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ─── Quick Actions ────────────────────────────────────────────── */}
+      <div>
+        <div className="flex items-center justify-between mb-3 px-1">
+          <span className="font-heading text-xs text-zinc-400">Quick actions</span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+          {/* Fair Payer Coffee Roulette */}
+          <button
+            onClick={onOpenRoulette}
+            className="p-3.5 sm:p-4 rounded-2xl bg-[#18181b] hover:bg-[#222227] border border-white/8 hover:border-amber-500/40 transition text-left group active:scale-95 shadow-md"
+          >
+            <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center mb-2 transition">
+              <Coffee className="w-4 h-4" />
+            </div>
+            <div className="text-xs font-heading text-white flex items-center gap-1">
+              Roulette
+            </div>
+            <div className="text-[10px] sm:text-[11px] text-amber-400 font-body mt-0.5">Who pays coffee?</div>
+          </button>
+
+          {/* Payd Lens receipt scanner */}
           <button
             onClick={onOpenReceiptScanner}
-            className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-slate-900 border border-emerald-500/30 hover:border-emerald-500 hover:bg-emerald-500/15 transition text-left group relative overflow-hidden"
+            className="p-3.5 sm:p-4 rounded-2xl bg-[#18181b] hover:bg-[#222227] border border-white/8 hover:border-emerald-500/40 transition text-left group active:scale-95 shadow-md"
           >
-            <div className="p-2.5 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white w-fit mb-2 group-hover:scale-110 transition shadow-md shadow-emerald-500/20">
-              <Camera className="w-5 h-5" />
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-2 transition">
+              <Camera className="w-4 h-4" />
             </div>
-            <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+            <div className="text-xs font-heading text-white flex items-center gap-1">
               Payd Lens
-              <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500 text-white font-extrabold uppercase">
-                AI
-              </span>
             </div>
-            <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">Scan receipt OCR</div>
-          </button>
-
-          <button
-            onClick={() => onOpenAddExpense('expense')}
-            className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition text-left group"
-          >
-            <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 w-fit mb-2 group-hover:scale-105 transition">
-              <PlusCircle className="w-5 h-5" />
-            </div>
-            <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Add Expense</div>
-            <div className="text-[11px] text-slate-400">Personal or shared</div>
-          </button>
-
-          <button
-            onClick={() => onOpenAddExpense('income')}
-            className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-teal-500/50 hover:bg-teal-500/5 transition text-left group"
-          >
-            <div className="p-2.5 rounded-xl bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 w-fit mb-2 group-hover:scale-105 transition">
-              <TrendingUp className="w-5 h-5" />
-            </div>
-            <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Add Income</div>
-            <div className="text-[11px] text-slate-400">Salary & payouts</div>
-          </button>
-
-          <button
-            onClick={() => onOpenAddExpense('expense')}
-            className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-blue-500/50 hover:bg-blue-500/5 transition text-left group"
-          >
-            <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 w-fit mb-2 group-hover:scale-105 transition">
-              <Users className="w-5 h-5" />
-            </div>
-            <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Split Bill</div>
-            <div className="text-[11px] text-slate-400">Equal or custom</div>
-          </button>
-
-          <button
-            onClick={onOpenRecordSettlement}
-            className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-500/50 hover:bg-indigo-500/5 transition text-left group"
-          >
-            <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 w-fit mb-2 group-hover:scale-105 transition">
-              <HandCoins className="w-5 h-5" />
-            </div>
-            <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Record Settlement</div>
-            <div className="text-[11px] text-slate-400">Repay or collect</div>
-          </button>
-
-          <button
-            onClick={onOpenCreateGroup}
-            className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition text-left group"
-          >
-            <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 w-fit mb-2 group-hover:scale-105 transition">
-              <Users className="w-5 h-5" />
-            </div>
-            <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Create Group</div>
-            <div className="text-[11px] text-slate-400">Trip, flat, or team</div>
+            <div className="text-[10px] sm:text-[11px] text-emerald-400 font-body mt-0.5">Split a receipt</div>
           </button>
         </div>
       </div>
 
-      {/* Recent Transactions Feed */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Recent Transactions</h3>
+      {/* ─── Cash Flow Health & Reimbursement Lag Analytics ─────────────── */}
+      <CashFlowAnalyticsCard onNavigateSettlements={() => onNavigateTab('settlements')} />
+
+      {/* ─── Spending Sectors & Daily Runway ─────────────────────────────── */}
+      <CategoryBreakdownCard onNavigateTransactions={() => onNavigateTab('transactions')} />
+
+      {/* ─── Shared Subscriptions & Recurring Bills ──────────────────────── */}
+      <RecurringBillsSection />
+
+      {/* ─── Recent Expenses (Matching iOS Prototype) ───────────────────── */}
+      <div>
+        <div className="flex items-center justify-between mb-3 px-1">
+          <span className="font-heading text-xs text-zinc-400">Recent activity</span>
           <button
             onClick={() => onNavigateTab('transactions')}
-            className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+            className="font-body text-xs font-bold text-silver-400 hover:text-silver-300 transition"
           >
-            <span>View all</span>
-            <ChevronRight className="w-3.5 h-3.5" />
+            See all &rarr;
           </button>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {recentTransactions.length === 0 ? (
-            <div className="p-8 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl">
-              <Receipt className="w-8 h-8 text-slate-400 mx-auto mb-2 opacity-50" />
-              <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">No transactions recorded yet</p>
-              <p className="text-xs text-slate-400 mt-1">Use voice or tap Add Expense to start tracking.</p>
+            <div className="p-8 text-center bg-[#18181b] border border-white/8 rounded-2xl">
+              <Receipt className="w-8 h-8 text-zinc-500 mx-auto mb-2 opacity-50" />
+              <p className="font-heading text-sm text-white">No expenses recorded yet</p>
+              <p className="text-xs text-zinc-400 mt-1 font-body">Tap the center microphone or Add Expense to start.</p>
             </div>
           ) : (
             recentTransactions.map((t) => {
               const cat = categories.find((c) => c.id === t.category_id);
               const payer = users.find((u) => u.id === t.payer_id);
+              const isPayer = t.payer_id === currentUser.id;
               const isIncome = t.type === 'income';
+              const myShareMinor = getMyExpenseShareMinor(t, currentUser.id, splits);
+              const amIInSplit = isParticipant(t, currentUser.id, splits);
+
+              // What this entry means for me, in one short line.
+              let shareText: string;
+              let shareClass: string;
+              if (isIncome) {
+                shareText = isPayer ? 'Income' : `Income · ${payer?.name || 'someone else'}`;
+                shareClass = 'text-[#10B981]';
+              } else if (t.type !== 'expense') {
+                shareText = t.type.charAt(0).toUpperCase() + t.type.slice(1);
+                shareClass = 'text-zinc-400';
+              } else if (isPayer) {
+                shareText =
+                  myShareMinor > 0
+                    ? `Your share: ${formatMinorUnits(myShareMinor, t.currency)}`
+                    : 'You paid for others';
+                shareClass = 'text-[#10B981]';
+              } else if (amIInSplit && myShareMinor > 0) {
+                shareText = `You owe: ${formatMinorUnits(myShareMinor, t.currency)}`;
+                shareClass = 'text-[#F43F5E]';
+              } else {
+                shareText = 'Not in your split';
+                shareClass = 'text-zinc-500';
+              }
 
               return (
                 <div
                   key={t.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => onSelectTransaction(t)}
-                  className="p-3.5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/40 rounded-2xl flex items-center justify-between cursor-pointer transition shadow-sm"
+                  onKeyDown={onActivateKey(() => onSelectTransaction(t))}
+                  className="flex items-center gap-3 p-3.5 bg-[#18181b] hover:bg-[#202024] border border-white/8 hover:border-silver-500/40 rounded-2xl cursor-pointer transition-all duration-150 active:scale-[0.99] shadow-sm"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                      {getCategoryIcon(cat?.icon, 'w-4 h-4')}
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
-                        {t.title}
-                      </div>
-                      <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-2">
-                        <span>{cat?.name}</span>
-                        <span>•</span>
-                        <span>Paid by {payer?.id === currentUser.id ? 'You' : payer?.name}</span>
-                      </div>
-                    </div>
+                  {/* Category icon box with soft tinted background */}
+                  <div className="w-11 h-11 rounded-xl bg-silver-500/10 flex items-center justify-center text-xl shrink-0">
+                    {getCategoryEmoji(cat?.name)}
                   </div>
 
-                  <div className="text-right">
-                    <div
-                      className={`text-sm font-bold ${
-                        isIncome ? 'text-teal-600 dark:text-teal-400' : 'text-slate-900 dark:text-white'
-                      }`}
-                    >
-                      {isIncome ? '+' : ''}
-                      {formatMinorUnits(t.amount_minor, t.currency)}
-                    </div>
-                    <div className="text-[10px] text-slate-400">
+                  <div className="font-body min-w-0 flex-1">
+                    <div className="font-bold text-sm text-white truncate">{t.title}</div>
+                    <div className="text-xs text-zinc-400 mt-0.5 truncate">
+                      {isIncome
+                        ? isPayer
+                          ? 'Received by you'
+                          : `Received by ${payer?.name || 'Unknown'}`
+                        : isPayer
+                        ? 'Paid by you'
+                        : `Paid by ${payer?.name || 'Unknown'}`}{' '}
+                      &bull;{' '}
                       {new Date(t.occurred_at).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
                       })}
                     </div>
+                  </div>
+
+                  <div className="text-right font-body shrink-0">
+                    <div className={`text-sm font-bold ${isIncome ? 'text-[#10B981]' : 'text-white'}`}>
+                      {isIncome ? '+' : ''}
+                      {formatMinorUnits(t.amount_minor, t.currency)}
+                    </div>
+                    <div className={`text-[11px] font-medium mt-0.5 ${shareClass}`}>{shareText}</div>
                   </div>
                 </div>
               );

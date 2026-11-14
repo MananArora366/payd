@@ -1,0 +1,35 @@
+{
+  "name": "payd-superapp",
+  "version": "1.0.0",
+  "ide": "AWS Kiro Spec-Driven IDE",
+  "hackathon": "Careem Builders '26 (Careem, AWS & DataCamp)",
+  "framework": "Next.js 15 PWA + TypeScript",
+  "aiEngine": {
+    "provider": "AWS Bedrock",
+    "primaryModel": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+    "secondaryModel": "amazon.nova-pro-v1:0",
+    "runtime": "@aws-sdk/client-bedrock-runtime"
+  },
+  "mcp": {
+    "careemEndpoint": "https://mcp.careemapis.com/mcp",
+    "paydEndpoint": "/api/mcp",
+    "protocol": "Streamable JSON-RPC 2.0",
+    "tools": [
+      "careem_rides_split_fare",
+      "careem_food_import_order",
+      "careem_quik_basket_split",
+      "careem_pay_settle_debt",
+      "payd_get_balances",
+      "payd_simplify_debts",
+      "payd_add_expense",
+      "payd_check_reimbursement_lag",
+      "payd_spin_coffee_roulette",
+      "payd_trigger_recurring_split"
+    ]
+  },
+  "invariants": {
+    "currencyMinorUnits": "AED fils (integer 100)",
+    "zeroLossSplits": true,
+    "graphMinCashFlow": true
+  }
+}

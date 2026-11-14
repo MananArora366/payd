@@ -18,10 +18,12 @@ ON CONFLICT (id) DO NOTHING;
 
 -- 2. Demo Users
 INSERT INTO public.users (id, name, email, default_currency, avatar_url) VALUES
-    ('11111111-1111-1111-1111-111111111111', 'Prakarsh', 'prakarsh@payd.app', 'AED', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80'),
-    ('22222222-2222-2222-2222-222222222222', 'Rahul', 'rahul@payd.app', 'AED', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80'),
-    ('33333333-3333-3333-3333-333333333333', 'Sarah', 'sarah@payd.app', 'AED', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&auto=format&fit=crop&q=80'),
-    ('44444444-4444-4444-4444-444444444444', 'Priya', 'priya@payd.app', 'AED', 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=120&auto=format&fit=crop&q=80')
+    ('11111111-1111-1111-1111-111111111111', 'Manan Arora', 'manan@payd.app', 'AED', NULL),
+    ('22222222-2222-2222-2222-222222222222', 'Prakarsh Thakur', 'prakarsh@payd.app', 'AED', NULL),
+    ('33333333-3333-3333-3333-333333333333', 'Veer Nanwani', 'veer@payd.app', 'AED', NULL),
+    ('44444444-4444-4444-4444-444444444444', 'Aisha Rahman', 'aisha@payd.app', 'AED', NULL),
+    ('55555555-5555-5555-5555-555555555555', 'Omar Haddad', 'omar@payd.app', 'AED', NULL),
+    ('66666666-6666-6666-6666-666666666666', 'Zara Kapoor', 'zara@payd.app', 'AED', NULL)
 ON CONFLICT (id) DO NOTHING;
 
 -- 3. Groups
@@ -37,7 +39,9 @@ INSERT INTO public.group_members (group_id, user_id, role) VALUES
     ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '33333333-3333-3333-3333-333333333333', 'member'),
     ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '11111111-1111-1111-1111-111111111111', 'member'),
     ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '22222222-2222-2222-2222-222222222222', 'admin'),
-    ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '44444444-4444-4444-4444-444444444444', 'member')
+    ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '44444444-4444-4444-4444-444444444444', 'member'),
+    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '55555555-5555-5555-5555-555555555555', 'member'),
+    ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '66666666-6666-6666-6666-666666666666', 'member')
 ON CONFLICT (group_id, user_id) DO NOTHING;
 
 -- 5. Group Invites
@@ -53,7 +57,7 @@ INSERT INTO public.budgets (id, user_id, category_id, limit_minor, period) VALUE
 ON CONFLICT (id) DO NOTHING;
 
 -- 7. Transactions
--- Example 1: 3-way split dinner: 100.00 AED total (10000 minor) paid by Prakarsh, split across Prakarsh, Rahul, Sarah
+-- Example 1: 3-way split dinner: 100.00 AED total (10000 minor) paid by Manan, split across Manan, Prakarsh, Veer
 -- Invariant check: 3334 + 3333 + 3333 = 10000 minor units
 INSERT INTO public.transactions (id, type, title, amount_minor, currency, category_id, payer_id, group_id, payment_method, notes, occurred_at, created_by) VALUES
     ('t0000001-0000-0000-0000-000000000001', 'expense', 'Dinner at Al Hallab', 10000, 'AED', 'c0000001-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Card', 'Lebanese dinner with flatmates', timezone('utc'::text, now()) - INTERVAL '2 days', '11111111-1111-1111-1111-111111111111');
@@ -64,7 +68,7 @@ INSERT INTO public.transaction_splits (transaction_id, user_id, share_minor) VAL
     ('t0000001-0000-0000-0000-000000000001', '33333333-3333-3333-3333-333333333333', 3333)
 ON CONFLICT (transaction_id, user_id) DO NOTHING;
 
--- Example 2: Groceries: 240.00 AED total paid by Rahul, split between Rahul, Prakarsh, Sarah (80.00 AED each = 8000 minor)
+-- Example 2: Groceries: 240.00 AED total paid by Prakarsh, split between Prakarsh, Manan, Veer (80.00 AED each = 8000 minor)
 INSERT INTO public.transactions (id, type, title, amount_minor, currency, category_id, payer_id, group_id, payment_method, notes, occurred_at, created_by) VALUES
     ('t0000002-0000-0000-0000-000000000002', 'expense', 'Carrefour Supermarket', 24000, 'AED', 'c0000002-0000-0000-0000-000000000002', '22222222-2222-2222-2222-222222222222', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Card', 'Weekly grocery run', timezone('utc'::text, now()) - INTERVAL '1 day', '22222222-2222-2222-2222-222222222222');
 

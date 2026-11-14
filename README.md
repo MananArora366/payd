@@ -16,10 +16,10 @@ payd/
 │   ├── src/
 │   │   ├── app/               # Next.js App Router & API routes (/api/ai/...)
 │   │   ├── components/        # UI Views, Modals, Voice Waveform, Payd Lens
-│   │   └── lib/               # Deterministic /lib/ledger & Gemini AI
+│   │   └── lib/               # Deterministic /lib/ledger & AI (Bedrock Claude, Gemini)
 │   ├── supabase/              # PostgreSQL migrations & seed personas
 │   ├── package.json
-│   └── vitest.config.ts       # 31 Passing financial invariant tests
+│   └── vitest.config.ts       # 47 passing financial invariant tests
 │
 ├── ios/                       # Native iOS Application (Swift & SwiftUI)
 │   ├── Payd.swiftpm/          # Xcode-Native App Package
@@ -35,10 +35,10 @@ payd/
 
 ## 1. Web Application (`web/`)
 
-- **Tech Stack**: Next.js 15, React 19, TypeScript, Supabase, Tailwind CSS, Gemini 2.0 Flash
+- **Tech Stack**: Next.js 15, React 19, TypeScript, Supabase, Tailwind CSS, AWS Bedrock (Claude Opus 5.5), Gemini 2.0 Flash
 - **Features**:
-  - Voice-First input via Web Speech API with real-time waveform and single-question clarification.
-  - **Payd Lens**: Gemini Vision camera receipt scanner extracting TRN, line items, and UAE 5% VAT.
+  - Voice-First input via Web Speech API with real-time waveform and single-question clarification, interpreted by Claude on AWS Bedrock (falls back to Gemini when Bedrock is not configured).
+  - **Payd Lens**: Gemini Vision camera receipt scanner (local OCR fallback when no API key is set) extracting TRN, line items, and UAE 5% VAT.
   - Zero-Float financial engine (`amount_minor` fils) with deterministic split algorithms.
   - Greedy min-cash-flow peer-to-peer debt simplification.
 
@@ -79,5 +79,5 @@ In Xcode, select any simulator (e.g., iPhone 16 Pro) and press **`Cmd + R`** to 
 From the root `/Users/user/Desktop/payd` directory:
 - `npm run dev` — Starts the Web dev server
 - `npm run build` — Builds the Web production bundle
-- `npm test` — Runs the 31 financial invariant tests
+- `npm test` — Runs the 47 financial invariant tests
 - `npm run ios` — Opens the native iOS app directly in Xcode

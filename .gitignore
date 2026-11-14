@@ -5,9 +5,11 @@ node_modules/
 
 # Next.js build output
 .next/
+.next-share/
 out/
 build/
 dist/
+web/bin/
 
 # Environment files
 .env*.local
@@ -47,3 +49,6 @@ DerivedData/
 *.ipa
 *.dSYM.zip
 *.dSYM
+run-claude.sh
+run-codex.sh
+.serena/
