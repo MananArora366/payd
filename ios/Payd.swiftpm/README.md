@@ -1,40 +1,46 @@
-# Payd iOS — Native Swift & SwiftUI Expense Tracker
+# Payd iOS — SwiftUI port of the Payd web app
 
-A lightweight, native iOS expense tracking app built with modern Swift and SwiftUI.
+A native SwiftUI copy of the Next.js app in `web/` (the source of truth). The binding port contract is
+`docs/ios-port/SPEC.md`.
 
-## Architecture & Features
+## Architecture
 
-- **PaydCore Ledger**: All state lives in a `LedgerState` from the local `../PaydCore` package and changes only through its pure `LedgerActions`. `LedgerStore` (`@Observable`) persists it as JSON (`payd_state_v1.json` in Application Support, same shape as the web app). First launch loads the demo seed.
-- **Financial Precision**: Money is integer minor units (fils), parsed and formatted by `PaydCore.Currency`, so there are no floats.
-- **Apple Human Interface Guidelines (HIG)**:
-  - SF Symbols and category-specific tinting.
-  - Ultra-thin material glass cards.
-  - Native NavigationStack and Inset-Grouped list styling.
-  - Dynamic Type & Light/Dark mode support.
-- **Features**:
-  - Live Dashboard card with formatted total spending and transaction count.
-  - Category pill filters (Food, Transport, Shopping, Bills, Entertainment, Healthcare, Other).
-  - Searchable transaction feed.
-  - Add Expense modal with decimal keypad and validation.
-  - Native swipe-to-delete with animated list updates.
+- **PaydCore** (`../PaydCore`): the engine. `LedgerState` mirrors the web's `payd_state_v3` localStorage blob
+  and changes only through the pure `LedgerActions`; `LedgerQueries.snapshot` derives everything PaydContext
+  memoises. Money is integer minor units (fils) everywhere.
+- **LedgerStore** (`Store/`): the only holder of the state. Persists the blob to
+  `Application Support/payd_state_v3.json` after every action. A missing file loads the web demo seed; an
+  unreadable file is never overwritten (saving is disabled); a corrupt file is moved aside as
+  `payd_state_v3.json.corrupt-<ms>`.
+- **AppSettings** (`Store/`): `payd_ai_enabled` and the Payd server address (`payd_server_base_url`).
+- **PaydAPI** (`Networking/`): calls the web's own routes (`/api/ai/interpret`, `/api/ai/query`,
+  `/api/ai/receipt-scan`, `/api/careem/events`, `/api/mcp`) on the configured server. No API keys live in the
+  app. With no server (or when it is unreachable) voice falls back to the on-device rules and Payd Lens to
+  Apple Vision OCR.
+- **Shell** (`Shell/`): `RootView` (navbar, tab content, bottom nav, voice overlay, Careem prompt), `AppRouter`
+  (tab, focused group, the single sheet) and `PaydSheetContent` (one sheet per web modal).
+- **UI** (`UI/`) and **Theme** (`Theme/`): shared components and the green brand tokens/fonts of the web.
+- **Features** (`Features/<Feature>/`): Home, Groups, Settle, Expenses, Lens, VoiceProfile.
 
-## Project Structure
+## Project structure
 
 ```
-SwiftExpenseTracker/
-├── ExpenseTrackerApp.swift   # Main app entry point; injects LedgerStore
-├── Store/
-│   └── LedgerStore.swift      # Observable wrapper over PaydCore + JSON persistence
-├── Models/
-│   └── CategoryStyle.swift    # Tint colours for PaydCore categories
-└── Views/
-    ├── ContentView.swift      # Primary view with search, filter chips, and list
-    ├── SummaryCardView.swift  # Dashboard KPI card
-    ├── ExpenseRowView.swift   # Single transaction list row
-    └── AddExpenseView.swift   # Add expense modal sheet
+Payd.swiftpm/
+├── ExpenseTrackerApp.swift   # @main: store, settings, router, fonts, payd://join deep link
+├── Config/AdditionalInfo.plist
+├── Resources/{Fonts,Brand}/
+├── Theme/                    # PaydTheme colours/gradients, PaydFonts
+├── Store/                    # LedgerStore, AppSettings
+├── Networking/               # PaydAPI, APIModels
+├── Shell/                    # RootView, Navbar, BottomNav, AppRouter, PaydSheet, PaydSheetContent
+├── UI/                       # shared components (cards, buttons, fields, banners, avatars)
+└── Features/                 # one directory per feature
 ```
 
-## How to Run in Xcode
+## How to run
 
-1. Open `ios/Payd.swiftpm` in **Xcode 16+** (it depends on `../PaydCore` by path, which Swift Playgrounds does not support).
-2. Select any iOS Simulator and hit **Cmd + R**.
+1. Open `ios/Payd.swiftpm` in Xcode (it depends on `../PaydCore` by path, which Swift Playgrounds does not support).
+2. Select an iOS 17+ simulator and press **Cmd + R**.
+3. Optional: set your Payd web server address in Profile → Payd server to use the server-side AI and Careem features.
+
+Tests: `cd ios/PaydCore && swift test`.

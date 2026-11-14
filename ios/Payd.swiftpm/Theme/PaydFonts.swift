@@ -4,12 +4,17 @@ import SwiftUI
 import UIKit
 
 /// The web app's typefaces (web/src/app/globals.css), bundled from web/public/fonts:
-/// PT Sans for body text (`.font-body`), DM Sans for uppercase headings (`.font-heading`)
+/// PT Sans for body text (`.font-body`), DM Sans 600 for headings (`.font-heading`, not uppercased)
 /// and Zen Dots for the wordmark (`.font-logo`).
 enum PaydFonts {
     static let body = "PT Sans"
     static let heading = "DM Sans"
     static let logo = "Zen Dots"
+
+    /// `.font-heading` letter-spacing: −0.01em.
+    static let headingTrackingEm: CGFloat = -0.01
+    /// `.font-logo` letter-spacing: 0.5px.
+    static let logoTracking: CGFloat = 0.5
 
     private static let logger = Logger(subsystem: "com.payd.SwiftExpenseTracker", category: "fonts")
 
@@ -24,47 +29,54 @@ enum PaydFonts {
                 logger.error("Could not register \(url.lastPathComponent, privacy: .public): \(reason, privacy: .public)")
             }
         }
-        // UIKit-drawn navigation titles (sheet headers) use PT Sans Bold too
+        // UIKit-drawn navigation titles use PT Sans Bold too
         if let title = UIFont(name: "PTSans-Bold", size: 17) {
             UINavigationBar.appearance().titleTextAttributes = [.font: title]
         }
     }
 
-    /// Point sizes of Apple's default text styles, so custom fonts keep the same scale and Dynamic Type.
-    static func size(for style: Font.TextStyle) -> CGFloat {
-        switch style {
-        case .largeTitle: 34
-        case .title: 28
-        case .title2: 22
-        case .title3: 20
-        case .headline, .body: 17
-        case .callout: 16
-        case .subheadline: 15
-        case .footnote: 13
-        case .caption: 12
-        case .caption2: 11
-        @unknown default: 17
+    /// The Dynamic Type style a fixed web size scales with.
+    static func textStyle(for size: CGFloat) -> Font.TextStyle {
+        switch size {
+        case ..<11.5: .caption2
+        case ..<13: .caption
+        case ..<15: .footnote
+        case ..<16.5: .callout
+        case ..<19: .body
+        case ..<21: .title3
+        case ..<25: .title2
+        case ..<31: .title
+        default: .largeTitle
         }
     }
 }
 
 extension Font {
-    /// PT Sans at a system text style's size, scaling with Dynamic Type.
-    static func payd(_ style: TextStyle) -> Font {
-        .custom(PaydFonts.body, size: PaydFonts.size(for: style), relativeTo: style)
+    /// PT Sans (`.font-body`). Only Regular 400 and Bold 700 exist, so web 500 is Regular and 600/700 Bold.
+    static func payd(size: CGFloat, bold: Bool = false, italic: Bool = false) -> Font {
+        let name = switch (bold, italic) {
+        case (false, false): "PTSans-Regular"
+        case (true, false): "PTSans-Bold"
+        case (false, true): "PTSans-Italic"
+        case (true, true): "PTSans-BoldItalic"
+        }
+        return .custom(name, size: size, relativeTo: PaydFonts.textStyle(for: size))
     }
 
-    /// PT Sans at a fixed size (scaled relative to `.body`).
-    static func payd(size: CGFloat) -> Font {
-        .custom(PaydFonts.body, size: size, relativeTo: .body)
+    /// DM Sans weight 600 (`.font-heading`). Apply `.paydHeadingTracking(size:)` for the −0.01em spacing.
+    static func paydHeading(size: CGFloat) -> Font {
+        .custom(PaydFonts.heading, size: size, relativeTo: PaydFonts.textStyle(for: size)).weight(.semibold)
     }
 
-    /// DM Sans Bold for uppercase, tracked headings.
-    static func paydHeading(_ style: TextStyle) -> Font {
-        .custom(PaydFonts.heading, size: PaydFonts.size(for: style), relativeTo: style).weight(.bold)
-    }
-
+    /// Zen Dots wordmark (`.font-logo`); pair with `.tracking(PaydFonts.logoTracking)`.
     static func paydLogo(size: CGFloat) -> Font {
-        .custom(PaydFonts.logo, size: size, relativeTo: .title)
+        .custom(PaydFonts.logo, size: size, relativeTo: PaydFonts.textStyle(for: size))
+    }
+}
+
+extension View {
+    /// `.font-heading` at `size` including its −0.01em letter-spacing.
+    func paydHeadingFont(size: CGFloat) -> some View {
+        font(.paydHeading(size: size)).tracking(PaydFonts.headingTrackingEm * size)
     }
 }
