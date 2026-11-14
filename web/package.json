@@ -9,7 +9,8 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "mcp": "node scripts/mcp-server.mjs"
+    "mcp": "node scripts/mcp-server.mjs",
+    "share": "bash scripts/share.sh"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.1169.0",

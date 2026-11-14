@@ -3,7 +3,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Camera,
-  Upload,
   X,
   Check,
   Receipt,
@@ -27,6 +26,7 @@ import {
   ReceiptItem,
 } from '@/lib/ai/receipt-scan';
 import { splitEqual, formatMinorUnits } from '@/lib/ledger';
+import { LensCameraViewer } from './LensCameraViewer';
 
 interface ReceiptScannerModalProps {
   isOpen: boolean;
@@ -112,6 +112,8 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    // Reset so choosing the same file again re-triggers onChange
+    e.target.value = '';
     if (!file) return;
 
     setError(null);
@@ -122,6 +124,13 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
       setScannedReceipt(null);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleCameraCapture = (dataUrl: string) => {
+    setError(null);
+    setImagePreview(dataUrl);
+    setIsReadyToScan(true);
+    setScannedReceipt(null);
   };
 
   const executeReceiptScan = async () => {
@@ -467,24 +476,20 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
         {/* State 1: Choose or Snap File */}
         {!scannedReceipt && !isScanning && !isReadyToScan && (
           <div className="mt-6 space-y-6">
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500/50 rounded-3xl p-8 text-center cursor-pointer transition hover:bg-emerald-500/5 group"
-            >
+            <div className="space-y-3">
               <input
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
-                capture="environment"
                 className="hidden"
                 onChange={handleFileChange}
               />
-              <div className="w-16 h-16 mx-auto rounded-2xl bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-4 group-hover:scale-105 transition">
-                <Upload className="w-8 h-8" />
-              </div>
-              <h3 className="font-bold text-sm sm:text-base">Take a Photo or Upload Receipt</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
-                Snap any UAE restaurant or grocery bill. Payd Lens extracts merchant, TRN, line items, and 5% VAT in real-time.
+              <LensCameraViewer
+                onCapture={handleCameraCapture}
+                onUploadClick={() => fileInputRef.current?.click()}
+              />
+              <p className="text-xs text-center text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                Point at any UAE restaurant or grocery bill. Payd Lens extracts merchant, TRN, line items, and 5% VAT.
               </p>
             </div>
 
@@ -600,7 +605,7 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
                 }}
                 className="flex-1 py-3 px-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs hover:bg-slate-200 dark:hover:bg-slate-750 transition"
               >
-                Choose Another
+                Retake
               </button>
               <button
                 type="button"
