@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       provider: useBedrock ? 'aws-bedrock' : 'gemini',
-      model: useBedrock ? 'anthropic.claude-3-5-sonnet-20241022-v2:0' : 'gemini-2.5-flash',
+      model: useBedrock ? (process.env.BEDROCK_MODEL_ID || 'global.anthropic.claude-opus-5-5') : 'gemini-2.5-flash',
       intent,
     });
   } catch (error: any) {
