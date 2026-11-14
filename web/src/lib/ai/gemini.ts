@@ -485,6 +485,53 @@ export async function interpretVoiceTranscript(
   return (await interpretVoiceTranscriptWithSource(transcript, ctx)).intent;
 }
 
+/** Gemini response schema for a VoiceIntent. Shared by the text and audio parsers. */
+export const INTENT_RESPONSE_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    intent: {
+      type: Type.STRING,
+      enum: ['add_expense', 'add_income', 'split_expense', 'record_repayment', 'query'],
+    },
+    amount: { type: Type.NUMBER, nullable: true },
+    currency: { type: Type.STRING, nullable: true },
+    category: { type: Type.STRING, nullable: true },
+    payer: { type: Type.STRING, nullable: true },
+    participants: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+    },
+    split_method: {
+      type: Type.STRING,
+      enum: ['equal', 'exact', 'percentage', 'shares'],
+      nullable: true,
+    },
+    group_name: { type: Type.STRING, nullable: true },
+    notes: { type: Type.STRING, nullable: true },
+    confidence: { type: Type.NUMBER },
+    missing_fields: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+    },
+    clarification_question: { type: Type.STRING, nullable: true },
+  },
+  required: ['intent', 'confidence', 'missing_fields', 'participants'],
+};
+
+/** The system prompt for turning speech into a VoiceIntent. */
+export function intentSystemInstruction(ctx: InterpretContext): string {
+  return `You are Payd's financial voice parser.
+Convert natural speech into structured JSON for an expense tracker.
+IMPORTANT INVARIANTS:
+1. You only extract intent and entities. You DO NOT calculate balances or split amounts.
+2. If amount is missing, add 'amount' to missing_fields and ask a brief clarification_question.
+3. If split participants are unclear, add 'participants' to missing_fields and ask a brief clarification_question.
+4. Current user is "${ctx.currentUser.name}" (ID: ${ctx.currentUser.id}, Default Currency: ${ctx.currentUser.currency}).
+Known contacts/group members: ${ctx.knownMembers.map((m) => m.name).join(', ')}.
+Available groups: ${ctx.groups.map((g) => g.name).join(', ')}.
+Standard Categories: ${ctx.categories.join(', ')}.`;
+}
+
 export type AiProvider = 'aws-bedrock' | 'gemini' | 'deterministic';
 
 export function isGeminiConfigured(): boolean {
@@ -507,16 +554,7 @@ export async function interpretVoiceTranscriptWithSource(
   try {
     const ai = new GoogleGenAI({ apiKey });
 
-    const systemInstruction = `You are Payd's financial voice parser.
-Convert natural speech into structured JSON for an expense tracker.
-IMPORTANT INVARIANTS:
-1. You only extract intent and entities. You DO NOT calculate balances or split amounts.
-2. If amount is missing, add 'amount' to missing_fields and ask a brief clarification_question.
-3. If split participants are unclear, add 'participants' to missing_fields and ask a brief clarification_question.
-4. Current user is "${ctx.currentUser.name}" (ID: ${ctx.currentUser.id}, Default Currency: ${ctx.currentUser.currency}).
-Known contacts/group members: ${ctx.knownMembers.map((m) => m.name).join(', ')}.
-Available groups: ${ctx.groups.map((g) => g.name).join(', ')}.
-Standard Categories: ${ctx.categories.join(', ')}.`;
+    const systemInstruction = intentSystemInstruction(ctx);
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.0-flash',
@@ -529,37 +567,7 @@ Standard Categories: ${ctx.categories.join(', ')}.`;
       config: {
         systemInstruction,
         responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            intent: {
-              type: Type.STRING,
-              enum: ['add_expense', 'add_income', 'split_expense', 'record_repayment', 'query'],
-            },
-            amount: { type: Type.NUMBER, nullable: true },
-            currency: { type: Type.STRING, nullable: true },
-            category: { type: Type.STRING, nullable: true },
-            payer: { type: Type.STRING, nullable: true },
-            participants: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-            },
-            split_method: {
-              type: Type.STRING,
-              enum: ['equal', 'exact', 'percentage', 'shares'],
-              nullable: true,
-            },
-            group_name: { type: Type.STRING, nullable: true },
-            notes: { type: Type.STRING, nullable: true },
-            confidence: { type: Type.NUMBER },
-            missing_fields: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-            },
-            clarification_question: { type: Type.STRING, nullable: true },
-          },
-          required: ['intent', 'confidence', 'missing_fields', 'participants'],
-        },
+        responseSchema: INTENT_RESPONSE_SCHEMA,
       },
     });
 

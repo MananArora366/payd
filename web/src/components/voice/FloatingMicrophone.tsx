@@ -9,6 +9,7 @@ import { ClarificationCard } from './ClarificationCard';
 import { formatMinorUnits, calculateBilateralDebts } from '@/lib/ledger';
 import { Mic, MicOff, Loader2, Keyboard, Send, Bot, X, Volume2, Camera } from 'lucide-react';
 import { useDialog } from '@/lib/hooks/useDialog';
+import { canRecordAudio, startRecording, type Recording } from '@/lib/voice/recorder';
 
 interface FloatingMicrophoneProps {
   onOpenReceiptScanner?: () => void;
@@ -46,6 +47,11 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
   const [voiceError, setVoiceError] = useState<string | null>(null);
 
   const recognitionRef = useRef<any>(null);
+  // AI speech (Gemini hears the audio). null until the server says whether it is configured.
+  const [aiSpeechAvailable, setAiSpeechAvailable] = useState<boolean | null>(null);
+  const [maxAudioSeconds, setMaxAudioSeconds] = useState(30);
+  const recordingRef = useRef<Recording | null>(null);
+  const finishAiRecordingRef = useRef<() => Promise<void>>(async () => {});
   // Latest processTranscript, so speech callbacks never use a stale closure.
   const processTranscriptRef = useRef<(text: string) => Promise<boolean>>(async () => false);
   // Full original utterance (notes may be truncated server-side), used for clarification follow-ups.
@@ -67,7 +73,119 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
     }
   };
 
-  // Initialize Web Speech API if supported
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/ai/voice', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled) return;
+        setAiSpeechAvailable(Boolean(d?.available));
+        if (typeof d?.maxSeconds === 'number') setMaxAudioSeconds(d.maxSeconds);
+      })
+      .catch(() => !cancelled && setAiSpeechAvailable(false));
+    return () => {
+      cancelled = true;
+      recordingRef.current?.cancel();
+    };
+  }, []);
+
+  const aiSpeechOn = Boolean(aiSpeechAvailable && aiEnabled && canRecordAudio());
+
+  /** Stops whichever recognizer is listening and throws the audio away. */
+  const cancelListening = () => {
+    recordingRef.current?.cancel();
+    recordingRef.current = null;
+    try {
+      recognitionRef.current?.abort?.();
+    } catch {
+      // ignore
+    }
+    setIsRecording(false);
+  };
+
+  const buildInterpretContext = () => ({
+    currentUser: { id: currentUser.id, name: currentUser.name, currency: 'AED' },
+    knownMembers: users.map((u) => ({ id: u.id, name: u.name })),
+    groups: groups.map((g) => ({ id: g.id, name: g.name })),
+    categories: categories.map((c) => c.name),
+  });
+
+  const startAiRecording = async () => {
+    try {
+      setTranscript('');
+      setInterimTranscript('');
+      recordingRef.current = await startRecording({
+        maxSeconds: maxAudioSeconds,
+        onAutoStop: (reason) => {
+          if (reason === 'no_speech') {
+            cancelListening();
+            setVoiceError(speechErrorMessage('no-speech'));
+            setShowTypedInput(true);
+          } else {
+            finishAiRecordingRef.current();
+          }
+        },
+      });
+      setIsRecording(true);
+    } catch (err: any) {
+      console.warn('Could not start recording:', err);
+      setIsRecording(false);
+      setVoiceError(
+        speechErrorMessage(err?.name === 'NotAllowedError' ? 'not-allowed' : err?.name === 'NotFoundError' ? 'audio-capture' : 'unavailable')
+      );
+      setShowTypedInput(true);
+    }
+  };
+
+  /** Stops recording, sends the audio to the AI, and shows the filled-in card. */
+  const finishAiRecording = async () => {
+    const rec = recordingRef.current;
+    recordingRef.current = null;
+    if (!rec) return;
+    setIsRecording(false);
+    setIsProcessing(true);
+    setVoiceError(null);
+    try {
+      const audio = await rec.stop();
+      if (!audio) {
+        setVoiceError(speechErrorMessage('no-speech'));
+        setShowTypedInput(true);
+        return;
+      }
+      const res = await fetch('/api/ai/voice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ audio: audio.base64, mimeType: audio.mimeType, context: buildInterpretContext(), aiEnabled }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.status === 503 && data?.code === 'speech_unavailable') {
+        // Server lost its key or AI was turned off: use the browser recognizer from now on.
+        setAiSpeechAvailable(false);
+        setVoiceError('AI listening is unavailable right now. Tap the mic again, or type your request.');
+        setShowTypedInput(true);
+        return;
+      }
+      if (data?.code === 'no_speech') {
+        setVoiceError(speechErrorMessage('no-speech'));
+        setShowTypedInput(true);
+        return;
+      }
+      if (!res.ok || !data?.success || !data.intent) throw new Error(data?.error || 'Voice request failed');
+
+      setTranscript(data.transcript);
+      lastTranscriptRef.current = data.transcript;
+      await applyIntent(data.intent as VoiceIntent, data.transcript);
+    } catch (err) {
+      console.error('Error processing voice:', err);
+      setVoiceError("Sorry, we couldn't understand that just now. Try again, or type your request.");
+      setShowTypedInput(true);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+  finishAiRecordingRef.current = finishAiRecording;
+
+  // Initialize Web Speech API if supported (fallback when AI speech is unavailable)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const SpeechRecognition =
@@ -124,6 +242,14 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
 
   const toggleRecording = () => {
     setVoiceError(null);
+    if (recordingRef.current) {
+      finishAiRecording();
+      return;
+    }
+    if (!isRecording && aiSpeechOn) {
+      startAiRecording();
+      return;
+    }
     if (isRecording) {
       recognitionRef.current?.stop();
       setIsRecording(false);
@@ -155,6 +281,16 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
     }
   };
 
+  /** Shows the right card for an understood request: an answer, a question, or the filled-in form. */
+  const applyIntent = async (intent: VoiceIntent, text: string) => {
+    if (intent.intent === 'query') {
+      await handleFinancialQuery(text);
+    } else {
+      setActiveIntent(intent);
+      setNeedsClarification(Boolean(intent.missing_fields && intent.missing_fields.length > 0));
+    }
+  };
+
   /** Returns true when the request was understood and a card was shown. */
   const processTranscript = async (rawTranscript: string): Promise<boolean> => {
     if (!rawTranscript.trim()) return false;
@@ -164,17 +300,7 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
     lastTranscriptRef.current = rawTranscript;
 
     try {
-      // Build context for Gemini/Voice parser
-      const context = {
-        currentUser: {
-          id: currentUser.id,
-          name: currentUser.name,
-          currency: 'AED',
-        },
-        knownMembers: users.map((u) => ({ id: u.id, name: u.name })),
-        groups: groups.map((g) => ({ id: g.id, name: g.name })),
-        categories: categories.map((c) => c.name),
-      };
+      const context = buildInterpretContext();
 
       const res = await fetch('/api/ai/interpret', {
         method: 'POST',
@@ -187,18 +313,7 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
         throw new Error(data?.error || 'Failed to interpret speech');
       }
 
-      const intent: VoiceIntent = data.intent;
-
-      // Handle Query vs Action
-      if (intent.intent === 'query') {
-        await handleFinancialQuery(rawTranscript);
-      } else if (intent.missing_fields && intent.missing_fields.length > 0) {
-        setActiveIntent(intent);
-        setNeedsClarification(true);
-      } else {
-        setActiveIntent(intent);
-        setNeedsClarification(false);
-      }
+      await applyIntent(data.intent as VoiceIntent, rawTranscript);
       return true;
     } catch (err: any) {
       console.error('Error processing transcript:', err);
@@ -326,14 +441,7 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
   // Esc dismisses whatever card is showing (not while a request is in flight).
   const { dialogProps } = useDialog(overlayOpen, () => {
     if (isProcessing) return;
-    if (isRecording) {
-      try {
-        recognitionRef.current?.abort?.();
-      } catch {
-        // ignore
-      }
-      setIsRecording(false);
-    }
+    if (isRecording) cancelListening();
     setAiQueryAnswer(null);
     setActiveIntent(null);
     setNeedsClarification(false);
@@ -351,18 +459,11 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
             <div className="w-full max-w-md bg-[#18181b] border border-brand-500/40 rounded-2xl p-6 shadow-2xl text-center space-y-4 animate-in slide-in-from-bottom-6">
               <div className="flex justify-between items-center text-xs font-heading text-brand-400">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-brand-400 animate-ping" />
-                  Listening...
+                  <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" />
+                  {aiSpeechOn ? 'Listening with AI' : 'Listening'}
                 </span>
                 <button
-                  onClick={() => {
-                    try {
-                      recognitionRef.current?.abort?.();
-                    } catch {
-                      // ignore
-                    }
-                    setIsRecording(false);
-                  }}
+                  onClick={cancelListening}
                   aria-label="Stop listening"
                   className="p-1 rounded-full text-zinc-400 hover:text-white"
                 >
@@ -372,8 +473,12 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
 
               <VoiceWaveform isRecording={isRecording} />
 
-              <p className="text-sm font-body text-zinc-200 min-h-[48px] flex items-center justify-center px-3 italic">
-                {interimTranscript || transcript || 'Speak now: "Paid 120 AED for dinner with Prakarsh split equally"'}
+              <p className="text-sm font-body text-zinc-200 min-h-[48px] flex items-center justify-center px-3">
+                {interimTranscript ||
+                  transcript ||
+                  (aiSpeechOn
+                    ? 'Say it naturally, like "Paid 120 AED for dinner with Prakarsh, split equally". Stops when you pause'
+                    : 'Speak now, like "Paid 120 AED for dinner with Prakarsh, split equally"')}
               </p>
 
               <button
@@ -386,12 +491,7 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
               <button
                 type="button"
                 onClick={() => {
-                  try {
-                    recognitionRef.current?.abort?.();
-                  } catch {
-                    // ignore
-                  }
-                  setIsRecording(false);
+                  cancelListening();
                   setShowTypedInput(true);
                 }}
                 className="w-full py-2 text-xs text-zinc-400 hover:text-white font-body flex items-center justify-center gap-1.5"
@@ -409,9 +509,9 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
                 <Loader2 className="w-6 h-6 text-brand-300 animate-spin" />
               </div>
               <div>
-                <h4 className="font-heading text-sm text-white">Interpreting Speech</h4>
+                <h4 className="font-heading text-sm text-white">Filling in the details</h4>
                 <p className="text-xs text-zinc-400 mt-1 font-body">
-                  Working out the details…
+                  {aiSpeechOn ? 'Turning what you said into an expense…' : 'Working out the details…'}
                 </p>
               </div>
             </div>
@@ -464,7 +564,7 @@ export function FloatingMicrophone({ onOpenReceiptScanner }: FloatingMicrophoneP
                 {aiQueryAnswer}
               </div>
 
-              <div className="text-[11px] text-zinc-400 italic">
+              <div className="text-[11px] text-zinc-400">
                 * Answer grounded in real-time ledger calculation. Gemini formats explanations only.
               </div>
 

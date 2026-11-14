@@ -56,13 +56,16 @@ export type RequestError = { ok: false; status: number; error: string };
  * Reads a JSON request body defensively: requires application/json, caps size,
  * and turns malformed or empty bodies into 400s instead of 500s.
  */
-export async function readJsonBody(req: Request): Promise<{ ok: true; body: Record<string, unknown> } | RequestError> {
+export async function readJsonBody(
+  req: Request,
+  maxBytes = MAX_BODY_BYTES
+): Promise<{ ok: true; body: Record<string, unknown> } | RequestError> {
   const contentType = req.headers.get('content-type') || '';
   if (!contentType.toLowerCase().includes('application/json')) {
     return { ok: false, status: 400, error: 'Content-Type must be application/json' };
   }
   const declared = Number(req.headers.get('content-length') || '0');
-  if (declared > MAX_BODY_BYTES) {
+  if (declared > maxBytes) {
     return { ok: false, status: 413, error: 'Request body too large' };
   }
   let raw: string;
@@ -71,7 +74,7 @@ export async function readJsonBody(req: Request): Promise<{ ok: true; body: Reco
   } catch {
     return { ok: false, status: 400, error: 'Could not read request body' };
   }
-  if (raw.length > MAX_BODY_BYTES) {
+  if (raw.length > maxBytes) {
     return { ok: false, status: 413, error: 'Request body too large' };
   }
   if (!raw.trim()) {
