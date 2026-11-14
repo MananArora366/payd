@@ -269,7 +269,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
         <div className="flex items-center justify-between pb-3 border-b border-white/8">
           <div className="flex items-center gap-2">
             <span className="font-heading text-sm text-white">
-              {type === 'income' ? 'RECORD INCOME' : 'ADD NEW EXPENSE'}
+              {type === 'income' ? 'Record income' : 'Add expense'}
             </span>
           </div>
           <button type="button" onClick={onClose} aria-label="Close" className="p-1 rounded-full text-zinc-400 hover:text-white transition">
@@ -344,7 +344,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
             <div>
               <label className="text-[11px] font-heading text-zinc-400">Amount</label>
               <div className="relative mt-1">
-                <span className="absolute left-3 top-2.5 text-xs font-bold text-brand-400">
+                <span className="absolute left-3 top-2.5 text-xs font-semibold text-brand-400">
                   {LEDGER_CURRENCY}
                 </span>
                 <input
@@ -361,7 +361,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
                   }
                   value={amountStr}
                   onChange={(e) => isMoneyKeystroke(e.target.value) && setAmountStr(e.target.value)}
-                  className="w-full pl-14 pr-3 py-2.5 text-sm font-bold bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-brand-500 text-white font-body"
+                  className="w-full pl-14 pr-3 py-2.5 text-sm font-semibold bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-brand-500 text-white font-body"
                 />
               </div>
             </div>
@@ -478,11 +478,11 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
                       aria-pressed={isSelected}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition ${
                         isSelected
-                          ? 'bg-brand-600 text-white shadow-xs font-bold'
+                          ? 'bg-brand-600 text-white shadow-xs font-semibold'
                           : 'bg-[#27272a] text-zinc-400 hover:text-white'
                       }`}
                     >
-                      <div className="w-4 h-4 rounded-full bg-brand-400/30 text-white flex items-center justify-center text-[9px] font-bold">
+                      <div className="w-4 h-4 rounded-full bg-brand-400/30 text-white flex items-center justify-center text-[11px] font-semibold">
                         {u.name.slice(0, 1)}
                       </div>
                       <span>{u.name}</span>
@@ -492,7 +492,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
               </div>
 
               {groupId && (
-                <p className="text-[10px] text-zinc-500">
+                <p className="text-[11px] text-zinc-500">
                   Only members of {groups.find((g) => g.id === groupId)?.name ?? 'this group'} can be part of this split.
                 </p>
               )}
@@ -501,7 +501,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
                 <div role="alert" className="flex items-start gap-2 p-2.5 text-[11px] bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-xl">
                   <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                   <span className="flex-1">{claimWarning}</span>
-                  <button type="button" onClick={() => setClaimWarning(null)} className="font-bold hover:underline">
+                  <button type="button" onClick={() => setClaimWarning(null)} className="font-semibold hover:underline">
                     OK
                   </button>
                 </div>
@@ -517,7 +517,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
                     <button
                       type="button"
                       onClick={handleAddManualItem}
-                      className="flex items-center gap-1 text-brand-400 text-xs font-bold hover:underline"
+                      className="flex items-center gap-1 text-brand-400 text-xs font-semibold hover:underline"
                     >
                       <Plus className="w-3.5 h-3.5" /> Add Item
                     </button>
@@ -563,7 +563,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
                                 }}
                                 className="w-full px-2.5 py-1.5 text-xs bg-[#09090b] border border-white/10 rounded-lg focus:outline-none focus:border-brand-500 text-white text-right pr-9 font-semibold"
                               />
-                              <span className="absolute right-2 top-1.5 text-[10px] text-zinc-500 font-semibold pointer-events-none">
+                              <span className="absolute right-2 top-1.5 text-[11px] text-zinc-500 font-semibold pointer-events-none">
                                 AED
                               </span>
                             </div>
@@ -580,7 +580,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
 
                           {/* Friends tap-to-claim chips for this item */}
                           <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                            <span className="text-[10px] text-zinc-500 font-medium">
+                            <span className="text-[11px] text-zinc-500 font-medium">
                               {count === 0 ? 'Shared by all · tap to claim:' : 'Claimed:'}
                             </span>
                             {selectedUserIds.map((uid) => {
@@ -592,7 +592,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
                                   key={uid}
                                   type="button"
                                   onClick={() => handleToggleManualItemUser(item.id, uid)}
-                                  className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition ${
+                                  className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition ${
                                     isClaimed
                                       ? 'bg-brand-600 text-white font-semibold'
                                       : 'bg-[#27272a] text-zinc-400 border border-white/6'
@@ -666,7 +666,7 @@ function AddExpenseForm({ onClose, defaultType = 'expense', defaultGroupId = nul
                               }
                               className="w-full px-2.5 py-1.5 text-xs bg-[#09090b] border border-white/10 rounded-lg text-right pr-9 font-semibold text-white focus:outline-none focus:border-brand-500"
                             />
-                            <span className="absolute right-2 top-1.5 text-[10px] text-zinc-500 font-semibold pointer-events-none">
+                            <span className="absolute right-2 top-1.5 text-[11px] text-zinc-500 font-semibold pointer-events-none">
                               AED
                             </span>
                           </div>

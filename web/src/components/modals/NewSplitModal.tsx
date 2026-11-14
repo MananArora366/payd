@@ -262,7 +262,7 @@ function NewSplitForm({ onClose, defaultGroupId = null }: NewSplitModalProps) {
                 Amount
               </label>
               <div className="relative mt-1">
-                <span className="absolute left-3 top-2.5 text-xs font-bold text-brand-400 pointer-events-none" aria-hidden="true">
+                <span className="absolute left-3 top-2.5 text-xs font-semibold text-brand-400 pointer-events-none" aria-hidden="true">
                   {LEDGER_CURRENCY}
                 </span>
                 <input
@@ -280,7 +280,7 @@ function NewSplitForm({ onClose, defaultGroupId = null }: NewSplitModalProps) {
                     setAmountInput(e.target.value);
                     setError(null);
                   }}
-                  className="w-full pl-14 pr-3 py-2.5 text-sm font-bold bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-brand-500 text-white font-body"
+                  className="w-full pl-14 pr-3 py-2.5 text-sm font-semibold bg-[#09090b] border border-white/10 rounded-xl focus:outline-none focus:border-brand-500 text-white font-body"
                 />
               </div>
             </div>
@@ -368,12 +368,12 @@ function NewSplitForm({ onClose, defaultGroupId = null }: NewSplitModalProps) {
                     aria-disabled={isLast || undefined}
                     title={isLast ? 'At least one person must be in the split' : undefined}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 ${
-                      isSelected ? 'bg-brand-600 text-white shadow-xs font-bold' : 'bg-[#27272a] text-zinc-400 hover:text-white'
+                      isSelected ? 'bg-brand-600 text-white shadow-xs font-semibold' : 'bg-[#27272a] text-zinc-400 hover:text-white'
                     }`}
                   >
                     <span
                       aria-hidden="true"
-                      className="w-5 h-5 rounded-full bg-brand-400/30 text-white flex items-center justify-center text-[9px] font-bold"
+                      className="w-5 h-5 rounded-full bg-brand-400/30 text-white flex items-center justify-center text-[11px] font-semibold"
                     >
                       {initialsOf(u.name)}
                     </span>
@@ -387,7 +387,7 @@ function NewSplitForm({ onClose, defaultGroupId = null }: NewSplitModalProps) {
             </div>
 
             {groupId && (
-              <p className="text-[10px] text-zinc-500">
+              <p className="text-[11px] text-zinc-500">
                 Only members of {groups.find((g) => g.id === groupId)?.name ?? 'this group'} can be part of this split.
               </p>
             )}
@@ -433,7 +433,7 @@ function NewSplitForm({ onClose, defaultGroupId = null }: NewSplitModalProps) {
                     <span className="flex items-center gap-2 min-w-0 text-zinc-300 font-medium">
                       <span
                         aria-hidden="true"
-                        className="w-5 h-5 shrink-0 rounded-full bg-brand-400/20 text-brand-200 flex items-center justify-center text-[9px] font-bold"
+                        className="w-5 h-5 shrink-0 rounded-full bg-brand-400/20 text-brand-200 flex items-center justify-center text-[11px] font-semibold"
                       >
                         {initialsOf(name)}
                       </span>
@@ -462,7 +462,7 @@ function NewSplitForm({ onClose, defaultGroupId = null }: NewSplitModalProps) {
                             }}
                             className="w-full px-2.5 py-1.5 text-xs bg-[#09090b] border border-white/10 rounded-lg text-right pr-9 font-semibold text-white focus:outline-none focus:border-brand-500"
                           />
-                          <span className="absolute right-2 top-1.5 text-[10px] text-zinc-500 font-semibold pointer-events-none" aria-hidden="true">
+                          <span className="absolute right-2 top-1.5 text-[11px] text-zinc-500 font-semibold pointer-events-none" aria-hidden="true">
                             {method === 'exact' ? LEDGER_CURRENCY : method === 'percentage' ? '%' : 'x'}
                           </span>
                         </span>

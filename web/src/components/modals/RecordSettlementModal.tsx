@@ -141,7 +141,7 @@ export function RecordSettlementModal({
         <div className="flex items-center justify-between pb-3 border-b border-white/8">
           <div className="flex items-center gap-2">
             <h2 id={titleId} className="font-heading text-sm text-white">Record settlement</h2>
-            <span className="text-[10px] font-heading px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30">
+            <span className="text-[11px] font-heading px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30">
               Not an expense
             </span>
           </div>
@@ -162,30 +162,30 @@ export function RecordSettlementModal({
             {senderUser?.avatar_url ? (
               <img src={senderUser.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover" />
             ) : (
-              <span aria-hidden="true" className="w-7 h-7 rounded-full bg-brand-600/40 flex items-center justify-center text-[10px] font-bold">
+              <span aria-hidden="true" className="w-7 h-7 rounded-full bg-brand-600/40 flex items-center justify-center text-[11px] font-semibold">
                 {(senderUser?.name || '?').slice(0, 1)}
               </span>
             )}
             <div>
-              <span className="text-[10px] text-slate-400 block uppercase">Payer</span>
+              <span className="text-[11px] text-slate-400 block">Payer</span>
               <span className="font-semibold">{senderUser?.name}</span>
             </div>
           </div>
 
           <div className="flex flex-col items-center px-2">
-            <span className="text-[10px] text-emerald-500 font-semibold mb-0.5">Repaying</span>
+            <span className="text-[11px] text-emerald-500 font-semibold mb-0.5">Repaying</span>
             <ArrowRight className="w-4 h-4 text-emerald-500" />
           </div>
 
           <div className="flex items-center gap-2 text-right">
             <div>
-              <span className="text-[10px] text-slate-400 block uppercase">Recipient</span>
+              <span className="text-[11px] text-slate-400 block">Recipient</span>
               <span className="font-semibold">{recipientUser?.name}</span>
             </div>
             {recipientUser?.avatar_url ? (
               <img src={recipientUser.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover" />
             ) : (
-              <span aria-hidden="true" className="w-7 h-7 rounded-full bg-brand-600/40 flex items-center justify-center text-[10px] font-bold">
+              <span aria-hidden="true" className="w-7 h-7 rounded-full bg-brand-600/40 flex items-center justify-center text-[11px] font-semibold">
                 {(recipientUser?.name || '?').slice(0, 1)}
               </span>
             )}
@@ -273,7 +273,7 @@ export function RecordSettlementModal({
             <div>
               <label htmlFor="settle-amount" className="text-xs font-medium text-zinc-400">Amount</label>
               <div className="relative mt-1">
-                <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">
+                <span className="absolute left-3 top-2 text-xs font-semibold text-slate-400">
                   {CURRENCY}
                 </span>
                 <input

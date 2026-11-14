@@ -35,10 +35,10 @@ export function Navbar({ onOpenReceiptScanner, onOpenAddExpense, onNavigateTab, 
             className="w-8 h-8 sm:w-9 sm:h-9 transition-opacity group-hover:opacity-90"
           />
           <div className="flex items-baseline gap-1">
-            <span className="font-logo text-2xl sm:text-3xl text-white tracking-wide transition-opacity group-hover:opacity-90">
+            <span className="font-logo text-2xl sm:text-3xl text-white transition-opacity group-hover:opacity-90">
               payd
             </span>
-            <span className="w-2 h-2 rounded-full bg-brand-gradient inline-block mb-0.5" />
+            <span className="w-2 h-2 rounded-full bg-brand-400 inline-block mb-0.5" />
           </div>
         </button>
 
@@ -51,14 +51,14 @@ export function Navbar({ onOpenReceiptScanner, onOpenAddExpense, onNavigateTab, 
               className="w-9 h-9 rounded-full bg-brand-400 hover:bg-brand-300 text-zinc-950 flex items-center justify-center transition active:scale-95"
               title="Add Expense"
             >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
+              <Plus className="w-4 h-4" />
             </button>
           )}
 
           {onOpenReceiptScanner && (
             <button
               onClick={onOpenReceiptScanner}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#18181b] hover:bg-[#27272a] text-slate-200 border border-white/10 hover:border-brand-500/40 transition text-xs font-bold shadow-xs active:scale-95"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#18181b] hover:bg-[#27272a] text-slate-200 border border-white/10 hover:border-brand-500/40 transition text-xs font-semibold shadow-xs active:scale-95"
               title="Scan receipt with Payd Lens"
             >
               <Camera className="w-3.5 h-3.5 text-brand-400" />
@@ -77,7 +77,7 @@ export function Navbar({ onOpenReceiptScanner, onOpenAddExpense, onNavigateTab, 
             }`}
             title={onProfile ? 'Back to home' : 'Your profile'}
           >
-            <div className="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center text-[11px] font-bold text-white shadow-xs">
+            <div className="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center text-[11px] font-semibold text-white shadow-xs">
               {currentUser.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
             </div>
             <span className="font-medium hidden sm:inline">{currentUser.name}</span>

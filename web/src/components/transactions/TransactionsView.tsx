@@ -5,6 +5,7 @@ import { usePayd } from '@/lib/store/PaydContext';
 import { formatMinorUnits } from '@/lib/ledger';
 import { Transaction } from '@/types/database';
 import { Search, Filter, Plus } from 'lucide-react';
+import { getCategoryIcon } from '@/lib/icons';
 import { sortByDateDesc, volumeByType } from '@/components/analytics/spendMath';
 
 // Remember "Include Deleted" for the browser session so it survives tab switches.
@@ -48,18 +49,6 @@ export function TransactionsView({ onOpenAddExpense, onSelectTransaction }: Tran
     }
   };
 
-  // Category emoji helper
-  const getCategoryEmoji = (catName?: string) => {
-    const lower = (catName || '').toLowerCase();
-    if (lower.includes('food') || lower.includes('dining')) return '🍣';
-    if (lower.includes('grocer')) return '🛒';
-    if (lower.includes('utility') || lower.includes('bill') || lower.includes('wifi')) return '⚡';
-    if (lower.includes('transport') || lower.includes('careem')) return '🚗';
-    if (lower.includes('coffee')) return '☕';
-    if (lower.includes('travel')) return '✈️';
-    if (lower.includes('entertainment')) return '🎬';
-    return '💳';
-  };
 
   // Filter transactions, newest first
   const filtered = sortByDateDesc(transactions).filter((t) => {
@@ -90,7 +79,7 @@ export function TransactionsView({ onOpenAddExpense, onSelectTransaction }: Tran
       {/* Title & Top Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="font-heading text-xl sm:text-2xl text-white tracking-wide">Expense activity</h2>
+          <h2 className="font-heading text-xl sm:text-2xl text-white">Expense activity</h2>
           <p className="text-xs text-zinc-400 mt-1 font-body">
             Every expense and income entry in one place. Settlements live in the Settle tab
           </p>
@@ -100,7 +89,7 @@ export function TransactionsView({ onOpenAddExpense, onSelectTransaction }: Tran
           onClick={() => onOpenAddExpense('expense')}
           className="px-4 py-2.5 rounded-2xl bg-brand-400 hover:bg-brand-300 text-zinc-950 font-semibold text-sm flex items-center justify-center gap-2 transition active:scale-95 self-start sm:self-auto"
         >
-          <Plus className="w-4 h-4 stroke-[3]" />
+          <Plus className="w-4 h-4" />
           <span>+ Add Expense</span>
         </button>
       </div>
@@ -226,22 +215,22 @@ export function TransactionsView({ onOpenAddExpense, onSelectTransaction }: Tran
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center text-lg shrink-0">
-                    {getCategoryEmoji(cat?.name)}
+                  <div className="w-10 h-10 rounded-xl bg-[#27272a] text-zinc-300 flex items-center justify-center shrink-0">
+                    {getCategoryIcon(cat?.icon, 'w-[18px] h-[18px]')}
                   </div>
 
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-white leading-tight">
+                      <span className="text-sm font-semibold text-white leading-tight">
                         {t.title}
                       </span>
                       {isDeleted && (
-                        <span className="text-[10px] uppercase font-heading px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-400">
+                        <span className="text-[11px] font-heading px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-400">
                           Reversed
                         </span>
                       )}
                       {group && (
-                        <span className="text-[10px] font-heading px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300">
+                        <span className="text-[11px] font-heading px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300">
                           {group.name}
                         </span>
                       )}
@@ -266,7 +255,7 @@ export function TransactionsView({ onOpenAddExpense, onSelectTransaction }: Tran
 
                 <div className="text-right">
                   <div
-                    className={`text-sm font-bold ${
+                    className={`text-sm font-semibold ${
                       isDeleted
                         ? 'line-through text-zinc-500'
                         : isIncome

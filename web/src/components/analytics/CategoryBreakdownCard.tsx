@@ -75,7 +75,7 @@ export function CategoryBreakdownCard({ onNavigateTransactions }: CategoryBreakd
           <div>
             <h3 className="font-heading text-xs text-white flex items-center gap-1.5">
               Spending sectors & daily runway
-              <span className="text-[9px] px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 font-heading border border-brand-500/30">
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 font-heading border border-brand-500/30">
                 Insights
               </span>
             </h3>
@@ -101,13 +101,13 @@ export function CategoryBreakdownCard({ onNavigateTransactions }: CategoryBreakd
           {/* Daily Runway KPI Card */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="p-4 rounded-2xl bg-teal-500/[0.06] border border-teal-500/20">
-              <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold uppercase tracking-wider">
+              <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold">
                 <span className="flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5 text-teal-500" />
                   Daily Safe Burn Rate
                 </span>
                 <span
-                  className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                  className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${
                     isPaceHealthy
                       ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                       : 'bg-amber-500/10 text-amber-500'
@@ -127,12 +127,12 @@ export function CategoryBreakdownCard({ onNavigateTransactions }: CategoryBreakd
 
             {/* Careem Super-App Synergy Badge */}
             <div className="p-4 rounded-2xl bg-emerald-500/[0.06] border border-emerald-500/25">
-              <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold uppercase tracking-wider">
+              <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold">
                 <span className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
                   <Zap className="w-3.5 h-3.5 text-emerald-500" />
                   Careem Super-App Pulse
                 </span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold uppercase">
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold">
                   Careem Pay Ready
                 </span>
               </div>
@@ -147,7 +147,7 @@ export function CategoryBreakdownCard({ onNavigateTransactions }: CategoryBreakd
 
           {/* Categorical Breakdown Bars */}
           <div className="space-y-3 pt-1">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-400">
               <span>Category Breakdown</span>
               <span className="flex items-center gap-2">
                 <span>Total: {formatMinorUnits(totalExpensesMinor, currentUser.default_currency)}</span>
@@ -155,7 +155,7 @@ export function CategoryBreakdownCard({ onNavigateTransactions }: CategoryBreakd
                   <button
                     type="button"
                     onClick={onNavigateTransactions}
-                    className="normal-case tracking-normal font-bold text-brand-400 hover:text-brand-300 transition"
+                    className="normal-case tracking-normal font-semibold text-brand-400 hover:text-brand-300 transition"
                   >
                     Activity &rarr;
                   </button>
@@ -193,7 +193,7 @@ export function CategoryBreakdownCard({ onNavigateTransactions }: CategoryBreakd
 
                         <div className="flex items-center gap-2">
                           <span className="text-slate-400 text-[11px]">{percent}%</span>
-                          <span className="font-bold text-slate-900 dark:text-white">
+                          <span className="font-semibold text-slate-900 dark:text-white">
                             {formatMinorUnits(cat.totalMinor, currentUser.default_currency)}
                           </span>
                         </div>
@@ -202,7 +202,7 @@ export function CategoryBreakdownCard({ onNavigateTransactions }: CategoryBreakd
                       {/* Percentage Bar */}
                       <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full ${gradient} transition-all duration-500`}
+                          className={`h-full rounded-full ${gradient} transition duration-500`}
                           style={{ width: `${percent}%` }}
                         />
                       </div>

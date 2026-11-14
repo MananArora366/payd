@@ -56,7 +56,7 @@ export function CashFlowAnalyticsCard({ onNavigateSettlements }: CashFlowAnalyti
           <div>
             <h3 className="font-heading text-xs text-white flex items-center gap-1.5">
               Cash flow health & reimbursement lag
-              <span className="text-[9px] px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 font-heading border border-brand-500/30">
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 font-heading border border-brand-500/30">
                 Analytics
               </span>
             </h3>
@@ -81,39 +81,39 @@ export function CashFlowAnalyticsCard({ onNavigateSettlements }: CashFlowAnalyti
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {/* Outstanding Exposure */}
         <div className="p-3.5 rounded-2xl bg-[#202025] border border-white/6">
-          <div className="text-[10px] font-heading text-zinc-400">
+          <div className="text-[11px] font-heading text-zinc-400">
             Out-of-pocket exposure
           </div>
-          <div className="text-xl font-bold text-[#F43F5E] mt-1">
+          <div className="text-xl font-semibold text-[#F43F5E] mt-1">
             {formatMinorUnits(outstanding_exposure_minor, currentUser.default_currency)}
           </div>
-          <div className="text-[10px] text-zinc-400 mt-0.5">
+          <div className="text-[11px] text-zinc-400 mt-0.5">
             Fronted for others & awaiting repayment
           </div>
         </div>
 
         {/* Repayment Velocity Rate */}
         <div className="p-3.5 rounded-2xl bg-[#202025] border border-white/6">
-          <div className="text-[10px] font-heading text-zinc-400">
+          <div className="text-[11px] font-heading text-zinc-400">
             Settlement recovery rate
           </div>
-          <div className="text-xl font-bold text-[#10B981] mt-1">
+          <div className="text-xl font-semibold text-[#10B981] mt-1">
             {recoveryPercent}%
           </div>
-          <div className="text-[10px] text-zinc-400 mt-0.5">
+          <div className="text-[11px] text-zinc-400 mt-0.5">
             {formatMinorUnits(total_recovered_minor, currentUser.default_currency)} recovered of fronted share
           </div>
         </div>
 
         {/* Personal vs Group Fronted Ratio */}
         <div className="p-3.5 rounded-2xl bg-[#202025] border border-white/6">
-          <div className="text-[10px] font-heading text-zinc-400">
+          <div className="text-[11px] font-heading text-zinc-400">
             Fair share consumption
           </div>
           <div className="text-xl font-semibold text-slate-800 dark:text-slate-200 mt-1">
             {formatMinorUnits(personal_consumption_minor, currentUser.default_currency)}
           </div>
-          <div className="text-[10px] text-slate-400 mt-0.5">
+          <div className="text-[11px] text-slate-400 mt-0.5">
             True personal spend (excluding friends&apos; splits)
           </div>
         </div>
@@ -129,12 +129,12 @@ export function CashFlowAnalyticsCard({ onNavigateSettlements }: CashFlowAnalyti
         </div>
         <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden flex">
           <div
-            className="h-full bg-emerald-500 rounded-l-full transition-all duration-500"
+            className="h-full bg-emerald-500 rounded-l-full transition duration-500"
             style={{ width: `${recoveryPercent}%` }}
             title="Recovered"
           />
           <div
-            className="h-full bg-rose-500 rounded-r-full transition-all duration-500"
+            className="h-full bg-rose-500 rounded-r-full transition duration-500"
             style={{ width: `${100 - recoveryPercent}%` }}
             title="Outstanding"
           />
@@ -168,7 +168,7 @@ export function CashFlowAnalyticsCard({ onNavigateSettlements }: CashFlowAnalyti
       {/* Expanded Roster of Reimbursement Velocity */}
       {isExpanded && (
         <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2.5 animate-in fade-in duration-200">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">
+          <span className="text-xs font-semibold text-slate-400 block">
             Friend Reimbursement Turnaround (Lag Index)
           </span>
 
@@ -185,8 +185,8 @@ export function CashFlowAnalyticsCard({ onNavigateSettlements }: CashFlowAnalyti
                     className="w-7 h-7 rounded-full object-cover"
                   />
                   <div>
-                    <div className="font-bold text-slate-800 dark:text-slate-200">{item.name}</div>
-                    <div className="text-[10px] text-slate-400">
+                    <div className="font-semibold text-slate-800 dark:text-slate-200">{item.name}</div>
+                    <div className="text-[11px] text-slate-400">
                       Avg turnaround: <strong className="text-slate-600 dark:text-slate-300">{item.avg_lag_label}</strong>
                     </div>
                   </div>
@@ -195,7 +195,7 @@ export function CashFlowAnalyticsCard({ onNavigateSettlements }: CashFlowAnalyti
                 <div className="flex items-center gap-2">
                   {/* Status Badge */}
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${
+                    className={`px-2 py-0.5 rounded-full text-[11px] font-semibold flex items-center gap-1 ${
                       item.tier === 'speedy'
                         ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                         : item.tier === 'average'
@@ -209,7 +209,7 @@ export function CashFlowAnalyticsCard({ onNavigateSettlements }: CashFlowAnalyti
                     {item.tier === 'average' && <Clock className="w-3 h-3" />}
                     {item.tier === 'lagging' && <AlertTriangle className="w-3 h-3" />}
                     {item.tier === 'speedy'
-                      ? 'Speedy ⚡'
+                      ? 'Speedy'
                       : item.tier === 'average'
                       ? 'Average ⏱️'
                       : item.tier === 'unknown'
@@ -220,7 +220,7 @@ export function CashFlowAnalyticsCard({ onNavigateSettlements }: CashFlowAnalyti
                   {/* Owed amount + Nudge */}
                   {item.current_owed_minor > 0 ? (
                     <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-rose-500">
+                      <span className="font-semibold text-rose-500">
                         {formatMinorUnits(item.current_owed_minor, currentUser.default_currency)}
                       </span>
                       <button
@@ -245,7 +245,7 @@ export function CashFlowAnalyticsCard({ onNavigateSettlements }: CashFlowAnalyti
             <button
               type="button"
               onClick={onNavigateSettlements}
-              className="text-xs font-bold text-brand-400 hover:text-brand-300 transition"
+              className="text-xs font-semibold text-brand-400 hover:text-brand-300 transition"
             >
               Open settlements &rarr;
             </button>

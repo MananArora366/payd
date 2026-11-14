@@ -3,7 +3,7 @@
 import React from 'react';
 import { usePayd } from '@/lib/store/PaydContext';
 import { formatMinorUnits } from '@/lib/ledger';
-import { getGroupEmoji } from '@/lib/icons';
+import { getGroupIcon, getCategoryIcon } from '@/lib/icons';
 import { Transaction } from '@/types/database';
 import { Receipt, Coffee, Camera, HandCoins, Split } from 'lucide-react';
 import { CashFlowAnalyticsCard } from '@/components/analytics/CashFlowAnalyticsCard';
@@ -76,61 +76,46 @@ export function HomeView({
       ? `You have pending liabilities across ${groupsLabel}`
       : `Your balances net out to zero across ${groupsLabel}`;
 
-  // Category emoji map helper
-  const getCategoryEmoji = (catName?: string) => {
-    const lower = (catName || '').toLowerCase();
-    if (lower.includes('food') || lower.includes('dining') || lower.includes('restaurant')) return '🍣';
-    if (lower.includes('grocer')) return '🛒';
-    if (lower.includes('utility') || lower.includes('bill') || lower.includes('electricity') || lower.includes('wifi')) return '⚡';
-    if (lower.includes('transport') || lower.includes('careem') || lower.includes('taxi')) return '🚗';
-    if (lower.includes('coffee')) return '☕';
-    if (lower.includes('travel') || lower.includes('flight')) return '✈️';
-    if (lower.includes('entertainment') || lower.includes('movie')) return '🎬';
-    return '💳';
-  };
 
   return (
     <div className="space-y-6 pb-28">
-      {/* ─── Hero Balance Card (Matching iOS Prototype) ──────────────────── */}
-      <div className="relative overflow-hidden rounded-2xl bg-brand-hero p-6 text-white">
-        <div className="balance-label font-heading text-[11px] text-brand-100 tracking-wider mb-2">
-          Total net balance
-        </div>
+      {/* ─── Net balance: the one figure that matters, with owed vs owe as a single bar ─── */}
+      <div className="rounded-2xl bg-[#18181b] border border-white/8 p-6 text-white">
+        <div className="font-body text-[13px] text-zinc-400 mb-2">Total net balance</div>
 
-        <div className="flex items-baseline gap-2 font-body">
-          <span className="text-3xl sm:text-4xl font-bold tracking-tight">
+        <div className="flex items-baseline gap-2">
+          <span
+            className={`font-heading text-4xl font-medium tabular-nums ${
+              userNetBalance > 0 ? 'text-brand-400' : userNetBalance < 0 ? 'text-rose-400' : 'text-white'
+            }`}
+          >
             {userNetBalance > 0 ? '+' : userNetBalance < 0 ? '-' : ''}
             {formatMinorUnits(Math.abs(userNetBalance), currentUser.default_currency).replace(/^[A-Z]{3}\s*/, '')}
           </span>
-          <span className="text-sm font-bold text-brand-100">{currentUser.default_currency}</span>
+          <span className="font-body text-sm text-zinc-400">{currentUser.default_currency}</span>
         </div>
 
-        <div className="text-xs text-white/80 mt-1 font-body">
-          {heroSubtitle}
-        </div>
+        <div className="font-body text-[13px] text-zinc-400 mt-1">{heroSubtitle}</div>
 
-        {/* Divider */}
-        <div className="h-px bg-white/20 my-4" />
+        {/* Owed vs owe, in proportion */}
+        {(userOwedToMe > 0 || userIOwe > 0) && (
+          <div className="flex h-1.5 gap-1 mt-5" aria-hidden="true">
+            {userOwedToMe > 0 && <div className="rounded-full bg-brand-400" style={{ flexGrow: userOwedToMe }} />}
+            {userIOwe > 0 && <div className="rounded-full bg-rose-400/70" style={{ flexGrow: userIOwe }} />}
+          </div>
+        )}
 
-        {/* Metrics Row */}
-        <div className="flex flex-wrap items-center justify-between gap-3 font-body">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-lime-300 inline-block" />
-            <div>
-              <div className="text-[10px] text-white/70 uppercase tracking-wider font-semibold">Owed to you</div>
-              <div className="text-sm font-bold text-white">
-                +{formatMinorUnits(userOwedToMe, currentUser.default_currency)}
-              </div>
+        <div className="flex flex-wrap items-start justify-between gap-3 mt-3 font-body">
+          <div>
+            <div className="text-xs text-zinc-400">Owed to you</div>
+            <div className="text-sm text-white tabular-nums mt-0.5">
+              +{formatMinorUnits(userOwedToMe, currentUser.default_currency)}
             </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#F43F5E] inline-block" />
-            <div>
-              <div className="text-[10px] text-white/70 uppercase tracking-wider font-semibold">You owe</div>
-              <div className="text-sm font-bold text-white">
-                -{formatMinorUnits(userIOwe, currentUser.default_currency)}
-              </div>
+          <div className="text-right">
+            <div className="text-xs text-zinc-400">You owe</div>
+            <div className="text-sm text-white tabular-nums mt-0.5">
+              -{formatMinorUnits(userIOwe, currentUser.default_currency)}
             </div>
           </div>
         </div>
@@ -139,7 +124,7 @@ export function HomeView({
         <div className="flex gap-2.5 mt-5 font-body">
           <button
             onClick={() => onNavigateTab('settlements')}
-            className="flex-[3] h-12 rounded-xl bg-white hover:bg-brand-50 text-brand-900 font-bold text-sm flex items-center justify-center gap-2 transition active:scale-95"
+            className="flex-[3] h-12 rounded-xl bg-brand-400 hover:bg-brand-300 text-zinc-950 font-heading font-medium text-sm flex items-center justify-center gap-2 transition-colors active:scale-[0.98]"
           >
             <HandCoins className="w-4 h-4" />
             <span>Settle up</span>
@@ -147,9 +132,9 @@ export function HomeView({
 
           <button
             onClick={onOpenNewSplit}
-            className="flex-[2] h-12 rounded-xl bg-white/15 hover:bg-white/20 text-white font-semibold text-xs flex items-center justify-center gap-2 border border-white/20 transition active:scale-95"
+            className="flex-[2] h-12 rounded-xl bg-[#27272a] hover:bg-[#3f3f46] text-white font-heading font-medium text-sm flex items-center justify-center gap-2 border border-white/8 transition-colors active:scale-[0.98]"
           >
-            <Split className="w-4 h-4 stroke-[3]" />
+            <Split className="w-4 h-4" />
             <span>New split</span>
           </button>
         </div>
@@ -164,7 +149,7 @@ export function HomeView({
           <span className="font-heading text-xs text-zinc-400">Active groups</span>
           <button
             onClick={() => onNavigateTab('groups')}
-            className="font-body text-xs font-bold text-brand-400 hover:text-brand-300 transition"
+            className="font-body text-xs font-semibold text-brand-400 hover:text-brand-300 transition"
           >
             See all ({groups.length}) &rarr;
           </button>
@@ -186,20 +171,20 @@ export function HomeView({
                 aria-label={`Open ${group.name}`}
                 onClick={() => openGroup(group.id)}
                 onKeyDown={onActivateKey(() => openGroup(group.id))}
-                className="flex-none w-[220px] sm:w-[240px] bg-[#18181b] hover:bg-[#202024] border border-white/8 hover:border-brand-500/40 rounded-2xl p-4 snap-start cursor-pointer transition-all duration-200 active:scale-95 shadow-lg"
+                className="flex-none w-[220px] sm:w-[240px] bg-[#18181b] hover:bg-[#202024] border border-white/8 hover:border-brand-500/40 rounded-2xl p-4 snap-start cursor-pointer transition duration-200 active:scale-95 shadow-lg"
               >
                 <div className="flex items-center justify-between mb-2.5">
-                  <span className="text-2xl">{getGroupEmoji(group.name)}</span>
+                  <span className="w-9 h-9 shrink-0 rounded-xl bg-[#27272a] text-zinc-300 flex items-center justify-center">{getGroupIcon(group.name, 'w-[18px] h-[18px]')}</span>
                   {userBal > 0 ? (
-                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-[11px] font-bold">
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-[11px] font-semibold">
                       +{formatMinorUnits(userBal, group.currency)}
                     </span>
                   ) : userBal < 0 ? (
-                    <span className="px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-400 text-[11px] font-bold">
+                    <span className="px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-400 text-[11px] font-semibold">
                       -{formatMinorUnits(Math.abs(userBal), group.currency)}
                     </span>
                   ) : (
-                    <span className="px-2.5 py-0.5 rounded-full bg-brand-500/15 text-brand-400 text-[11px] font-bold">
+                    <span className="px-2.5 py-0.5 rounded-full bg-brand-500/15 text-brand-400 text-[11px] font-semibold">
                       Settled
                     </span>
                   )}
@@ -214,7 +199,7 @@ export function HomeView({
 
                 <div className="flex items-baseline justify-between mt-3 pt-2.5 border-t border-white/6 font-body">
                   <span className="text-[11px] text-zinc-400">{membersLabel}</span>
-                  <span className="text-xs font-bold text-white">
+                  <span className="text-xs font-semibold text-white">
                     {formatMinorUnits(groupSpend, group.currency)}
                   </span>
                 </div>
@@ -242,7 +227,7 @@ export function HomeView({
             <div className="text-xs font-heading text-white flex items-center gap-1">
               Roulette
             </div>
-            <div className="text-[10px] sm:text-[11px] text-amber-400 font-body mt-0.5">Who pays coffee?</div>
+            <div className="text-[11px] sm:text-[11px] text-amber-400 font-body mt-0.5">Who pays coffee?</div>
           </button>
 
           {/* Payd Lens receipt scanner */}
@@ -256,7 +241,7 @@ export function HomeView({
             <div className="text-xs font-heading text-white flex items-center gap-1">
               Payd Lens
             </div>
-            <div className="text-[10px] sm:text-[11px] text-emerald-400 font-body mt-0.5">Split a receipt</div>
+            <div className="text-[11px] sm:text-[11px] text-emerald-400 font-body mt-0.5">Split a receipt</div>
           </button>
         </div>
       </div>
@@ -276,7 +261,7 @@ export function HomeView({
           <span className="font-heading text-xs text-zinc-400">Recent activity</span>
           <button
             onClick={() => onNavigateTab('transactions')}
-            className="font-body text-xs font-bold text-brand-400 hover:text-brand-300 transition"
+            className="font-body text-xs font-semibold text-brand-400 hover:text-brand-300 transition"
           >
             See all &rarr;
           </button>
@@ -328,15 +313,15 @@ export function HomeView({
                   tabIndex={0}
                   onClick={() => onSelectTransaction(t)}
                   onKeyDown={onActivateKey(() => onSelectTransaction(t))}
-                  className="flex items-center gap-3 p-3.5 bg-[#18181b] hover:bg-[#202024] border border-white/8 hover:border-brand-500/40 rounded-2xl cursor-pointer transition-all duration-150 active:scale-[0.99] shadow-sm"
+                  className="flex items-center gap-3 p-3.5 bg-[#18181b] hover:bg-[#202024] border border-white/8 hover:border-brand-500/40 rounded-2xl cursor-pointer transition duration-150 active:scale-[0.99] shadow-sm"
                 >
                   {/* Category icon box with soft tinted background */}
-                  <div className="w-11 h-11 rounded-xl bg-brand-500/10 flex items-center justify-center text-xl shrink-0">
-                    {getCategoryEmoji(cat?.name)}
+                  <div className="w-11 h-11 rounded-xl bg-[#27272a] text-zinc-300 flex items-center justify-center shrink-0">
+                    {getCategoryIcon(cat?.icon, 'w-[18px] h-[18px]')}
                   </div>
 
                   <div className="font-body min-w-0 flex-1">
-                    <div className="font-bold text-sm text-white truncate">{t.title}</div>
+                    <div className="font-semibold text-sm text-white truncate">{t.title}</div>
                     <div className="text-xs text-zinc-400 mt-0.5 truncate">
                       {isIncome
                         ? isPayer
@@ -354,7 +339,7 @@ export function HomeView({
                   </div>
 
                   <div className="text-right font-body shrink-0">
-                    <div className={`text-sm font-bold ${isIncome ? 'text-[#10B981]' : 'text-white'}`}>
+                    <div className={`text-sm font-semibold ${isIncome ? 'text-[#10B981]' : 'text-white'}`}>
                       {isIncome ? '+' : ''}
                       {formatMinorUnits(t.amount_minor, t.currency)}
                     </div>

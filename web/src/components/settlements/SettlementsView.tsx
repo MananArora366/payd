@@ -132,7 +132,7 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
           {onOpenCareemPay && (
             <button
               onClick={() => onOpenCareemPay({ ...params, reference: `Settlement from ${other.name}` })}
-              className={`flex-1 ${size} rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 font-bold flex items-center justify-center gap-1.5 transition active:scale-95`}
+              className={`flex-1 ${size} rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 font-semibold flex items-center justify-center gap-1.5 transition active:scale-95`}
             >
               <Zap className="w-3.5 h-3.5" />
               <span>Careem QR</span>
@@ -140,7 +140,7 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
           )}
           <button
             onClick={() => onOpenRecordSettlement(params)}
-            className={`flex-1 ${size} rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold transition active:scale-95`}
+            className={`flex-1 ${size} rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold transition active:scale-95`}
           >
             Mark Received
           </button>
@@ -152,7 +152,7 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
         {onOpenCareemPay && (
           <button
             onClick={() => onOpenCareemPay({ ...params, reference: `Settlement to ${other.name}` })}
-            className={`flex-1 ${size} rounded-xl bg-white hover:bg-zinc-100 text-black font-bold flex items-center justify-center gap-2 shadow-lg transition active:scale-95`}
+            className={`flex-1 ${size} rounded-xl bg-white hover:bg-zinc-100 text-black font-semibold flex items-center justify-center gap-2 shadow-lg transition active:scale-95`}
           >
             <Zap className="w-3.5 h-3.5 fill-current text-[#00ea80]" />
             <span>Pay with Careem Pay ({formatMinorUnits(c.amountMinor, CURRENCY)})</span>
@@ -160,7 +160,7 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
         )}
         <button
           onClick={() => onOpenRecordSettlement(params)}
-          className={`${onOpenCareemPay ? '' : 'flex-1 '}px-3 ${size} rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold transition active:scale-95`}
+          className={`${onOpenCareemPay ? '' : 'flex-1 '}px-3 ${size} rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold transition active:scale-95`}
         >
           Record Repayment
         </button>
@@ -200,7 +200,7 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
                 <span className="text-zinc-300 truncate">
                   {groupName(c.groupId)} &bull; {label}
                 </span>
-                <span className={`font-bold ${c.fromUserId === currentUser.id ? 'text-[#F43F5E]' : 'text-[#10B981]'}`}>
+                <span className={`font-semibold ${c.fromUserId === currentUser.id ? 'text-[#F43F5E]' : 'text-[#10B981]'}`}>
                   {formatMinorUnits(c.amountMinor, CURRENCY)}
                 </span>
               </div>
@@ -226,7 +226,7 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="font-heading text-xl sm:text-2xl text-white tracking-wide">Settle up</h2>
+            <h2 className="font-heading text-xl sm:text-2xl text-white">Settle up</h2>
           </div>
           <p className="text-xs text-zinc-400 mt-1 font-body">
             Payd works out the fewest payments that clear every balance. Pay or get paid in one tap, fee-free with Careem Pay.
@@ -237,30 +237,28 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
           onClick={() => onOpenRecordSettlement()}
           className="px-4 py-2.5 rounded-2xl bg-brand-400 hover:bg-brand-300 text-zinc-950 font-semibold text-sm flex items-center gap-2 transition active:scale-95 self-start sm:self-auto"
         >
-          <Plus className="w-4 h-4 stroke-[3]" />
-          <span>Record Settlement</span>
+          <Plus className="w-4 h-4" />
+          <span>Record settlement</span>
         </button>
       </div>
 
-      {/* ─── Debt Minimization Engine Hero Card (Matching iOS Prototype) ─── */}
-      <div className="relative overflow-hidden rounded-2xl bg-brand-hero p-6 text-white">
-        <div className="font-heading text-[11px] text-brand-100 tracking-wider mb-2">
-          Smart settle-up
-        </div>
+      {/* ─── Debt minimization: before → after transfers ─── */}
+      <div className="rounded-2xl bg-[#18181b] border border-white/8 p-6 text-white">
+        <div className="font-body text-[13px] text-zinc-400 mb-2">Smart settle-up</div>
 
         <div className="flex items-baseline justify-between mt-3 font-body">
           <div>
             {beforeTransfers === 0 ? (
               <>
-                <div className="text-3xl sm:text-4xl font-bold tracking-tight text-white">All square</div>
-                <div className="text-xs text-brand-100 mt-0.5">No open debts to settle</div>
+                <div className="font-heading text-4xl font-medium text-white">All square</div>
+                <div className="text-[13px] text-zinc-400 mt-1">No open debts to settle</div>
               </>
             ) : (
               <>
-                <div className="text-3xl sm:text-4xl font-bold tracking-tight text-white">
-                  {beforeTransfers} &rarr; {afterTransfers}
+                <div className="font-heading text-4xl font-medium text-white tabular-nums">
+                  <span className="text-zinc-500">{beforeTransfers}</span> &rarr; <span className="text-brand-400">{afterTransfers}</span>
                 </div>
-                <div className="text-xs text-brand-100 mt-0.5">
+                <div className="text-[13px] text-zinc-400 mt-1">
                   {saved > 0
                     ? `${saved} transfer${saved === 1 ? '' : 's'} eliminated (${reductionPct}% fewer)`
                     : 'Already the fewest transfers possible'}
@@ -270,10 +268,10 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
           </div>
 
           <div className="text-right">
-            <div className="text-xl sm:text-2xl font-bold text-[#10B981]">
+            <div className="font-heading text-xl sm:text-2xl font-medium text-white tabular-nums">
               {formatMinorUnits(totalVolume, CURRENCY)}
             </div>
-            <div className="text-[11px] text-white/70">Pending Volume</div>
+            <div className="text-xs text-zinc-400 mt-1">Pending volume</div>
           </div>
         </div>
       </div>
@@ -292,7 +290,7 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
             <ArrowDownLeft className="w-4 h-4" />
             <span>Owed to you</span>
           </div>
-          <div className="text-2xl font-bold text-white mt-2 font-body">
+          <div className="text-2xl font-semibold text-white mt-2 font-body">
             +{formatMinorUnits(userOwedToMe, CURRENCY)}
           </div>
           <p className="text-[11px] text-zinc-400 mt-1 font-body">
@@ -312,7 +310,7 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
             <ArrowUpRight className="w-4 h-4" />
             <span>You owe</span>
           </div>
-          <div className="text-2xl font-bold text-white mt-2 font-body">
+          <div className="text-2xl font-semibold text-white mt-2 font-body">
             -{formatMinorUnits(userIOwe, CURRENCY)}
           </div>
           <p className="text-[11px] text-zinc-400 mt-1 font-body">
@@ -352,7 +350,7 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
             peopleWhoOweMe.length === 0 ? (
               <div className="p-10 text-center bg-[#18181b] border border-white/8 rounded-2xl">
                 <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2 opacity-60" />
-                <h4 className="font-heading text-sm text-white">No pending receivables!</h4>
+                <h4 className="font-heading text-sm text-white">No pending receivables</h4>
                 <p className="text-xs text-zinc-400 mt-1 font-body">None of your friends owe you money right now.</p>
               </div>
             ) : (
@@ -364,17 +362,17 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
                   className="p-5 bg-[#18181b] border border-white/8 hover:border-brand-500/40 rounded-2xl shadow-md transition"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-full bg-sky-700 flex items-center justify-center font-bold text-sm text-white shrink-0">
+                    <div className="w-11 h-11 rounded-full bg-sky-700 flex items-center justify-center font-semibold text-sm text-white shrink-0">
                       {user.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-bold text-white truncate">
+                      <div className="text-sm font-semibold text-white truncate">
                         {user.name} <span className="text-zinc-400 font-normal italic">owes</span> You
                       </div>
                       <div className="text-xs text-zinc-400 truncate mt-0.5">{user.email}</div>
                     </div>
                     <div className="text-right shrink-0">
-                      <div className="text-base font-bold text-[#10B981]">
+                      <div className="text-base font-semibold text-[#10B981]">
                         +{formatMinorUnits(amountMinor, CURRENCY)}
                       </div>
                     </div>
@@ -383,7 +381,7 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
                   <div className="mt-4 pt-3 border-t border-white/6">
                     <button
                       onClick={() => sendReminder(person)}
-                      className="w-full py-2 rounded-xl bg-[#27272a] hover:bg-[#3f3f46] text-zinc-200 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95"
+                      className="w-full py-2 rounded-xl bg-[#27272a] hover:bg-[#3f3f46] text-zinc-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition active:scale-95"
                     >
                       <Share2 className="w-3.5 h-3.5" />
                       <span>Copy Reminder</span>
@@ -397,7 +395,7 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
           ) : peopleIOwe.length === 0 ? (
             <div className="p-10 text-center bg-[#18181b] border border-white/8 rounded-2xl">
               <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2 opacity-60" />
-              <h4 className="font-heading text-sm text-white">You are completely debt-free!</h4>
+              <h4 className="font-heading text-sm text-white">You owe nothing right now</h4>
               <p className="text-xs text-zinc-400 mt-1 font-body">You don&apos;t owe any group members.</p>
             </div>
           ) : (
@@ -409,17 +407,17 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
                 className="p-5 bg-[#18181b] border border-white/8 hover:border-brand-500/40 rounded-2xl shadow-md transition"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-full bg-rose-700 flex items-center justify-center font-bold text-sm text-white shrink-0">
+                  <div className="w-11 h-11 rounded-full bg-rose-700 flex items-center justify-center font-semibold text-sm text-white shrink-0">
                     {user.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-bold text-white truncate">
+                    <div className="text-sm font-semibold text-white truncate">
                       You <span className="text-zinc-400 font-normal italic">owe</span> {user.name}
                     </div>
                     <div className="text-xs text-zinc-400 truncate mt-0.5">{user.email}</div>
                   </div>
                   <div className="text-right shrink-0">
-                    <div className="text-base font-bold text-[#F43F5E]">
+                    <div className="text-base font-semibold text-[#F43F5E]">
                       -{formatMinorUnits(amountMinor, CURRENCY)}
                     </div>
                   </div>
@@ -455,11 +453,11 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
                   className="flex items-center gap-3 p-3.5 bg-[#18181b] border border-white/8 rounded-2xl text-xs shadow-sm"
                 >
                   <div className="w-8 h-8 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
-                    <Check className="w-4 h-4 stroke-[3]" />
+                    <Check className="w-4 h-4" />
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <div className="font-bold text-white truncate">
+                    <div className="font-semibold text-white truncate">
                       {sender?.name} {sender?.id === currentUser.id ? '(You)' : ''} paid{' '}
                       {recipient?.name} {recipient?.id === currentUser.id ? '(You)' : ''}
                     </div>
@@ -470,10 +468,10 @@ export function SettlementsView({ onOpenRecordSettlement, onOpenCareemPay }: Set
                   </div>
 
                   <div className="text-right shrink-0">
-                    <div className="font-bold text-zinc-300">
+                    <div className="font-semibold text-zinc-300">
                       {formatMinorUnits(s.amount_minor, s.currency)}
                     </div>
-                    <div className="text-[10px] text-zinc-500">
+                    <div className="text-[11px] text-zinc-500">
                       {new Date(s.settled_at).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',

@@ -36,7 +36,7 @@ export function ProfileView() {
     <div className="space-y-6 max-w-2xl mx-auto pb-28 font-body">
       {/* Title */}
       <div>
-        <h2 className="font-heading text-xl sm:text-2xl text-white tracking-wide">User profile & settings</h2>
+        <h2 className="font-heading text-xl sm:text-2xl text-white">User profile & settings</h2>
         <p className="text-xs text-zinc-400 mt-1 font-body">
           Manage your budget, currency and privacy
         </p>
@@ -60,7 +60,7 @@ export function ProfileView() {
           <div>
             <h3 className="font-heading text-base text-white">{currentUser.name}</h3>
             <p className="text-xs text-zinc-400 font-body">{currentUser.email}</p>
-            <span className="inline-block mt-1 text-[10px] font-heading px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30">
+            <span className="inline-block mt-1 text-[11px] font-heading px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30">
               Verified Ledger Account
             </span>
           </div>
@@ -108,7 +108,7 @@ export function ProfileView() {
               >
                 <option value={LEDGER_CURRENCY}>AED - UAE Dirham (د.إ)</option>
               </select>
-              <p id="profile-currency-note" className="mt-1 text-[10px] text-zinc-500">
+              <p id="profile-currency-note" className="mt-1 text-[11px] text-zinc-500">
                 AED only for now. Multi-currency is coming soon.
               </p>
             </div>
@@ -118,7 +118,7 @@ export function ProfileView() {
                 Monthly budget limit
               </label>
               <div className="relative mt-1">
-                <span aria-hidden="true" className="absolute left-3 top-2.5 text-xs font-bold text-brand-400">
+                <span aria-hidden="true" className="absolute left-3 top-2.5 text-xs font-semibold text-brand-400">
                   {LEDGER_CURRENCY}
                 </span>
                 <input
@@ -204,7 +204,7 @@ export function ProfileView() {
             🔒 <strong className="text-white">Audio is processed in real time and never stored</strong>: Your microphone audio is processed on-device or streamed for ephemeral transcript extraction. Payd never saves voice recordings.
           </p>
           <p>
-            ⚡ <strong className="text-white">AI only reads, never counts</strong>: AI helps understand what you say and what is on your receipts. It never calculates balances or changes your records on its own; every amount is worked out by Payd and shown to you before it is saved.
+            <strong className="text-white">AI only reads, never counts</strong>: AI helps understand what you say and what is on your receipts. It never calculates balances or changes your records on its own; every amount is worked out by Payd and shown to you before it is saved.
           </p>
           <p>
             💎 <strong className="text-white">Exact to the fils</strong>: Splits are calculated to the exact fils or cent, so shares always add up to the full bill with nothing lost to rounding.

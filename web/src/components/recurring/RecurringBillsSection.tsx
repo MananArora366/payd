@@ -88,8 +88,8 @@ export function RecurringBillsSection({ groupId = null }: RecurringBillsSectionP
           <div className="min-w-0">
             <h3 className="font-heading text-xs text-white flex flex-wrap items-center gap-1.5">
               <span>Subscriptions & recurring bills</span>
-              <span className="shrink-0 text-[9px] px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 font-heading border border-brand-500/30">
-                {displayedBills.length} ACTIVE
+              <span className="shrink-0 text-[11px] px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 font-heading border border-brand-500/30">
+                {displayedBills.length} active
               </span>
             </h3>
             <p className="text-[11px] text-zinc-400 font-body">
@@ -101,9 +101,9 @@ export function RecurringBillsSection({ groupId = null }: RecurringBillsSectionP
         <button
           type="button"
           onClick={() => setModalOpen(true)}
-          className="shrink-0 px-3.5 py-1.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-zinc-950 font-bold text-xs flex items-center gap-1 transition active:scale-95"
+          className="shrink-0 px-3.5 py-1.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-zinc-950 font-semibold text-xs flex items-center gap-1 transition active:scale-95"
         >
-          <Plus className="w-3.5 h-3.5 stroke-[3]" />
+          <Plus className="w-3.5 h-3.5" />
           <span>Subscription</span>
         </button>
       </div>
@@ -147,29 +147,29 @@ export function RecurringBillsSection({ groupId = null }: RecurringBillsSectionP
                 <div>
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-brand-400 flex items-center gap-1">
+                      <span className="text-[11px] font-semibold text-brand-400 flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
                         {formatDueDay(bill.due_day, bill.frequency)} • {bill.frequency}
                       </span>
-                      <h4 className="font-bold text-sm text-white mt-0.5 truncate">
+                      <h4 className="font-semibold text-sm text-white mt-0.5 truncate">
                         {bill.title}
                       </h4>
                     </div>
 
                     {confirmDeleteId === bill.id ? (
-                      <div className="flex items-center gap-1 text-[10px]">
+                      <div className="flex items-center gap-1 text-[11px]">
                         <span className="text-zinc-400">Delete?</span>
                         <button
                           type="button"
                           onClick={() => handleConfirmDelete(bill)}
-                          className="px-2 py-0.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold"
+                          className="px-2 py-0.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold"
                         >
                           Yes
                         </button>
                         <button
                           type="button"
                           onClick={() => setConfirmDeleteId(null)}
-                          className="px-2 py-0.5 rounded-lg bg-[#27272a] hover:bg-[#3f3f46] text-zinc-300 font-bold"
+                          className="px-2 py-0.5 rounded-lg bg-[#27272a] hover:bg-[#3f3f46] text-zinc-300 font-semibold"
                         >
                           No
                         </button>
@@ -199,7 +199,7 @@ export function RecurringBillsSection({ groupId = null }: RecurringBillsSectionP
                   )}
 
                   {postedThisPeriod && !isPostedRecently && (
-                    <p className="text-[10px] text-emerald-400 mt-1">Already posted for {periodLabel}</p>
+                    <p className="text-[11px] text-emerald-400 mt-1">Already posted for {periodLabel}</p>
                   )}
 
                   {confirmRepostId === bill.id && (
@@ -209,14 +209,14 @@ export function RecurringBillsSection({ groupId = null }: RecurringBillsSectionP
                         <button
                           type="button"
                           onClick={() => postBill(bill)}
-                          className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold"
+                          className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-semibold"
                         >
                           Post again
                         </button>
                         <button
                           type="button"
                           onClick={() => setConfirmRepostId(null)}
-                          className="px-2.5 py-1 rounded-lg bg-[#27272a] hover:bg-[#3f3f46] text-zinc-300 font-bold"
+                          className="px-2.5 py-1 rounded-lg bg-[#27272a] hover:bg-[#3f3f46] text-zinc-300 font-semibold"
                         >
                           Cancel
                         </button>
@@ -251,7 +251,7 @@ export function RecurringBillsSection({ groupId = null }: RecurringBillsSectionP
                             key={s.user_id}
                             title={tip}
                             aria-label={name}
-                            className="inline-flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-[#18181b] bg-brand-200 text-[8px] font-bold text-brand-900"
+                            className="inline-flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-[#18181b] bg-brand-200 text-[11px] font-semibold text-brand-900"
                           >
                             {name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
                           </span>
@@ -263,7 +263,7 @@ export function RecurringBillsSection({ groupId = null }: RecurringBillsSectionP
                       type="button"
                       onClick={() => handlePostNow(bill)}
                       disabled={isPostedRecently}
-                      className={`shrink-0 px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition active:scale-95 ${
+                      className={`shrink-0 px-3 py-1.5 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition active:scale-95 ${
                         isPostedRecently
                           ? 'bg-emerald-500 text-white'
                           : 'bg-[#27272a] hover:bg-brand-500 hover:text-zinc-950 text-zinc-100'
@@ -272,7 +272,7 @@ export function RecurringBillsSection({ groupId = null }: RecurringBillsSectionP
                       {isPostedRecently ? (
                         <>
                           <Check className="w-3.5 h-3.5" />
-                          <span>Posted!</span>
+                          <span>Posted</span>
                         </>
                       ) : (
                         <>

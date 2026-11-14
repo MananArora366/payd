@@ -200,7 +200,7 @@ export function CreateRecurringBillModal({
                 placeholder="0.00"
                 value={amountStr}
                 onChange={(e) => setAmountStr(e.target.value)}
-                className="w-full mt-1 px-3.5 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl text-white focus:outline-none focus:border-brand-500 font-bold"
+                className="w-full mt-1 px-3.5 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl text-white focus:outline-none focus:border-brand-500 font-semibold"
                 required
               />
             </div>
@@ -343,7 +343,7 @@ export function CreateRecurringBillModal({
             {totalMinor > 0 && participantIds.length > 0 && (
               <div className="p-3 bg-[#09090b] border border-white/8 rounded-xl text-xs space-y-1">
                 <div className="text-zinc-400 font-medium">Equal share per member:</div>
-                <div className="font-bold text-white text-sm">
+                <div className="font-semibold text-white text-sm">
                   {totalMinor % participantIds.length !== 0 ? '≈ ' : ''}
                   {formatMinorUnits(Math.round(totalMinor / participantIds.length), 'AED')} / {frequency === 'monthly' ? 'month' : frequency === 'weekly' ? 'week' : 'year'}
                 </div>

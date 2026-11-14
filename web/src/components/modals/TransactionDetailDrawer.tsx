@@ -127,7 +127,7 @@ export function TransactionDetailDrawer({ transaction, onClose }: TransactionDet
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2">
             <span
-              className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
+              className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${
                 transaction.type === 'income'
                   ? 'bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-400'
                   : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400'
@@ -136,7 +136,7 @@ export function TransactionDetailDrawer({ transaction, onClose }: TransactionDet
               {transaction.type}
             </span>
             {isDeleted && (
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400">
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400">
                 Soft Deleted (Reversed)
               </span>
             )}
@@ -154,7 +154,7 @@ export function TransactionDetailDrawer({ transaction, onClose }: TransactionDet
         {/* Title & Amount Banner */}
         <div className="flex items-center justify-between">
           <div>
-            <h3 id="txn-drawer-title" className="text-xl font-bold text-slate-900 dark:text-white">{transaction.title}</h3>
+            <h3 id="txn-drawer-title" className="text-xl font-semibold text-slate-900 dark:text-white">{transaction.title}</h3>
             <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
               <Calendar className="w-3.5 h-3.5" />
               {new Date(transaction.occurred_at).toLocaleDateString('en-US', {
@@ -188,7 +188,7 @@ export function TransactionDetailDrawer({ transaction, onClose }: TransactionDet
               {getCategoryIcon(category?.icon, 'w-4 h-4')}
             </div>
             <div>
-              <span className="text-[10px] uppercase text-slate-400 block font-semibold">Category</span>
+              <span className="text-[11px] text-slate-400 block font-semibold">Category</span>
               <span className="font-medium text-slate-800 dark:text-slate-200">{category?.name || 'Uncategorized'}</span>
             </div>
           </div>
@@ -196,7 +196,7 @@ export function TransactionDetailDrawer({ transaction, onClose }: TransactionDet
           <div className="p-3 bg-slate-50 dark:bg-slate-850 rounded-xl flex items-center gap-2.5">
             <img src={payer?.avatar_url || ''} alt="" className="w-7 h-7 rounded-full object-cover" />
             <div>
-              <span className="text-[10px] uppercase text-slate-400 block font-semibold">Paid By</span>
+              <span className="text-[11px] text-slate-400 block font-semibold">Paid By</span>
               <span className="font-medium text-slate-800 dark:text-slate-200">
                 {payer?.name} {payer?.id === currentUser.id ? '(You)' : ''}
               </span>
@@ -225,7 +225,7 @@ export function TransactionDetailDrawer({ transaction, onClose }: TransactionDet
         {/* Split Breakdown */}
         {txnSplits.length > 0 && (
           <div className="space-y-2">
-            <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+            <div className="text-xs font-semibold text-slate-400 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5" /> Split Allocation
               </span>
@@ -273,7 +273,7 @@ export function TransactionDetailDrawer({ transaction, onClose }: TransactionDet
               className="py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copied ? 'Copied!' : 'Copy Breakdown'}</span>
+              <span>{copied ? 'Copied' : 'Copy breakdown'}</span>
             </button>
           </div>
         )}

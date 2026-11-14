@@ -478,7 +478,7 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
             <div>
               <div className="flex items-center gap-2">
                 <h2 id={titleId} className="font-heading text-lg text-white">Payd Lens</h2>
-                <span className="text-[10px] uppercase font-heading px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30">
+                <span className="text-[11px] font-heading px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30">
                   UAE OCR &bull; 5% VAT
                 </span>
               </div>
@@ -584,7 +584,7 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
                 >
                   <RotateCcw className="w-4 h-4" />
                 </button>
-                <span className="text-[10px] text-slate-300">Rotate</span>
+                <span className="text-[11px] text-slate-300">Rotate</span>
                 <button
                   type="button"
                   onClick={() => handleRotateImage(90)}
@@ -614,7 +614,7 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
               <button
                 type="button"
                 onClick={executeReceiptScan}
-                className="flex-[2] py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition flex items-center justify-center gap-2"
+                className="flex-[2] py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition flex items-center justify-center gap-2"
               >
                 <ScanLine className="w-4 h-4" /> Scan receipt
               </button>
@@ -626,13 +626,12 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
         {isScanning && (
           <div className="mt-8 py-12 text-center space-y-4">
             <div className="relative w-20 h-20 mx-auto">
-              <div className="absolute inset-0 rounded-2xl bg-emerald-500/20 animate-ping" />
               <div className="relative w-20 h-20 rounded-2xl bg-emerald-500 flex items-center justify-center text-white">
                 <Receipt className="w-10 h-10 animate-pulse" />
               </div>
             </div>
             <div>
-              <h3 className="font-bold text-base">Payd Lens Scanning Receipt...</h3>
+              <h3 className="font-semibold text-base">Payd Lens Scanning Receipt...</h3>
               <p className="text-xs text-slate-400 mt-1">
                 Reading line items, merchant TRN, and verifying UAE 5% VAT calculations.
               </p>
@@ -649,7 +648,7 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
                 <div className="flex-1 pr-4">
                   {isEditingReceipt ? (
                     <div className="space-y-1.5">
-                      <label className="text-[10px] uppercase font-bold text-slate-400">Merchant Name</label>
+                      <label className="text-[11px] font-semibold text-slate-400">Merchant Name</label>
                       <input
                         type="text"
                         value={scannedReceipt.merchant_name}
@@ -657,7 +656,7 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
                         onChange={(e) =>
                           setScannedReceipt({ ...scannedReceipt, merchant_name: e.target.value })
                         }
-                        className="w-full px-2.5 py-1 text-sm font-bold rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
+                        className="w-full px-2.5 py-1 text-sm font-semibold rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
                       />
                     </div>
                   ) : (
@@ -667,22 +666,22 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
                       </h3>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
                         {scannedReceipt.trn && (
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                          <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
                             TRN: {scannedReceipt.trn}
                           </span>
                         )}
                         {scannedReceipt.date && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                          <span className="text-[11px] px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
                             {scannedReceipt.date}
                           </span>
                         )}
                         {scannedReceipt.engine !== 'manual' &&
                           (scannedReceipt.warnings && scannedReceipt.warnings.length > 0 ? (
-                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold">
+                            <span className="text-[11px] px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold">
                               Needs review &bull; {Math.round((scannedReceipt.confidence ?? 0) * 100)}% confidence
                             </span>
                           ) : (
-                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold">
+                            <span className="text-[11px] px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold">
                               Totals reconcile &bull; {Math.round((scannedReceipt.confidence ?? 0) * 100)}% confidence
                             </span>
                           ))}
@@ -694,7 +693,7 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
                 <div className="text-right">
                   {isEditingReceipt ? (
                     <div className="space-y-1.5">
-                      <label className="text-[10px] uppercase font-bold text-slate-400">Total AED</label>
+                      <label className="text-[11px] font-semibold text-slate-400">Total AED</label>
                       <input
                         type="number"
                         step="0.01"
@@ -777,7 +776,7 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
 
             {/* Split Mode Selector & Edit Toggle */}
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              <span className="text-xs font-semibold text-slate-400">
                 Split Strategy
               </span>
               <div className="flex items-center gap-2">
@@ -852,7 +851,7 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
             {splitMode === 'itemized' && (
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  <span className="text-xs font-semibold text-slate-400">
                     Line Items ({scannedReceipt.line_items.length})
                   </span>
                   <div className="flex items-center gap-1.5 text-[11px]">
@@ -923,7 +922,7 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
                                   step="0.01"
                                   value={(item.price_minor / 100).toFixed(2)}
                                   onChange={(e) => handleUpdateItemPrice(idx, e.target.value)}
-                                  className="w-16 px-1.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-right font-bold text-xs"
+                                  className="w-16 px-1.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-right font-semibold text-xs"
                                 />
                               </div>
                               <button
@@ -943,7 +942,7 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
                                   {item.name}
                                 </span>
                                 {fraction && (
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
+                                  <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold">
                                     {fraction}
                                   </span>
                                 )}
@@ -958,7 +957,7 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
                         {/* Assignee badges */}
                         {!isEditingReceipt && (
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[10px] text-slate-400 font-medium">Claimed by:</span>
+                            <span className="text-[11px] text-slate-400 font-medium">Claimed by:</span>
                             <div className="flex flex-wrap gap-1">
                               {selectedUserIds.map((uid) => {
                                 const u = users.find((usr) => usr.id === uid);
@@ -971,11 +970,11 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
                                     onClick={() => toggleItemUser(idx, uid)}
                                     className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition flex items-center gap-1 ${
                                       isAssigned
-                                        ? 'bg-emerald-600 text-white font-bold shadow-xs'
+                                        ? 'bg-emerald-600 text-white font-semibold shadow-xs'
                                         : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
                                     }`}
                                   >
-                                    {isAssigned && <Check className="w-3 h-3 stroke-[3]" />}
+                                    {isAssigned && <Check className="w-3 h-3" />}
                                     <span>{u.name}</span>
                                   </button>
                                 );
@@ -998,7 +997,7 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
             <div className="p-4 rounded-2xl bg-brand-950/30 border border-brand-500/20 space-y-2 font-body">
               <div className="flex items-center justify-between text-xs font-heading text-brand-300">
                 <span className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" /> EACH PERSON PAYS
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" /> Each person pays
                 </span>
                 <span>Sum: {formatMinorUnits(scannedReceipt.total_minor, 'AED')}</span>
               </div>
@@ -1012,7 +1011,7 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
                       className="p-2.5 rounded-xl bg-[#202025] border border-white/8"
                     >
                       <div className="text-[11px] text-zinc-400">{u?.name || 'User'}</div>
-                      <div className="text-sm font-bold text-white font-body">
+                      <div className="text-sm font-semibold text-white font-body">
                         {formatMinorUnits(share, 'AED')}
                       </div>
                     </div>
@@ -1041,7 +1040,7 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
                 ) : (
                   <Copy className="w-3.5 h-3.5" />
                 )}
-                <span>{copiedBreakdown ? 'Copied to Clipboard!' : 'Copy Summary'}</span>
+                <span>{copiedBreakdown ? 'Copied' : 'Copy Summary'}</span>
               </button>
             </div>
 
@@ -1069,7 +1068,7 @@ export function ReceiptScannerModal({ isOpen, onClose }: ReceiptScannerModalProp
                 disabled={!canSave}
                 className="flex-[2] py-3 px-4 rounded-2xl bg-brand-400 hover:bg-brand-300 text-zinc-950 font-semibold text-sm transition flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
               >
-                <Check className="w-4 h-4 stroke-[3]" />{' '}
+                <Check className="w-4 h-4" />{' '}
                 {isSaved ? 'Saved' : isSaving ? 'Saving…' : 'Save Receipt to Ledger'}
               </button>
             </div>

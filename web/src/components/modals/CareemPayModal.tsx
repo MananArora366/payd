@@ -264,7 +264,7 @@ export function CareemPayModal({
               {recipientUser?.name} via Careem Pay. Ledger updated.
             </p>
             {receipt && (
-              <p className="text-[10px] font-mono text-zinc-500">
+              <p className="text-[11px] font-mono text-zinc-500">
                 Ref {receipt.transaction_ref}
                 {receipt.simulated ? ' · sandbox (no real money moved)' : ''}
               </p>
@@ -275,14 +275,14 @@ export function CareemPayModal({
             {/* Header Badge */}
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-2xl bg-[#00ea80]/20 text-[#00ea80] flex items-center justify-center">
-                <Zap className="w-5 h-5 stroke-[2.5]" />
+                <Zap className="w-5 h-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="font-heading text-base text-white tracking-wide">
+                  <h3 className="font-heading text-base text-white">
                     Careem pay
                   </h3>
-                  <span className="text-[9px] font-heading px-2 py-0.5 rounded-full bg-[#00ea80]/20 text-[#00ea80] border border-[#00ea80]/30">
+                  <span className="text-[11px] font-heading px-2 py-0.5 rounded-full bg-[#00ea80]/20 text-[#00ea80] border border-[#00ea80]/30">
                     Instant UAE
                   </span>
                 </div>
@@ -294,10 +294,10 @@ export function CareemPayModal({
 
             {/* Bill / Transfer Amount Card */}
             <div className="p-4 rounded-2xl bg-emerald-500/[0.06] border border-emerald-500/20 space-y-2 text-center">
-              <div className="text-[10px] font-heading text-zinc-400">
+              <div className="text-[11px] font-heading text-zinc-400">
                 Amount to settle
               </div>
-              <div className="text-3xl font-bold text-white tracking-tight">
+              <div className="text-3xl font-semibold text-white tracking-tight">
                 {formattedAmount}
               </div>
               <div className="text-xs text-zinc-400 flex items-center justify-center gap-2">
@@ -313,10 +313,10 @@ export function CareemPayModal({
                 C
               </div>
               <div className="min-w-0 font-body">
-                <div className="text-xs font-bold text-white truncate">
+                <div className="text-xs font-semibold text-white truncate">
                   Paying {recipientUser?.name || 'Friend'} on Careem Pay
                 </div>
-                <div className="text-[10px] text-zinc-400 font-mono mt-0.5 truncate">{careemTag}</div>
+                <div className="text-[11px] text-zinc-400 font-mono mt-0.5 truncate">{careemTag}</div>
               </div>
             </div>
 
@@ -325,7 +325,7 @@ export function CareemPayModal({
               <button
                 type="button"
                 onClick={handleShareWhatsApp}
-                className="py-2.5 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 font-bold flex items-center justify-center gap-1.5 transition active:scale-95"
+                className="py-2.5 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 font-semibold flex items-center justify-center gap-1.5 transition active:scale-95"
               >
                 <Share2 className="w-3.5 h-3.5" />
                 <span>Share WhatsApp</span>
@@ -334,10 +334,10 @@ export function CareemPayModal({
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="py-2.5 px-3 rounded-xl bg-[#27272a] hover:bg-[#3f3f46] text-zinc-200 font-bold flex items-center justify-center gap-1.5 transition active:scale-95"
+                className="py-2.5 px-3 rounded-xl bg-[#27272a] hover:bg-[#3f3f46] text-zinc-200 font-semibold flex items-center justify-center gap-1.5 transition active:scale-95"
               >
                 {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copiedLink ? 'Link Copied!' : 'Copy Pay Link'}</span>
+                <span>{copiedLink ? 'Link copied' : 'Copy Pay Link'}</span>
               </button>
             </div>
 
@@ -388,7 +388,7 @@ export function CareemPayModal({
                 )}
               </button>
 
-              <p className="text-[10px] text-center text-zinc-400">
+              <p className="text-[11px] text-center text-zinc-400">
                 {groupName ? `Recorded in ${groupName}. ` : ''}Your balances update as soon as Careem Pay confirms the transfer.
               </p>
             </div>

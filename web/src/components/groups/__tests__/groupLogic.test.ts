@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   extractInviteToken,
   resolveInviteGroup,
-  getGroupEmoji,
+  getGroupKind,
   sumBalances,
   parseAmountInput,
   computeRouletteWeights,
@@ -56,11 +56,11 @@ describe('groups', () => {
     expect(filterGroupsForUser(groups, members, 'nobody')).toEqual([]);
   });
 
-  it('picks sensible emojis', () => {
-    expect(getGroupEmoji('Dubai Flatmates')).toBe('🏙️');
-    expect(getGroupEmoji('Hatta Road Trip')).toBe('🏕️');
-    expect(getGroupEmoji('Supper Club')).toBe('🍷');
-    expect(getGroupEmoji('Random')).toBe('👥');
+  it('picks a group kind from the name', () => {
+    expect(getGroupKind('Dubai Flatmates')).toBe('home');
+    expect(getGroupKind('Hatta Road Trip')).toBe('camp');
+    expect(getGroupKind('Supper Club')).toBe('food');
+    expect(getGroupKind('Random')).toBe('people');
   });
 
   it('sums balances', () => {

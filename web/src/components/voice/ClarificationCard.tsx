@@ -35,7 +35,7 @@ export function ClarificationCard({ intent, onAnswer, onCancel }: ClarificationC
           <span className="p-1.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400">
             <HelpCircle className="w-4 h-4" />
           </span>
-          <span className="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+          <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">
             Need Quick Clarification
           </span>
         </div>

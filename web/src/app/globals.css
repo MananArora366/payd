@@ -89,6 +89,7 @@ body {
   background-color: var(--background);
   font-family: 'PT Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   font-feature-settings: "rlig" 1, "calt" 1;
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -100,8 +101,7 @@ body {
 
 .font-heading {
   font-family: 'DM Sans', sans-serif !important;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-weight: 500;
 }
 
 .font-body {
@@ -125,8 +125,8 @@ body {
 }
 
 
-/* Center mic FAB on touch devices: keep it a fixed circle, stop hover styles
-   sticking after a tap, and keep the blurred halo from flickering on iOS. */
+/* Center mic FAB on touch devices: keep it a fixed circle and stop hover styles
+   sticking after a tap. */
 @media (hover: none) and (pointer: coarse), (max-width: 639px) {
   .payd-mic-fab {
     width: 52px;
@@ -139,14 +139,9 @@ body {
     -webkit-user-select: none;
     user-select: none;
   }
-  .payd-mic-halo {
-    transform: translateZ(0);
-    will-change: opacity;
-  }
 }
 @media (hover: none) {
   .payd-mic-fab:hover {
     background-color: theme('colors.brand.400');
-    box-shadow: 0 0 20px 4px rgba(74, 222, 128, 0.55), 0 0 0 4px #09090b;
   }
 }

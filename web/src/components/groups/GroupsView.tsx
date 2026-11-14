@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { RecurringBillsSection } from '@/components/recurring/RecurringBillsSection';
 import { extractInviteToken, resolveInviteGroup, sumBalances } from './groupLogic';
-import { getGroupEmoji } from '@/lib/icons';
+import { getGroupIcon } from '@/lib/icons';
 import { useVisibleGroups } from './useVisibleGroups';
 
 interface GroupsViewProps {
@@ -181,7 +181,7 @@ export function GroupsView({
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="font-heading text-xl sm:text-2xl text-white tracking-wide">Active ledgers</h2>
+          <h2 className="font-heading text-xl sm:text-2xl text-white">Active ledgers</h2>
           <p className="text-xs text-zinc-400 mt-1 font-body">
             Fewest payments to settle up, so everyone's square
           </p>
@@ -192,7 +192,7 @@ export function GroupsView({
             onClick={onOpenCreateGroup}
             className="px-4 py-2.5 rounded-2xl bg-brand-400 hover:bg-brand-300 text-zinc-950 font-semibold text-sm flex items-center gap-2 transition active:scale-95"
           >
-            <Plus className="w-4 h-4 stroke-[3]" />
+            <Plus className="w-4 h-4" />
             <span>+ New Group</span>
           </button>
         </div>
@@ -273,13 +273,13 @@ export function GroupsView({
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">{getGroupEmoji(group.name)}</span>
+                  <span className="w-9 h-9 shrink-0 rounded-xl bg-[#27272a] text-zinc-300 flex items-center justify-center">{getGroupIcon(group.name, 'w-[18px] h-[18px]')}</span>
                   <div>
                     <h3 className="font-heading text-sm text-white">{group.name}</h3>
                     <p className="text-xs text-zinc-400 line-clamp-1 mt-0.5 font-body">{group.description}</p>
                   </div>
                 </div>
-                <span className="text-[10px] font-heading px-2 py-0.5 rounded-full bg-[#27272a] text-zinc-300">
+                <span className="text-[11px] font-heading px-2 py-0.5 rounded-full bg-[#27272a] text-zinc-300">
                   AED
                 </span>
               </div>
@@ -290,7 +290,7 @@ export function GroupsView({
                   {members.map((m) => (
                     <div
                       key={m.id}
-                      className="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center text-[10px] font-bold text-white ring-2 ring-[#18181b]"
+                      className="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center text-[11px] font-semibold text-white ring-2 ring-[#18181b]"
                       title={m.name}
                     >
                       {m.name.slice(0, 1)}
@@ -299,9 +299,9 @@ export function GroupsView({
                 </div>
 
                 <div className="text-right">
-                  <div className="text-[10px] uppercase font-heading text-zinc-400">Balance</div>
+                  <div className="text-[11px] font-heading text-zinc-400">Balance</div>
                   <div
-                    className={`text-xs font-bold ${
+                    className={`text-xs font-semibold ${
                       myBalance > 0
                         ? 'text-[#10B981]'
                         : myBalance < 0
@@ -326,10 +326,10 @@ export function GroupsView({
           <div className="p-5 bg-[#18181b] border border-white/8 rounded-2xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 font-body">
             <div>
               <div className="flex items-center gap-2.5">
-                <span className="text-2xl">{getGroupEmoji(selectedGroup.name)}</span>
+                <span className="w-9 h-9 shrink-0 rounded-xl bg-[#27272a] text-zinc-300 flex items-center justify-center">{getGroupIcon(selectedGroup.name, 'w-[18px] h-[18px]')}</span>
                 <h3 className="font-heading text-lg text-white">{selectedGroup.name}</h3>
-                <span className="text-[10px] font-heading px-2.5 py-0.5 rounded-full bg-brand-500/20 text-brand-300">
-                  {groupMembers.length} MEMBERS
+                <span className="text-[11px] font-heading px-2.5 py-0.5 rounded-full bg-brand-500/20 text-brand-300">
+                  {groupMembers.length} {groupMembers.length === 1 ? 'member' : 'members'}
                 </span>
               </div>
               <p className="text-xs text-zinc-400 mt-1 font-body">{selectedGroup.description}</p>
@@ -341,7 +341,7 @@ export function GroupsView({
                 className="px-3.5 py-2 rounded-xl border border-white/10 hover:bg-[#27272a] text-xs font-semibold text-zinc-300 flex items-center gap-1.5 transition active:scale-95"
               >
                 {copiedToken ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copiedToken ? 'Invite Link Copied!' : 'Copy Invite'}</span>
+                <span>{copiedToken ? 'Invite link copied' : 'Copy Invite'}</span>
               </button>
 
               <button
@@ -358,7 +358,7 @@ export function GroupsView({
                 onClick={() => onOpenAddExpenseForGroup(selectedGroup.id)}
                 className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold flex items-center gap-1.5 transition active:scale-95"
               >
-                <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                <Plus className="w-3.5 h-3.5" />
                 <span>Add Expense</span>
               </button>
             </div>
@@ -397,21 +397,21 @@ export function GroupsView({
                     className="p-3 bg-[#202025] border border-white/6 rounded-2xl flex items-center justify-between"
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-xs font-bold text-white">
+                      <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-xs font-semibold text-white">
                         {member.name.slice(0, 1)}
                       </div>
                       <div>
-                        <div className="text-xs font-bold text-white">
+                        <div className="text-xs font-semibold text-white">
                           {member.name} {isMe ? '(You)' : ''}
                         </div>
-                        <div className="text-[10px] text-zinc-400">
+                        <div className="text-[11px] text-zinc-400">
                           {bal > 0 ? 'Gets back' : bal < 0 ? 'Owes' : 'Settled'}
                         </div>
                       </div>
                     </div>
 
                     <div
-                      className={`text-xs font-bold ${
+                      className={`text-xs font-semibold ${
                         bal > 0
                           ? 'text-[#10B981]'
                           : bal < 0
@@ -460,17 +460,17 @@ export function GroupsView({
                       className="p-3.5 bg-[#202025] rounded-2xl border border-white/8 flex items-center justify-between text-xs"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-white">
+                        <span className="font-semibold text-white">
                           {fromUser?.name} {fromUser?.id === currentUser.id ? '(You)' : ''}
                         </span>
                         <span className="text-zinc-400 font-serif italic">&rarr; pays &rarr;</span>
-                        <span className="font-bold text-white">
+                        <span className="font-semibold text-white">
                           {toUser?.name} {toUser?.id === currentUser.id ? '(You)' : ''}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-[#10B981] mr-1 text-sm">
+                        <span className="font-semibold text-[#10B981] mr-1 text-sm">
                           {formatMinorUnits(debt.amountMinor, 'AED')}
                         </span>
 
@@ -485,7 +485,7 @@ export function GroupsView({
                                 groupId: selectedGroup.id,
                               })
                             }
-                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] flex items-center gap-1 shadow-sm transition active:scale-95"
+                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-[11px] flex items-center gap-1 shadow-sm transition active:scale-95"
                             title="Instant Careem Pay Transfer"
                           >
                             <Zap className="w-3 h-3" />
@@ -530,7 +530,7 @@ export function GroupsView({
                       className="p-3.5 bg-[#18181b] hover:bg-[#202025] border border-white/8 hover:border-brand-500/40 rounded-2xl flex items-center justify-between cursor-pointer transition shadow-sm"
                     >
                       <div>
-                        <div className="text-sm font-bold text-white leading-tight">
+                        <div className="text-sm font-semibold text-white leading-tight">
                           {t.title}
                         </div>
                         <div className="text-[11px] text-zinc-400 mt-0.5">
@@ -539,10 +539,10 @@ export function GroupsView({
                       </div>
 
                       <div className="text-right">
-                        <div className="text-sm font-bold text-white">
+                        <div className="text-sm font-semibold text-white">
                           {formatMinorUnits(t.amount_minor, t.currency)}
                         </div>
-                        <div className="text-[10px] text-zinc-400">
+                        <div className="text-[11px] text-zinc-400">
                           {new Date(t.occurred_at).toLocaleDateString('en-US', {
                             month: 'short',
                             day: 'numeric',

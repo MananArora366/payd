@@ -72,13 +72,13 @@ export function SettleUpCard({ onOpenSettleUp }: SettleUpCardProps) {
                   onClick={onOpenSettleUp}
                   className="w-full flex items-center gap-3 py-2.5 text-left hover:bg-white/[0.03] rounded-lg transition"
                 >
-                  <span className="w-9 h-9 rounded-full bg-zinc-700 flex items-center justify-center text-xs font-bold text-white shrink-0">
+                  <span className="w-9 h-9 rounded-full bg-zinc-700 flex items-center justify-center text-xs font-semibold text-white shrink-0">
                     {initials(user.name)}
                   </span>
                   <span className="flex-1 min-w-0 text-sm text-white truncate">
                     {owesYou ? `${first} owes you` : `You owe ${first}`}
                   </span>
-                  <span className={`text-sm font-bold shrink-0 ${owesYou ? 'text-[#10B981]' : 'text-[#F43F5E]'}`}>
+                  <span className={`text-sm font-semibold shrink-0 ${owesYou ? 'text-[#10B981]' : 'text-[#F43F5E]'}`}>
                     {owesYou ? '+' : '-'}
                     {formatMinorUnits(Math.abs(netMinor), CURRENCY)}
                   </span>

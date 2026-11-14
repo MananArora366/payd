@@ -111,20 +111,20 @@ export function CareemSplitPrompt({ event, pendingCount = 0, onSplit, onDismiss 
         aria-modal="false"
         aria-labelledby={titleId}
         aria-describedby={descId}
-        className={`pointer-events-auto w-full max-w-md bg-[#18181b] border border-[#00ea80]/25 rounded-2xl shadow-2xl shadow-black/60 p-5 text-white font-body space-y-4 transition-all duration-300 ease-out ${
+        className={`pointer-events-auto w-full max-w-md bg-[#18181b] border border-[#00ea80]/25 rounded-2xl shadow-2xl shadow-black/60 p-5 text-white font-body space-y-4 transition duration-300 ease-out ${
           visible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-6 scale-[0.98]'
         }`}
       >
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="w-5 h-5 rounded-md bg-[#00ea80] text-black font-semibold text-[10px] flex items-center justify-center">
+            <span className="w-5 h-5 rounded-md bg-[#00ea80] text-black font-semibold text-[11px] flex items-center justify-center">
               C
             </span>
-            <span className="text-[10px] font-heading tracking-wider text-[#00ea80]">
+            <span className="text-[11px] font-heading text-[#00ea80]">
               {meta.label.toUpperCase()}
             </span>
-            <span className="text-[10px] text-zinc-500">· {relativeTime(event.occurred_at, now)}</span>
+            <span className="text-[11px] text-zinc-500">· {relativeTime(event.occurred_at, now)}</span>
           </div>
           <button
             type="button"
@@ -142,22 +142,22 @@ export function CareemSplitPrompt({ event, pendingCount = 0, onSplit, onDismiss 
             <Icon className="w-5 h-5 stroke-[2.25]" aria-hidden="true" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-bold text-white truncate">{event.title}</div>
+            <div className="text-sm font-semibold text-white truncate">{event.title}</div>
             {subtitle && <div className="text-[11px] text-zinc-400 truncate">{subtitle}</div>}
             {itemCount > 0 && (
-              <div className="text-[10px] text-zinc-500 mt-0.5">
+              <div className="text-[11px] text-zinc-500 mt-0.5">
                 {itemCount} {itemCount === 1 ? 'item' : 'items'}
               </div>
             )}
           </div>
           <div className="text-right shrink-0">
-            <div className="text-base font-bold tracking-tight text-white">{amount}</div>
+            <div className="text-base font-semibold tracking-tight text-white">{amount}</div>
           </div>
         </div>
 
         {/* Question */}
         <div>
-          <h2 id={titleId} className="font-heading text-sm text-white tracking-wide flex items-center gap-1.5">
+          <h2 id={titleId} className="font-heading text-sm text-white flex items-center gap-1.5">
             <Users className="w-4 h-4 text-[#00ea80]" aria-hidden="true" />
             Split this with others?
           </h2>

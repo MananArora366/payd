@@ -228,7 +228,7 @@ export function LensCameraViewer({ onCapture, onUploadClick }: LensCameraViewerP
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 transition">
                   <Camera className="h-8 w-8" />
                 </div>
-                <span className="text-sm font-bold">
+                <span className="text-sm font-semibold">
                   {state === 'starting' ? 'Starting camera…' : 'Open Payd Lens Camera'}
                 </span>
               </button>

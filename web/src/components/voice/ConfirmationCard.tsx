@@ -150,7 +150,7 @@ export function ConfirmationCard({ intent, onConfirm, onCancel }: ConfirmationCa
       {/* Header with Intent Badge */}
       <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-2">
-          <span className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
+          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
             {intent.intent.replace(/_/g, ' ')}
           </span>
           {matchedGroup && (
@@ -177,7 +177,7 @@ export function ConfirmationCard({ intent, onConfirm, onCancel }: ConfirmationCa
       <div className="space-y-3">
         {/* Title */}
         <div>
-          <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Description</label>
+          <label className="text-[11px] font-semibold text-slate-400">Description</label>
           <input
             type="text"
             value={title}
@@ -189,7 +189,7 @@ export function ConfirmationCard({ intent, onConfirm, onCancel }: ConfirmationCa
         {/* Amount & Payer row */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Total Amount</label>
+            <label className="text-[11px] font-semibold text-slate-400">Total Amount</label>
             <div className="relative mt-1">
               <span className="absolute left-3 top-2.5 text-xs font-semibold text-slate-400">
                 {LEDGER_CURRENCY}
@@ -205,7 +205,7 @@ export function ConfirmationCard({ intent, onConfirm, onCancel }: ConfirmationCa
           </div>
 
           <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{isRepayment ? 'From' : 'Paid By'}</label>
+            <label className="text-[11px] font-semibold text-slate-400">{isRepayment ? 'From' : 'Paid By'}</label>
             <div className="mt-1 flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl text-sm font-medium">
               <img
                 src={payerUser.avatar_url || ''}
@@ -242,7 +242,7 @@ export function ConfirmationCard({ intent, onConfirm, onCancel }: ConfirmationCa
         {/* Category Picker */}
         {!isRepayment && (
           <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Category</label>
+            <label className="text-[11px] font-semibold text-slate-400">Category</label>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}

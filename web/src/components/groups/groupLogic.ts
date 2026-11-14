@@ -54,7 +54,7 @@ export function filterGroupsForUser(groups: Group[], groupMembers: GroupMember[]
 }
 
 /** Re-exported so existing imports keep working; the rule lives in @/lib/icons. */
-export { getGroupEmoji } from '@/lib/icons';
+export { getGroupKind } from '@/lib/icons';
 
 /** Sum of a balance map in minor units. A healthy group ledger sums to 0. */
 export function sumBalances(balances: Record<string, number>): number {

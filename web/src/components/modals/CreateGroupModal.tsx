@@ -116,7 +116,7 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
             >
               <option value="AED">AED (UAE Dirham)</option>
             </select>
-            <p id="group-currency-note" className="mt-1 text-[10px] text-zinc-500">
+            <p id="group-currency-note" className="mt-1 text-[11px] text-zinc-500">
               AED only for now (multi-currency coming soon)
             </p>
           </div>
@@ -140,7 +140,7 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center text-[10px] font-bold text-white">
+                      <div className="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center text-[11px] font-semibold text-white">
                         {u.name.slice(0, 1)}
                       </div>
                       <span className="text-sm font-medium">

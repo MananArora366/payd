@@ -308,7 +308,7 @@ export function FairPayerRouletteModal({
             <div>
               <h3 id={titleId} className="font-heading text-base text-white flex items-center gap-1.5">
                 Fair payer roulette
-                <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-heading border border-amber-500/30">
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-heading border border-amber-500/30">
                   Mini-game
                 </span>
               </h3>
@@ -333,7 +333,7 @@ export function FairPayerRouletteModal({
           </div>
         ) : (
           <div>
-            <label htmlFor="roulette-group" className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+            <label htmlFor="roulette-group" className="text-xs font-semibold text-zinc-400">
               Group
             </label>
             <select
@@ -361,7 +361,7 @@ export function FairPayerRouletteModal({
         {/* Amount & Mode Selector */}
         <div className="space-y-2.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Bill Amount</span>
+            <span className="text-xs font-semibold text-slate-400">Bill Amount</span>
             <div className="flex items-center gap-1">
               {['25.00', '45.00', '80.00', '150.00'].map((preset) => (
                 <button
@@ -371,7 +371,7 @@ export function FairPayerRouletteModal({
                     setAmountStr(preset);
                     setError(null);
                   }}
-                  className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold transition ${
+                  className={`px-2 py-0.5 rounded-lg text-[11px] font-semibold transition ${
                     amountStr === preset
                       ? 'bg-amber-500 text-white'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800'
@@ -395,7 +395,7 @@ export function FairPayerRouletteModal({
               }}
               className="w-full px-4 py-2 text-sm bg-[#09090b] border border-white/10 rounded-2xl text-white font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 pr-14 text-center"
             />
-            <span className="absolute right-4 top-2.5 text-xs text-slate-400 font-bold pointer-events-none">
+            <span className="absolute right-4 top-2.5 text-xs text-slate-400 font-semibold pointer-events-none">
               AED
             </span>
           </div>
@@ -407,7 +407,7 @@ export function FairPayerRouletteModal({
               onClick={() => setMode('debt_weighted')}
               className={`py-1.5 rounded-lg transition flex items-center justify-center gap-1.5 ${
                 mode === 'debt_weighted'
-                  ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-xs font-bold'
+                  ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-xs font-semibold'
                   : 'text-slate-500'
               }`}
             >
@@ -419,7 +419,7 @@ export function FairPayerRouletteModal({
               onClick={() => setMode('equal')}
               className={`py-1.5 rounded-lg transition flex items-center justify-center gap-1.5 ${
                 mode === 'equal'
-                  ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-xs font-bold'
+                  ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-xs font-semibold'
                   : 'text-slate-500'
               }`}
             >
@@ -429,7 +429,7 @@ export function FairPayerRouletteModal({
           </div>
 
           {mode === 'debt_weighted' && (
-            <p className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-500/10 p-2 rounded-xl text-center">
+            <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 p-2 rounded-xl text-center">
               ⚖️ Members who owe this group get +1 slice per AED {ROULETTE_FILS_PER_EXTRA_SLICE / 100} owed (up to +{ROULETTE_MAX_EXTRA_SLICES}). Everyone else gets 1 slice.
             </p>
           )}
@@ -456,7 +456,7 @@ export function FairPayerRouletteModal({
           {/* Winner Display Badge */}
           {winnerUser && showCelebration && (
             <div className="mt-3 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/40 text-center animate-in zoom-in-95 duration-200 w-full">
-              <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+              <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
                 <Trophy className="w-4 h-4" /> Winner Covers The Bill!
               </div>
               <div className="text-lg font-semibold text-slate-900 dark:text-white mt-0.5">
@@ -473,7 +473,7 @@ export function FairPayerRouletteModal({
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs text-slate-400">
             <span>In the Wheel ({participants.length})</span>
-            <span className="text-[10px]">Tap to include/exclude</span>
+            <span className="text-[11px]">Tap to include/exclude</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {groupMembers.length < 2 && (
@@ -513,7 +513,7 @@ export function FairPayerRouletteModal({
               className="w-full py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-semibold text-sm flex items-center justify-center gap-2 transition active:scale-98 disabled:opacity-50"
             >
               <RotateCw className={`w-4 h-4 ${isSpinning ? 'animate-spin' : ''}`} />
-              <span>{isSpinning ? 'Spinning...' : 'Spin The Wheel!'}</span>
+              <span>{isSpinning ? 'Spinning...' : 'Spin the wheel'}</span>
             </button>
           ) : (
             <>
@@ -521,7 +521,7 @@ export function FairPayerRouletteModal({
                 type="button"
                 onClick={handleSpin}
                 disabled={isSpinning}
-                className="py-3 px-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-200 transition"
+                className="py-3 px-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs hover:bg-slate-200 transition"
               >
                 Re-spin
               </button>
