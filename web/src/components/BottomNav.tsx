@@ -52,7 +52,7 @@ export function BottomNav({ activeTab, onTabChange, onTriggerVoice }: BottomNavP
           {/* Soft animated green halo behind the FAB */}
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 -m-1.5 rounded-full bg-brand-400/40 blur-md animate-pulse motion-reduce:animate-none"
+            className="payd-mic-halo pointer-events-none absolute inset-0 -m-1.5 rounded-full bg-brand-400/40 blur-md animate-pulse motion-reduce:animate-none"
           />
           <button
             onClick={() => {
@@ -63,7 +63,7 @@ export function BottomNav({ activeTab, onTabChange, onTriggerVoice }: BottomNavP
                 if (micBtn) micBtn.click();
               }
             }}
-            className="relative w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-brand-400 hover:bg-brand-300 text-zinc-950 flex items-center justify-center ring-4 ring-[#09090b] shadow-[0_0_20px_4px_rgba(74,222,128,0.55)] hover:shadow-[0_0_26px_6px_rgba(74,222,128,0.65)] active:shadow-[0_0_14px_3px_rgba(74,222,128,0.5)] active:scale-95 transition-all duration-200"
+            className="payd-mic-fab relative shrink-0 w-[52px] h-[52px] sm:w-14 sm:h-14 rounded-full bg-brand-400 hover:bg-brand-300 text-zinc-950 flex items-center justify-center ring-4 ring-[#09090b] shadow-[0_0_20px_4px_rgba(74,222,128,0.55)] hover:shadow-[0_0_26px_6px_rgba(74,222,128,0.65)] active:shadow-[0_0_14px_3px_rgba(74,222,128,0.5)] active:scale-95 transition-all duration-200"
             title="Speak an expense"
             aria-label="Speak an expense"
           >

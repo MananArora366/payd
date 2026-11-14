@@ -124,3 +124,29 @@ body {
   background: rgba(161, 161, 170, 0.5);
 }
 
+
+/* Center mic FAB on touch devices: keep it a fixed circle, stop hover styles
+   sticking after a tap, and keep the blurred halo from flickering on iOS. */
+@media (hover: none) and (pointer: coarse), (max-width: 639px) {
+  .payd-mic-fab {
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    flex-shrink: 0;
+    aspect-ratio: 1 / 1;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .payd-mic-halo {
+    transform: translateZ(0);
+    will-change: opacity;
+  }
+}
+@media (hover: none) {
+  .payd-mic-fab:hover {
+    background-color: theme('colors.brand.400');
+    box-shadow: 0 0 20px 4px rgba(74, 222, 128, 0.55), 0 0 0 4px #09090b;
+  }
+}
