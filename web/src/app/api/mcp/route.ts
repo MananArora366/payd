@@ -7,8 +7,131 @@ import {
   handleSpinCoffeeRoulette,
   handleTriggerRecurringSplit,
 } from '@/lib/mcp/paydTools';
+import {
+  handleUserInfo,
+  handleRequestRide,
+  handleCreateRide,
+  handleCartGetBasketPrice,
+  handleGetActivities,
+  handleCareemRideSplit,
+  handleCareemFoodImport,
+  handleCareemQuikBasket,
+  handleCareemPaySettle,
+} from '@/lib/mcp/careemTools';
 
 const MCP_TOOLS_MANIFEST = [
+  // ─── Careem Official Agent Playbook Tools ──────────────────────────────
+  {
+    name: 'user_info',
+    description: 'Rule 1: Always pass coordinates. Retrieve saved addresses (Home/Work), Careem Pay balance.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        includeSavedLocations: { type: 'boolean' },
+      },
+    },
+  },
+  {
+    name: 'request_ride',
+    description: 'Rule 2: Request ride options with coordinates. Returns quotes and critical expiring context_blob.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        pickup_latitude: { type: 'number' },
+        pickup_longitude: { type: 'number' },
+        dropoff_latitude: { type: 'number' },
+        dropoff_longitude: { type: 'number' },
+        destination_name: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'create_ride',
+    description: 'Rule 2 & Golden Rule: Mutating tool to confirm and dispatch Careem ride using verbatim context_blob.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        context_blob: { type: 'string' },
+        confirmed_by_user: { type: 'boolean' },
+        split_with_riders: { type: 'array', items: { type: 'string' } },
+      },
+      required: ['context_blob', 'confirmed_by_user'],
+    },
+  },
+  {
+    name: 'cart_get_basket_price',
+    description: 'Rule 3: Never checkout blind. Compute total, UAE 5% VAT, and pass total_price verbatim to checkout.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        promo_code: { type: 'string' },
+        delivery_address: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'get_activities',
+    description: 'Rule 5: Personalize with past activities and user favorites over cold search.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        type: { type: 'string', enum: ['past', 'upcoming'] },
+      },
+      required: ['type'],
+    },
+  },
+
+  // ─── Careem Super App Extended Actions ──────────────────────────────────
+  {
+    name: 'careem_rides_split_fare',
+    description: 'Fetch Careem Ride fare details (pickup, dropoff, VAT) and calculate zero-loss splits across riders.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        pickup: { type: 'string' },
+        dropoff: { type: 'string' },
+        totalFareAed: { type: 'number' },
+        riderNames: { type: 'array', items: { type: 'string' } },
+      },
+    },
+  },
+  {
+    name: 'careem_food_import_order',
+    description: 'Import Careem Food order line items, UAE 5% VAT, and delivery fee into Tap-to-Claim splitting.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        restaurantName: { type: 'string' },
+        orderId: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'careem_quik_basket_split',
+    description: 'Import Careem Quik groceries cart items for instant distribution among shared flatmates.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        storeName: { type: 'string' },
+        groupName: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'careem_pay_settle_debt',
+    description: 'Execute immediate peer-to-peer settlement via Careem Pay / Aani instant payment rail.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        recipientPhone: { type: 'string' },
+        amountAed: { type: 'number' },
+        note: { type: 'string' },
+      },
+      required: ['recipientPhone', 'amountAed'],
+    },
+  },
+
+  // ─── Payd Social Finance Ledger Tools ──────────────────────────────────
   {
     name: 'payd_get_balances',
     description: 'Retrieve current net balances, who owes whom, and total outstanding debt in AED.',
@@ -140,6 +263,38 @@ export async function POST(req: NextRequest) {
       let output;
 
       switch (toolName) {
+        // ─── Careem Official Agent Playbook Tools ──────────────────────────
+        case 'user_info':
+          output = await handleUserInfo(args);
+          break;
+        case 'request_ride':
+          output = await handleRequestRide(args);
+          break;
+        case 'create_ride':
+          output = await handleCreateRide(args);
+          break;
+        case 'cart_get_basket_price':
+          output = await handleCartGetBasketPrice(args);
+          break;
+        case 'get_activities':
+          output = await handleGetActivities(args);
+          break;
+
+        // ─── Careem Super App Extended Actions ──────────────────────────────
+        case 'careem_rides_split_fare':
+          output = await handleCareemRideSplit(args);
+          break;
+        case 'careem_food_import_order':
+          output = await handleCareemFoodImport(args);
+          break;
+        case 'careem_quik_basket_split':
+          output = await handleCareemQuikBasket(args);
+          break;
+        case 'careem_pay_settle_debt':
+          output = await handleCareemPaySettle(args);
+          break;
+
+        // ─── Payd Social Finance Ledger Tools ──────────────────────────────
         case 'payd_get_balances':
           output = handleGetBalances(args.groupId);
           break;
