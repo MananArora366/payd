@@ -80,20 +80,20 @@ export function RecurringBillsSection({ groupId = null }: RecurringBillsSectionP
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-brand-500/20 text-brand-400">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="shrink-0 p-2 rounded-xl bg-brand-500/20 text-brand-400">
             <Repeat className="w-4 h-4" />
           </div>
-          <div>
-            <h3 className="font-heading text-xs text-white flex items-center gap-1.5">
-              Shared subscriptions & recurring bills
-              <span className="text-[9px] px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 font-heading border border-brand-500/30">
+          <div className="min-w-0">
+            <h3 className="font-heading text-xs text-white flex flex-wrap items-center gap-1.5">
+              <span>Subscriptions & recurring bills</span>
+              <span className="shrink-0 text-[9px] px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 font-heading border border-brand-500/30">
                 {displayedBills.length} ACTIVE
               </span>
             </h3>
             <p className="text-[11px] text-zinc-400 font-body">
-              Automated monthly splits for Wi-Fi, rent, DEWA, and memberships
+              Recurring splits for Wi-Fi, rent, DEWA, and memberships
             </p>
           </div>
         </div>
@@ -101,10 +101,10 @@ export function RecurringBillsSection({ groupId = null }: RecurringBillsSectionP
         <button
           type="button"
           onClick={() => setModalOpen(true)}
-          className="px-3.5 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-sm flex items-center gap-1 transition active:scale-95"
+          className="shrink-0 px-3.5 py-1.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-zinc-950 font-bold text-xs flex items-center gap-1 transition active:scale-95"
         >
           <Plus className="w-3.5 h-3.5 stroke-[3]" />
-          <span>+ Subscription</span>
+          <span>Subscription</span>
         </button>
       </div>
 
@@ -124,9 +124,9 @@ export function RecurringBillsSection({ groupId = null }: RecurringBillsSectionP
 
       {/* Grid of Recurring Bills */}
       {displayedBills.length === 0 ? (
-        <div className="p-6 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-slate-400 text-xs space-y-1">
+        <div className="p-6 text-center rounded-2xl border border-dashed border-white/10 text-zinc-400 text-xs space-y-1">
           <p>No recurring subscriptions configured yet.</p>
-          <p className="text-[11px] text-slate-500">
+          <p className="text-[11px] text-zinc-500">
             Set up shared utilities, Wi-Fi, or streaming services to split with 1 click.
           </p>
         </div>
@@ -146,12 +146,12 @@ export function RecurringBillsSection({ groupId = null }: RecurringBillsSectionP
               >
                 <div>
                   <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-400 flex items-center gap-1">
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-brand-400 flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
                         {formatDueDay(bill.due_day, bill.frequency)} • {bill.frequency}
                       </span>
-                      <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 mt-0.5">
+                      <h4 className="font-bold text-sm text-white mt-0.5 truncate">
                         {bill.title}
                       </h4>
                     </div>
@@ -187,15 +187,15 @@ export function RecurringBillsSection({ groupId = null }: RecurringBillsSectionP
                     )}
                   </div>
 
-                  <div className="text-lg font-semibold text-slate-900 dark:text-white mt-2">
+                  <div className="text-lg font-semibold text-white mt-2">
                     {formatMinorUnits(bill.amount_minor, bill.currency)}
-                    <span className="text-xs font-normal text-slate-400 ml-1">
+                    <span className="text-xs font-normal text-zinc-400 ml-1">
                       /{bill.frequency === 'monthly' ? 'mo' : bill.frequency === 'weekly' ? 'wk' : 'yr'}
                     </span>
                   </div>
 
                   {bill.notes && (
-                    <p className="text-[11px] text-slate-400 mt-1 line-clamp-1">{bill.notes}</p>
+                    <p className="text-[11px] text-zinc-400 mt-1 line-clamp-1">{bill.notes}</p>
                   )}
 
                   {postedThisPeriod && !isPostedRecently && (
@@ -225,25 +225,36 @@ export function RecurringBillsSection({ groupId = null }: RecurringBillsSectionP
                   )}
                 </div>
 
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-[11px] text-slate-400">
+                <div className="pt-2 border-t border-white/8 space-y-2">
+                  <div className="flex items-center justify-between gap-2 text-[11px] text-zinc-400">
                     <span>Paid by {payer?.name?.split(' ')[0] || 'Member'}</span>
-                    <span>{group?.name || 'Personal'}</span>
+                    <span className="truncate">{group?.name || 'Personal'}</span>
                   </div>
 
                   {/* Split participant avatars */}
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <div className="flex -space-x-1.5 overflow-hidden">
                       {bill.splits.map((s) => {
                         const u = users.find((usr) => usr.id === s.user_id);
-                        return (
+                        const name = u?.name || 'Member';
+                        const tip = `${name}: ${formatMinorUnits(s.share_minor, bill.currency)}`;
+                        return u?.avatar_url ? (
                           <img
                             key={s.user_id}
-                            src={u?.avatar_url || ''}
-                            alt={u?.name || ''}
-                            title={`${u?.name}: ${formatMinorUnits(s.share_minor, bill.currency)}`}
-                            className="inline-block h-5 w-5 rounded-full ring-2 ring-white dark:ring-slate-900 object-cover"
+                            src={u.avatar_url}
+                            alt={name}
+                            title={tip}
+                            className="inline-block h-5 w-5 rounded-full ring-2 ring-[#18181b] object-cover"
                           />
+                        ) : (
+                          <span
+                            key={s.user_id}
+                            title={tip}
+                            aria-label={name}
+                            className="inline-flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-[#18181b] bg-brand-200 text-[8px] font-bold text-brand-900"
+                          >
+                            {name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
+                          </span>
                         );
                       })}
                     </div>
@@ -252,10 +263,10 @@ export function RecurringBillsSection({ groupId = null }: RecurringBillsSectionP
                       type="button"
                       onClick={() => handlePostNow(bill)}
                       disabled={isPostedRecently}
-                      className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition ${
+                      className={`shrink-0 px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition active:scale-95 ${
                         isPostedRecently
                           ? 'bg-emerald-500 text-white'
-                          : 'bg-slate-100 hover:bg-brand-600 hover:text-white text-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                          : 'bg-[#27272a] hover:bg-brand-500 hover:text-zinc-950 text-zinc-100'
                       }`}
                     >
                       {isPostedRecently ? (
@@ -266,7 +277,7 @@ export function RecurringBillsSection({ groupId = null }: RecurringBillsSectionP
                       ) : (
                         <>
                           <Play className="w-3.5 h-3.5 fill-current" />
-                          <span>Post Split Now</span>
+                          <span>Post split</span>
                         </>
                       )}
                     </button>

@@ -162,7 +162,7 @@ export function CreateRecurringBillModal({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
+            className="p-1 rounded-full text-zinc-400 hover:text-zinc-200 transition"
           >
             <X className="w-5 h-5" />
           </button>
@@ -184,7 +184,7 @@ export function CreateRecurringBillModal({
               placeholder="e.g. Du 5G Wi-Fi, DEWA Bill, Netflix 4K"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full mt-1 px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
+              className="w-full mt-1 px-3.5 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl text-white focus:outline-none focus:border-brand-500 font-medium"
               required
             />
           </div>
@@ -200,7 +200,7 @@ export function CreateRecurringBillModal({
                 placeholder="0.00"
                 value={amountStr}
                 onChange={(e) => setAmountStr(e.target.value)}
-                className="w-full mt-1 px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold"
+                className="w-full mt-1 px-3.5 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl text-white focus:outline-none focus:border-brand-500 font-bold"
                 required
               />
             </div>
@@ -216,7 +216,7 @@ export function CreateRecurringBillModal({
                   setFrequency(next);
                   setDueDay((d) => clampDueDay(d, next));
                 }}
-                className="w-full mt-1 px-3 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
+                className="w-full mt-1 px-3 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl text-white focus:outline-none focus:border-brand-500 font-medium"
               >
                 <option value="monthly">Monthly</option>
                 <option value="weekly">Weekly</option>
@@ -234,7 +234,7 @@ export function CreateRecurringBillModal({
                 <select
                   value={clampDueDay(dueDay, 'weekly')}
                   onChange={(e) => setDueDay(parseInt(e.target.value, 10) || 1)}
-                  className="w-full mt-1 px-3 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="w-full mt-1 px-3 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl text-white focus:outline-none focus:border-brand-500"
                 >
                   {WEEKDAY_NAMES.map((d, i) => (
                     <option key={d} value={i + 1}>
@@ -249,7 +249,7 @@ export function CreateRecurringBillModal({
                   max={dueRange.max}
                   value={dueDay}
                   onChange={(e) => setDueDay(clampDueDay(parseInt(e.target.value, 10) || 1, frequency))}
-                  className="w-full mt-1 px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="w-full mt-1 px-3.5 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl text-white focus:outline-none focus:border-brand-500"
                 />
               )}
             </div>
@@ -261,7 +261,7 @@ export function CreateRecurringBillModal({
               <select
                 value={payerId}
                 onChange={(e) => setPayerId(e.target.value)}
-                className="w-full mt-1 px-3 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
+                className="w-full mt-1 px-3 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl text-white focus:outline-none focus:border-brand-500 font-medium"
               >
                 {eligibleUsers.map((u) => (
                   <option key={u.id} value={u.id}>
@@ -280,7 +280,7 @@ export function CreateRecurringBillModal({
               <select
                 value={groupId || ''}
                 onChange={(e) => applyGroup(e.target.value ? e.target.value : null)}
-                className="w-full mt-1 px-3 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full mt-1 px-3 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl text-white focus:outline-none focus:border-brand-500"
               >
                 <option value="">Personal (No group)</option>
                 {groups.map((g) => (
@@ -298,7 +298,7 @@ export function CreateRecurringBillModal({
               <select
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full mt-1 px-3 py-2.5 text-sm bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full mt-1 px-3 py-2.5 text-sm bg-[#09090b] border border-white/10 rounded-xl text-white focus:outline-none focus:border-brand-500"
               >
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -310,7 +310,7 @@ export function CreateRecurringBillModal({
           </div>
 
           {/* Participants to Split Among */}
-          <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="space-y-2 pt-2 border-t border-white/8">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-zinc-400 flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5 text-brand-500" />
@@ -330,7 +330,7 @@ export function CreateRecurringBillModal({
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition ${
                       isSelected
                         ? 'bg-brand-600 text-white shadow-xs'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                        : 'bg-[#27272a] text-zinc-400 hover:bg-[#3f3f46] hover:text-zinc-200'
                     }`}
                   >
                     <img src={u.avatar_url || ''} alt={u.name} className="w-4 h-4 rounded-full object-cover" />
@@ -341,9 +341,9 @@ export function CreateRecurringBillModal({
             </div>
 
             {totalMinor > 0 && participantIds.length > 0 && (
-              <div className="p-3 bg-slate-50 dark:bg-slate-850 rounded-xl text-xs space-y-1">
-                <div className="text-slate-400 font-medium">Equal Share per member:</div>
-                <div className="font-bold text-slate-900 dark:text-white text-sm">
+              <div className="p-3 bg-[#09090b] border border-white/8 rounded-xl text-xs space-y-1">
+                <div className="text-zinc-400 font-medium">Equal share per member:</div>
+                <div className="font-bold text-white text-sm">
                   {totalMinor % participantIds.length !== 0 ? '≈ ' : ''}
                   {formatMinorUnits(Math.round(totalMinor / participantIds.length), 'AED')} / {frequency === 'monthly' ? 'month' : frequency === 'weekly' ? 'week' : 'year'}
                 </div>
@@ -351,7 +351,7 @@ export function CreateRecurringBillModal({
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400">
+          <div className="flex items-center gap-1.5 text-[11px] text-emerald-400">
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>Posting this will log an immutable transaction into the ledger automatically</span>
           </div>
@@ -360,7 +360,7 @@ export function CreateRecurringBillModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-750 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-medium transition"
+              className="flex-1 py-2.5 rounded-xl border border-white/10 text-zinc-300 hover:bg-[#27272a] text-sm font-medium transition"
             >
               Cancel
             </button>
