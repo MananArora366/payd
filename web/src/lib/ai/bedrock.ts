@@ -5,14 +5,24 @@ import {
 import { VoiceIntent, VoiceIntentSchema, deterministicParseIntent } from './gemini';
 
 const region = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'us-east-1';
-const defaultModelId = process.env.BEDROCK_MODEL_ID || 'anthropic.claude-3-5-sonnet-20241022-v2:0';
+const defaultModelId = process.env.BEDROCK_MODEL_ID || 'amazon.nova-pro-v1:0';
 
 let client: BedrockRuntimeClient | null = null;
 
 function getBedrockClient(): BedrockRuntimeClient {
   if (!client) {
+    const credentials =
+      process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
+        ? {
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+            sessionToken: process.env.AWS_SESSION_TOKEN,
+          }
+        : undefined;
+
     client = new BedrockRuntimeClient({
       region,
+      credentials,
     });
   }
   return client;
