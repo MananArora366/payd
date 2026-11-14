@@ -3,19 +3,36 @@ import Observation
 import OSLog
 import Speech
 
-/// Dictation for the dock's mic (the web app uses the browser's Web Speech API).
+/// Dictation for the dock's mic. The web app uses the browser's Web Speech API with `lang = 'en-US'`
+/// and interim results (FloatingMicrophone.tsx:70-123).
 @Observable
 @MainActor
 final class SpeechRecognizer {
+    /// The Web Speech `onerror` codes that FloatingMicrophone.tsx:54-68 turns into messages.
+    enum Failure: Equatable {
+        case notAllowed, noSpeech, audioCapture, network, unavailable
+
+        /// FloatingMicrophone.tsx `speechErrorMessage`, verbatim.
+        var message: String {
+            switch self {
+            case .notAllowed: "Microphone access is blocked. You can type your request instead."
+            case .noSpeech: "We didn't catch that. Try again, or type your request below."
+            case .audioCapture: "No microphone was found. You can type your request instead."
+            case .network: "Voice recognition needs a network connection. You can type your request instead."
+            case .unavailable: "Voice input is not available right now. You can type your request instead."
+            }
+        }
+    }
+
     enum Status: Equatable {
         case idle, starting, listening, finished
-        case failed(String)
+        case failed(Failure)
     }
 
     private(set) var transcript = ""
     private(set) var status: Status = .idle
 
-    @ObservationIgnored private let recognizer = SFSpeechRecognizer(locale: Locale.current) ?? SFSpeechRecognizer()
+    @ObservationIgnored private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
     @ObservationIgnored private var engine: AVAudioEngine?
     @ObservationIgnored private var request: SFSpeechAudioBufferRecognitionRequest?
     @ObservationIgnored private var task: SFSpeechRecognitionTask?
@@ -29,7 +46,7 @@ final class SpeechRecognizer {
     nonisolated private static let logger = Logger(subsystem: "com.payd.SwiftExpenseTracker", category: "voice")
 
     private struct VoiceError: Error {
-        let message: String
+        let failure: Failure
     }
 
     func start() async {
@@ -40,7 +57,7 @@ final class SpeechRecognizer {
             let recognizer = try await checkPermissionsAndAvailability()
             try await Self.activateSession()
             sessionActive = true
-            // The sheet may have closed, or Stop been tapped, while we were waiting
+            // The card may have closed, or Stop been tapped, while we were waiting
             try Task.checkCancellation()
             guard status == .starting else { return teardown() }
             try begin(with: recognizer)
@@ -50,14 +67,15 @@ final class SpeechRecognizer {
             status = .idle
         } catch let error as VoiceError {
             teardown()
-            status = .failed(error.message)
+            status = .failed(error.failure)
         } catch {
+            Self.logger.error("Couldn't start listening: \(error.localizedDescription, privacy: .public)")
             teardown()
-            status = .failed("Couldn't start listening: \(error.localizedDescription)")
+            status = .failed(.audioCapture)
         }
     }
 
-    /// Stops listening; the latest partial result is kept as the transcript.
+    /// Stops listening; the latest partial result is kept as the transcript (web `recognition.stop()`).
     func stop() {
         switch status {
         case .starting:
@@ -71,17 +89,27 @@ final class SpeechRecognizer {
         }
     }
 
+    /// Cancels listening and drops the transcript (web `recognition.abort()`, whose "aborted" error is ignored).
+    func abort() {
+        switch status {
+        case .starting:
+            status = .idle
+        case .listening:
+            teardown()
+            status = .idle
+        default:
+            break
+        }
+    }
+
     // MARK: - Private
 
     private func checkPermissionsAndAvailability() async throws -> SFSpeechRecognizer {
-        guard await Self.speechAuthorized() else {
-            throw VoiceError(message: "Speech recognition is off for Payd. Turn it on in Settings › Privacy › Speech Recognition.")
-        }
-        guard await AVAudioApplication.requestRecordPermission() else {
-            throw VoiceError(message: "Microphone access is off for Payd. Turn it on in Settings › Privacy › Microphone.")
-        }
+        guard await Self.speechAuthorized() else { throw VoiceError(failure: .notAllowed) }
+        guard await AVAudioApplication.requestRecordPermission() else { throw VoiceError(failure: .notAllowed) }
         guard let recognizer, recognizer.isAvailable else {
-            throw VoiceError(message: "Speech recognition isn't available right now. Type the expense instead.")
+            // Server-based recognition needs the network; the on-device model doesn't.
+            throw VoiceError(failure: recognizer?.supportsOnDeviceRecognition == false ? .network : .unavailable)
         }
         return recognizer
     }
@@ -90,7 +118,8 @@ final class SpeechRecognizer {
         let engine = AVAudioEngine()
         let format = engine.inputNode.outputFormat(forBus: 0)
         guard format.sampleRate > 0, format.channelCount > 0 else {
-            throw VoiceError(message: "No microphone input found. On the Simulator, pick one under I/O › Audio Input.")
+            // No input device (on the Simulator, pick one under I/O › Audio Input)
+            throw VoiceError(failure: .audioCapture)
         }
 
         let request = SFSpeechAudioBufferRecognitionRequest()
@@ -100,7 +129,12 @@ final class SpeechRecognizer {
 
         Self.installTap(on: engine.inputNode, format: format, feeding: request)
         engine.prepare()
-        try engine.start()
+        do {
+            try engine.start()
+        } catch {
+            Self.logger.error("Audio engine failed to start: \(error.localizedDescription, privacy: .public)")
+            throw VoiceError(failure: .audioCapture)
+        }
 
         self.engine = engine
         self.request = request
@@ -112,28 +146,27 @@ final class SpeechRecognizer {
         }
     }
 
-    private func handle(text: String?, error: (code: Int, message: String)?, isFinal: Bool, generation: Int) {
+    private func handle(text: String?, error: RecognitionError?, isFinal: Bool, generation: Int) {
         guard generation == self.generation, status == .listening else { return }
         if let text, !text.isEmpty { transcript = text }
         guard error != nil || isFinal else { return }
 
         teardown()
         if let error, transcript.isEmpty {
-            Self.logger.error("Recognition failed (\(error.code)): \(error.message, privacy: .public)")
-            switch error.code {
-            case 1110: // no speech detected
-                status = .failed("Didn't hear anything. Tap the mic and try again.")
-            case 300: // recognizer couldn't start: missing speech assets, typical on the Simulator
-                status = .failed("Speech recognition isn't working on this device right now.")
-            default:
-                status = .failed("Couldn't recognise that: \(error.message)")
+            Self.logger.error("Recognition failed (\(error.domain, privacy: .public) \(error.code)): \(error.message, privacy: .public)")
+            if error.code == 1110 { // no speech detected
+                status = .failed(.noSpeech)
+            } else if error.domain == NSURLErrorDomain || error.code == 203 { // server recognition lost the network
+                status = .failed(.network)
+            } else { // e.g. 300: missing speech assets, typical on the Simulator
+                status = .failed(.unavailable)
             }
         } else {
             status = .finished
         }
     }
 
-    /// Stops the engine and recognition task but keeps the audio session (used for the retry).
+    /// Stops the engine and recognition task but keeps the audio session.
     private func stopRecognition() {
         generation += 1
         task?.cancel()
@@ -154,6 +187,12 @@ final class SpeechRecognizer {
 
     // Everything below runs off the main actor: the audio tap and recognition callbacks
     // fire on background threads and only hand plain values back.
+
+    private struct RecognitionError: Sendable {
+        let domain: String
+        let code: Int
+        let message: String
+    }
 
     nonisolated private static func activateSession() async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
@@ -187,12 +226,12 @@ final class SpeechRecognizer {
 
     nonisolated private static func recognize(
         _ request: SFSpeechAudioBufferRecognitionRequest, with recognizer: SFSpeechRecognizer,
-        onUpdate: @escaping @Sendable (String?, (code: Int, message: String)?, Bool) -> Void
+        onUpdate: @escaping @Sendable (String?, RecognitionError?, Bool) -> Void
     ) -> SFSpeechRecognitionTask {
         recognizer.recognitionTask(with: request) { result, error in
             let nsError = error as NSError?
             onUpdate(result?.bestTranscription.formattedString,
-                     nsError.map { ($0.code, $0.localizedDescription) },
+                     nsError.map { RecognitionError(domain: $0.domain, code: $0.code, message: $0.localizedDescription) },
                      result?.isFinal ?? false)
         }
     }
