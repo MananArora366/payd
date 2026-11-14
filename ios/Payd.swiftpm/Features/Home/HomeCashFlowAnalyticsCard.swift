@@ -51,7 +51,7 @@ struct HomeCashFlowAnalyticsCard: View {
                         captionColor: PaydTheme.zinc400)
                 kpiTile(label: "Fair share consumption", value: money(exposure.personalConsumptionMinor),
                         valueColor: PaydTheme.slate200,
-                        caption: "True personal spend (excluding friends\u{2019} splits)", captionColor: PaydTheme.slate400)
+                        caption: "True personal spend (excluding friends' splits)", captionColor: PaydTheme.slate400)
             }
 
             progress(recoveryPercent: recoveryPercent, exposurePercent: exposurePercent, exposure: exposure)
