@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime';
 import {
   handleCareemRideSplit,
   handleCareemFoodImport,
@@ -73,10 +74,20 @@ describe('Careem Super App MCP Tools (Careem Builders 26)', () => {
       categories: ['Food and dining'],
     };
 
+    const sendSpy = vi
+      .spyOn(BedrockRuntimeClient.prototype, 'send')
+      .mockRejectedValue(new Error('offline') as never);
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
     const intent = await interpretVoiceTranscriptBedrock(
       'Spent 85 dirhams on dinner with Sarah at Al Safadi',
       mockContext
     );
+
+    expect(sendSpy).toHaveBeenCalledOnce();
+    expect(warnSpy).toHaveBeenCalledOnce();
+    sendSpy.mockRestore();
+    warnSpy.mockRestore();
 
     expect(intent.intent).toBe('split_expense');
     expect(intent.amount).toBe(85);

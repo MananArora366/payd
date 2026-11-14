@@ -5,7 +5,7 @@ import {
 import { VoiceIntent, VoiceIntentSchema, deterministicParseIntent } from './gemini';
 
 const region = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'us-east-1';
-const defaultModelId = process.env.BEDROCK_MODEL_ID || 'us.anthropic.claude-opus-5-5';
+const defaultModelId = process.env.BEDROCK_MODEL_ID || 'global.anthropic.claude-opus-5-5';
 
 let client: BedrockRuntimeClient | null = null;
 
@@ -50,7 +50,7 @@ export function isBedrockConfigured(): boolean {
 }
 
 /**
- * Interpret voice intent using AWS Bedrock (Claude 3.5 Sonnet or Amazon Nova).
+ * Interpret voice intent using AWS Bedrock (Claude via BEDROCK_MODEL_ID).
  * Incorporates Careem Agent Playbook guidelines.
  */
 export async function interpretVoiceTranscriptBedrock(
@@ -130,7 +130,7 @@ Return ONLY valid JSON matching this schema:
 }
 
 /**
- * Ask ledger questions using AWS Bedrock Claude 3.5 Sonnet.
+ * Ask ledger questions using AWS Bedrock (Claude via BEDROCK_MODEL_ID).
  */
 export async function queryLedgerBedrock(
   question: string,

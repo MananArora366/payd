@@ -400,7 +400,7 @@ export function McpInspectorModal({ isOpen, onClose }: McpInspectorModalProps) {
                 <h4 className="font-heading text-xs text-white">OFFICIAL CAREEM AGENT PLAYBOOK (BUILDERS &apos;26)</h4>
               </div>
               <p className="text-[11px] text-zinc-300 font-body">
-                System prompt contracts guiding LLM agents (AWS Bedrock Claude 3.5 Sonnet) when orchestrating Careem Super App &amp; Payd tools.
+                System prompt contracts guiding LLM agents (AWS Bedrock Claude) when orchestrating Careem Super App &amp; Payd tools.
               </p>
             </div>
 

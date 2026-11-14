@@ -19,7 +19,7 @@ payd/
 │   │   └── lib/               # Deterministic /lib/ledger & Gemini AI
 │   ├── supabase/              # PostgreSQL migrations & seed personas
 │   ├── package.json
-│   └── vitest.config.ts       # 31 Passing financial invariant tests
+│   └── vitest.config.ts       # 47 passing financial invariant tests
 │
 ├── ios/                       # Native iOS Application (Swift & SwiftUI)
 │   ├── Payd.swiftpm/          # Xcode-Native App Package
@@ -79,5 +79,5 @@ In Xcode, select any simulator (e.g., iPhone 16 Pro) and press **`Cmd + R`** to 
 From the root `/Users/user/Desktop/payd` directory:
 - `npm run dev` — Starts the Web dev server
 - `npm run build` — Builds the Web production bundle
-- `npm test` — Runs the 31 financial invariant tests
+- `npm test` — Runs the 47 financial invariant tests
 - `npm run ios` — Opens the native iOS app directly in Xcode
