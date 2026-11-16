@@ -44,6 +44,10 @@ const nextConfig = {
   // Lets `npm run share` build into its own folder without clobbering `next dev`.
   distDir: process.env.NEXT_DIST_DIR || '.next',
   outputFileTracingRoot: path.join(__dirname, '../'),
+  serverExternalPackages: ['tesseract.js', '@tesseract.js-data/eng'],
+  outputFileTracingIncludes: {
+    '/api/ai/receipt-scan': ['./node_modules/@tesseract.js-data/eng/4.0.0_best_int/eng.traineddata.gz'],
+  },
   images: {
     domains: ['images.unsplash.com'],
   },

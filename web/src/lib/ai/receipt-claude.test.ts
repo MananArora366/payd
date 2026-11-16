@@ -2,8 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const readReceiptWithClaude = vi.fn();
 const runLocalOcrDetailed = vi.fn();
+const readReceiptTextWithTesseract = vi.fn();
 vi.mock('./receipt-claude', () => ({ readReceiptWithClaude: (...a: unknown[]) => readReceiptWithClaude(...a) }));
 vi.mock('./local-ocr', () => ({ runLocalOcrDetailed: (...a: unknown[]) => runLocalOcrDetailed(...a) }));
+vi.mock('./receipt-tesseract', () => ({ readReceiptTextWithTesseract: (...a: unknown[]) => readReceiptTextWithTesseract(...a) }));
 
 import { finalizeVisionReceipt, parseReceiptImage } from './receipt-server';
 
@@ -31,6 +33,7 @@ describe('Payd Lens with Claude vision', () => {
     vi.stubEnv('GEMINI_API_KEY', '');
     readReceiptWithClaude.mockReset();
     runLocalOcrDetailed.mockReset();
+    readReceiptTextWithTesseract.mockReset();
     runLocalOcrDetailed.mockResolvedValue({ status: 'ok', lines: ['TOTAL 12.00'] });
   });
   afterEach(() => vi.unstubAllEnvs());
@@ -69,6 +72,16 @@ describe('Payd Lens with Claude vision', () => {
     readReceiptWithClaude.mockResolvedValueOnce({ ...claudeReceipt, total_minor: 0, line_items: [] });
     expect((await parseReceiptImage(JPEG, 'image/jpeg')).engine).not.toBe('claude_bedrock_vision');
     expect(runLocalOcrDetailed).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(['ok', 'failed', 'unavailable'])('uses Tesseract when Apple Vision yields no receipt (%s)', async (status) => {
+    runLocalOcrDetailed.mockResolvedValue({ status, lines: [] });
+    readReceiptTextWithTesseract.mockResolvedValue(['PAYD MARKET', 'Subtotal 30.00', 'VAT 1.50', 'TOTAL 31.50']);
+
+    const receipt = await parseReceiptImage(JPEG, 'image/jpeg', undefined, { allowAi: false });
+
+    expect(receipt).toMatchObject({ engine: 'local_ocr', total_minor: 3150, vat_minor: 150 });
+    expect(readReceiptTextWithTesseract).toHaveBeenCalledWith(Buffer.from(JPEG, 'base64'));
   });
 });
 

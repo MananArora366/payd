@@ -7,6 +7,7 @@ import {
 import { runLocalOcrDetailed } from './local-ocr';
 import { isBedrockConfigured } from './bedrock';
 import { readReceiptWithClaude } from './receipt-claude';
+import { readReceiptTextWithTesseract } from './receipt-tesseract';
 
 /** Thrown when an upload cannot be turned into a trustworthy receipt. */
 export class ReceiptScanError extends Error {
@@ -417,7 +418,7 @@ export function parseRawReceiptTextLines(rawLines: string[], now: Date = new Dat
     category,
     confidence,
     warnings,
-    notes: ['Scanned on-device with Apple Vision OCR. Check the items before saving.', ...notes].join(' '),
+    notes: ['Scanned using local OCR. Check the items before saving.', ...notes].join(' '),
     engine: 'local_ocr',
   };
 }
@@ -635,14 +636,29 @@ RULES:
     }
   }
 
-  // Fallback: Run local Apple Vision OCR. Never fabricate a receipt.
+  // Prefer Apple Vision when available, then retry with the bundled OCR engine.
   const ocr = await runLocalOcrDetailed(decoded.base64);
-  if (ocr.status === 'unavailable') {
-    throw new ReceiptScanError(
-      'Receipt scanning is not available on this server right now. You can enter the bill manually.',
-      503,
-      'ocr_unavailable'
-    );
+  if (ocr.status === 'ok') {
+    try {
+      return parseRawReceiptTextLines(ocr.lines);
+    } catch (error) {
+      if (!(error instanceof ReceiptScanError) || error.code !== 'unreadable') throw error;
+    }
   }
-  return parseRawReceiptTextLines(ocr.lines);
+
+  let lines: string[];
+  try {
+    lines = await readReceiptTextWithTesseract(decoded.bytes);
+  } catch (error) {
+    console.warn('Tesseract receipt OCR failed:', error);
+    if (ocr.status === 'unavailable') {
+      throw new ReceiptScanError(
+        'Receipt scanning could not process this photo. Try a JPEG or PNG, or enter the bill manually.',
+        422,
+        'unreadable'
+      );
+    }
+    throw new ReceiptScanError(UNREADABLE_MESSAGE);
+  }
+  return parseRawReceiptTextLines(lines);
 }

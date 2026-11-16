@@ -25,6 +25,9 @@ export async function runLocalOcr(imageBase64: string): Promise<string[]> {
 }
 
 export async function runLocalOcrDetailed(imageBase64: string): Promise<LocalOcrResult> {
+  if (process.platform !== 'darwin') {
+    return { status: 'unavailable', lines: [] };
+  }
   const binaryPath = path.resolve(process.cwd(), 'bin/payd-ocr');
   const sourcePath = path.resolve(process.cwd(), 'scripts/ocr.swift');
   
