@@ -15,6 +15,7 @@ You start, check, and stop the public share of the Payd web app.
 HTTPS matters: phone browsers only allow the Payd Lens camera on HTTPS, so the ngrok link enables the camera on phones.
 
 ## Starting
+0. **Ask first.** Publishing is outward-facing: confirm with the user before every start, and say who will be able to open the link.
 1. If port 3001 is already listening, check whether it's an existing share (`curl -s localhost:4040/api/tunnels` lists live ngrok tunnels). If one is up, report its URL instead of starting another.
 2. Run `npm run share` from the repo root **in the background** (it runs until stopped). The build takes about 1–2 minutes.
 3. Wait for the `Payd is live:` line or a failure line (`Build failed`, `Server did not start`, `ngrok failed`) in its output, then fetch the URL with `curl -s -o /dev/null -w '%{http_code}' <url>` to confirm it responds.
